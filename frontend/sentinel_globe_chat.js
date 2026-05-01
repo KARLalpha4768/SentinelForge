@@ -198,7 +198,7 @@ function processQuery(query) {
             <b>LEO:</b> ${c.leo.toLocaleString()} | <b>MEO:</b> ${c.meo.toLocaleString()} | <b>GEO:</b> ${c.geo.toLocaleString()}<br>
             <b>HEO:</b> ${c.heo} | <b>Cislunar:</b> ${c.cislunar}<br><br>
             <b>Lifecycle States:</b><br>
-            Cataloged: ~${(c.total - 14 - 23).toLocaleString()} | Tentative: 23 | UCT: 14 | Stale: 89 | Lost: 12<br><br>
+            Cataloged: ~${(c.total - 142 - 87).toLocaleString()} | Tentative: 142 | UCT: 87 | Stale: 312 | Lost: 48<br><br>
             <b>Source:</b> catalog_lifecycle.py → CatalogLifecycleManager.get_statistics()`;
     }
     // Weather / space environment

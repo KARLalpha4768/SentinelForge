@@ -2,7 +2,7 @@
 
 // ── Simulated System State ──────────────────────────
 const STATE = {
-    catalog: { total: 12847, leo: 8934, meo: 1205, geo: 2108, heo: 412, cislunar: 188 },
+    catalog: { total: 46238, leo: 32104, meo: 3218, geo: 6412, heo: 3890, cislunar: 614 },
     ucts: [
         { id:'UCT-0091', state:'tentative', passes:4, sma:6878, inc:51.6, material:'Aluminum', rcs:0.8, first:'2026-05-01T03:22Z' },
         { id:'UCT-0092', state:'uct', passes:1, sma:7200, inc:98.1, material:'Unknown', rcs:0.1, first:'2026-05-01T18:44Z' },
