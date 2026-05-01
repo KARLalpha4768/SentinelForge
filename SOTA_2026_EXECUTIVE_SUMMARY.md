@@ -11,7 +11,7 @@ Traditional SDA pipelines suffer from three major bottlenecks:
 **The SentinelForge Solution:** We push inference to the edge using NVIDIA Jetson AGX Orin nodes at every observatory. These nodes perform real-time astrometric calibration and machine-learning streak detection, reducing the data payload by 500:1 (32MB frames → 10KB detection telemetry). This telemetry is streamed asynchronously via Kafka to a highly-concurrent, microservices-based cloud backend for catalog correlation, multi-sensor fusion, and automated conjunction assessment.
 
 ## 2. Elevating the Science (The SOTA 2026 Upgrade)
-To move beyond 2020-era industry standards, SentinelForge incorporates **fourteen** major theoretical advancements spanning orbital mechanics, sensor physics, machine learning, and applied astrophysics:
+To move beyond 2020-era industry standards, SentinelForge incorporates **fifteen** major theoretical advancements spanning orbital mechanics, sensor physics, machine learning, and applied astrophysics:
 
 ### A. Contrastive Light-Curve Fingerprinting (Surpassing IRL)
 * **The SOTA Method:** SentinelForge (`light_curve_analyzer.py`) uses a self-supervised Transformer encoder to map photometric light curves into a 128-dim embedding space. Anomalies are detected as "embedding drift" — no hand-designed reward function required.
@@ -54,6 +54,9 @@ To move beyond 2020-era industry standards, SentinelForge incorporates **fourtee
 
 ### N. Radar Cross Section Fusion
 * **The SOTA Method:** `rcs_fusion.py` fuses optical photometry with radar RCS measurements via NASA's Size Estimation Model. Joint estimation constrains both albedo and physical size independently, producing far more accurate characterization than either sensor alone.
+
+### O. Neuromorphic Event Stream Ingestion
+* **The SOTA Method:** `event_stream.py` parses Address-Event Representation (AER) streams from Neuromorphic Event Cameras. These sensors operate asynchronously at microsecond resolution, enabling daytime optical tracking and continuous custody of high-velocity tumbling objects invisible to traditional CCD/CMOS cameras.
 
 ## 3. Implementation Steps
 The transition to this architecture is executed across four tiers:

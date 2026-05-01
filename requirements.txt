@@ -1,13 +1,21 @@
 # SentinelForge — 20-Agent Space Surveillance Engineering System
 
-# Core dependencies (required)
+# Core
 numpy>=1.24.0
 torch>=2.0.0
 
-# Cloud pipeline (optional — install for production deployment)
-# confluent-kafka>=2.3.0     # Kafka streaming
-# psycopg2-binary>=2.9.0     # PostgreSQL/PostGIS
-# avro-python3>=1.10.0        # Schema Registry
+# Cloud API & Digital Twin
+fastapi>=0.100.0
+uvicorn>=0.23.0
+websockets>=11.0
+
+# Science (optional — enhances thermospheric & Bayesian modules)
+# scipy>=1.11.0
+
+# Streaming (optional — install for production deployment)
+# confluent-kafka>=2.3.0
+# psycopg2-binary>=2.9.0
+# avro-python3>=1.10.0
 
 # CUDA/C++ build (requires NVIDIA CUDA Toolkit >= 11.8)
 # Build: cd output/builds/src && mkdir build && cd build
@@ -15,6 +23,6 @@ torch>=2.0.0
 #        make -j$(nproc)
 
 # Optional: enhanced astrometry
-# astropy>=5.3               # Coordinate frames, time systems
-# onnx>=1.14.0               # Model export
-# onnxruntime-gpu>=1.15.0    # GPU inference
+# astropy>=5.3
+# onnx>=1.14.0
+# onnxruntime-gpu>=1.15.0

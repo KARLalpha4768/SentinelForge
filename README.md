@@ -1,41 +1,10 @@
 # SentinelForge
 
-**A 20-Agent Autonomous Space Surveillance Engineering System**
+**Enterprise Architecture Demonstration — Space Domain Awareness (SDA)**
 
-SentinelForge is a multi-agent AI system that autonomously writes, tests, reviews, deploys, and monitors a complete space surveillance pipeline — from raw telescope frames to collision warnings. The system comprises two layers:
+SentinelForge is a full-stack space surveillance pipeline that pushes ML inference to the edge, fuses multi-sensor observations in the cloud, and applies state-of-the-art astrophysics to solve the catalog staleness problem plaguing the U.S. Space Surveillance Network.
 
-1. **The Agent System** (~3,600 lines) — 20 specialized AI agents organized in 5 tiers that collaborate to build and maintain the surveillance software.
-2. **The Generated Pipeline** (~2,500 lines) — The actual space surveillance code produced by those agents: calibration, streak detection, orbit propagation, conjunction screening, and autonomous observatory control.
-
-Total: **7,244 lines of Python across 44 files.**
-
----
-
-## Quick Start
-
-```bash
-# 1. Clone / unzip
-cd sentinelforge/
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Initialize the database and verify the system
-python main.py
-
-# 4. Run the end-to-end integration test
-python end_to_end_test.py
-
-# 5. Verify the agent-generated pipeline independently
-cd output/builds/src/
-python simulate_frames.py      # Generates synthetic telescope data
-python source_extract.py       # Extracts detections from frames
-python correlator.py            # Matches detections to catalog
-python anomaly_detect.py        # Triages uncorrelated tracks
-python orbit_propagator.py      # Computes orbital elements
-python conjunction_screener.py  # Evaluates collision probability
-python observation_scheduler.py # Assigns telescope tasks
-```
+**13,575 lines of code** across **60+ files** — Python, C++/CUDA, HTML/JS, Terraform, Kubernetes.
 
 ---
 
@@ -43,202 +12,173 @@ python observation_scheduler.py # Assigns telescope tasks
 
 ```
 sentinelforge/
-├── main.py                          # Entry point — boots the Orchestrator
-├── config.py                        # Sites, credentials, model paths, API config
-├── db.py                            # SQLite task/sprint tracking (310 lines)
-├── knowledge.py                     # Domain knowledge loader (equations, algorithms)
-├── end_to_end_test.py               # Full pipeline integration test
-├── requirements.txt                 # Python dependencies
+├── main.py                              # Entry point — boots the Orchestrator
+├── config.py                            # Sites, credentials, model paths
+├── db.py                                # SQLite task/sprint tracking
+├── knowledge.py                         # Domain knowledge loader
+├── end_to_end_test.py                   # Full pipeline integration test
+├── requirements.txt                     # Python dependencies
+├── CI_CD_pipeline.yml                   # GitHub Actions CI/CD
+├── SOTA_2026_EXECUTIVE_SUMMARY.md       # Technical executive summary (A–N)
 │
-├── agents/                          # THE 20-AGENT SYSTEM
-│   ├── tier1_cpp/                   # C++/CUDA code generation agents
-│   │   ├── frame_architect.py       # Agent 1:  GPU calibration kernels
-│   │   ├── gpu_kernel_engineer.py   # Agent 2:  Streak detection kernels
-│   │   ├── plate_solver.py          # Agent 3:  Astrometric solution
-│   │   └── hardware_interface.py    # Agent 4:  CCD/telescope drivers
-│   │
-│   ├── tier2_python/                # Python pipeline agents
-│   │   ├── pipeline_orchestrator.py # Agent 5:  Observatory state machine
-│   │   ├── ml_trainer.py            # Agent 6:  PyTorch model training
-│   │   ├── correlator.py            # Agent 7:  Catalog matching
-│   │   └── anomaly_hunter.py        # Agent 8:  Uncorrelated track triage
-│   │
-│   ├── tier3_testing/               # Testing & validation agents
-│   │   ├── data_simulator.py        # Agent 9:  Synthetic frame generation
-│   │   ├── benchmark_runner.py      # Agent 10: Performance measurement
-│   │   ├── shadow_validator.py      # Agent 11: Edge vs. cloud comparison
-│   │   └── regression_guard.py      # Agent 12: CI/CD regression gate
-│   │
-│   ├── tier4_deploy/                # Deployment & operations agents
-│   │   ├── docker_builder.py        # Agent 13: Container image builds
-│   │   ├── fleet_deployer.py        # Agent 14: Multi-site rollout
-│   │   ├── site_monitor.py          # Agent 15: Health telemetry
-│   │   └── fault_responder.py       # Agent 16: Auto-remediation
-│   │
-│   └── tier5_mgmt/                  # Management agents
-│       ├── orchestrator.py          # Agent 20: Master coordinator
-│       ├── sprint_planner.py        # Agent 17: Task decomposition
-│       ├── code_reviewer.py         # Agent 19: Automated code review
-│       └── doc_writer.py            # Agent 18: Documentation generation
+├── agents/                              # 20-AGENT AI SYSTEM (5 Tiers)
+│   ├── tier1_cpp/                       # C++/CUDA code generation (Agents 1-4)
+│   ├── tier2_python/                    # Python pipeline agents (Agents 5-8)
+│   ├── tier3_testing/                   # Testing & validation (Agents 9-12)
+│   ├── tier4_deploy/                    # Deployment & ops (Agents 13-16)
+│   └── tier5_mgmt/                      # Management & orchestration (Agents 17-20)
 │
-├── data/
-│   ├── sentinelforge.db             # Populated task/sprint tracking database
-│   └── knowledge/
-│       ├── algorithms.json          # Matched filter, Hough transform specs
-│       ├── equations.json           # Kepler, Gauss IOD, Foster-Estes formulas
-│       └── hardware.json            # CCD specs, Jetson Orin, telescope params
+├── output/builds/src/                   # GENERATED PIPELINE CODE
+│   ├── cpp/                             # Edge inference (C++/CUDA)
+│   │   ├── photometry.cpp               #   Aperture photometry extraction
+│   │   └── plate_solver.cpp             #   Gaia DR3 astrometric calibration
+│   │
+│   ├── api/                             # Cloud API layer
+│   │   ├── api_server.py                #   FastAPI REST endpoints
+│   │   └── twin_ws.py                   #   Digital Twin WebSocket (1Hz streaming)
+│   │
+│   ├── science/                         # SOTA SCIENCE MODULES (14 modules)
+│   │   ├── light_curve_analyzer.py      #   A. Contrastive Transformer fingerprinting
+│   │   ├── graph_associator.py          #   B. GNN + Sinkhorn optimal transport
+│   │   ├── pinn_orbit.py                #   C. Physics-Informed Neural Network (J2+Drag)
+│   │   ├── non_gaussian_pc.py           #   D. Skewness tensor conjunction screening
+│   │   ├── data_assimilation_engine.py  #   F. Global catalog assimilation (weather model)
+│   │   ├── thermospheric_model.py       #   G. ML-corrected NRLMSISE-00 density
+│   │   ├── bayesian_iod.py              #   H. MCMC orbit determination for UCTs
+│   │   ├── srp_estimator.py             #   I. Solar radiation pressure + HAMR detection
+│   │   ├── koopman_propagator.py        #   J. EDMD linearized propagation
+│   │   ├── cislunar_dynamics.py         #   K. CR3BP Lagrange points + manifolds
+│   │   ├── fourier_neural_operator.py   #   L. FNO propagation surrogate
+│   │   ├── spectral_characterizer.py    #   M. Multi-band material identification
+│   │   └── rcs_fusion.py               #   N. Radar + optical size estimation
+│   │
+│   ├── core/                            # Coordinate frames, FITS, hardware
+│   │   └── coordinate_frames.py         #   J2000/TEME/ITRF transforms
+│   ├── data/                            # Neuromorphic event stream parser
+│   ├── hardware/                        # ASCOM telescope/camera HAL
+│   │
+│   ├── simulate_frames.py              # Synthetic telescope frame generator
+│   ├── source_extract.py               # Detection table assembly
+│   ├── correlator.py                   # Mahalanobis catalog matching
+│   ├── anomaly_detect.py               # Maneuver/breakup/new-object alerts
+│   ├── orbit_propagator.py             # Gauss IOD + Kepler/J2 propagation
+│   ├── multi_sensor_fusion.py          # Kalman filter, multi-site fusion
+│   ├── conjunction_screener.py         # Foster-Estes collision probability
+│   ├── observation_scheduler.py        # Priority-based telescope tasking
+│   ├── autonomous.py                   # Night-cycle state machine
+│   ├── cloud_ingest.py                 # Async Kafka consumer pipeline
+│   ├── train_model.py                  # PyTorch training + ONNX export
+│   ├── deploy.py                       # Fleet deployment orchestration
+│   └── monitor.py                      # Site health monitoring
 │
-├── output/
-│   └── builds/src/                  # AGENT-GENERATED PIPELINE CODE
-│       ├── simulate_frames.py       # Synthetic telescope frame generator
-│       ├── source_extract.py        # Detection table assembly
-│       ├── correlator.py            # Mahalanobis distance matching
-│       ├── anomaly_detect.py        # Maneuver/breakup/new-object alerts
-│       ├── orbit_propagator.py      # Gauss IOD + Kepler/J2 propagation
-│       ├── multi_sensor_fusion.py   # Kalman filter, multi-site fusion
-│       ├── conjunction_screener.py  # Foster-Estes collision probability
-│       ├── observation_scheduler.py # Priority-based telescope tasking
-│       ├── autonomous.py            # Night-cycle state machine
-│       ├── train_model.py           # PyTorch training + ONNX export
-│       ├── benchmark.py             # Performance measurement harness
-│       ├── regression_guard.py      # CI/CD gate
-│       ├── deploy.py                # Fleet deployment orchestration
-│       └── monitor.py               # Site health monitoring
+├── frontend/                            # VISUALIZATION
+│   ├── dashboard.html                   #   Operations dashboard
+│   └── digital_twin.html               #   E. CesiumJS 3D globe + WebSocket
 │
-└── templates/                       # (Reserved for CUDA/C++ templates)
+├── terraform/                           # INFRASTRUCTURE AS CODE
+│   └── main.tf                          #   AWS EKS + MSK + RDS provisioning
+│
+└── data/                                # DOMAIN KNOWLEDGE
+    ├── sentinelforge.db                 #   Task/sprint tracking database
+    └── knowledge/                       #   Equations, algorithms, hardware specs
 ```
 
 ---
 
-## How It Works
+## The Science (14 SOTA Modules)
 
-### The Agent Loop
+SentinelForge implements fourteen state-of-the-art techniques spanning orbital mechanics, sensor physics, machine learning, and applied astrophysics. See [`SOTA_2026_EXECUTIVE_SUMMARY.md`](SOTA_2026_EXECUTIVE_SUMMARY.md) for full details.
+
+| # | Module | Technique | What It Solves |
+|---|--------|-----------|---------------|
+| A | `light_curve_analyzer.py` | Contrastive Transformer embeddings | Satellite anomaly detection without IRL |
+| B | `graph_associator.py` | GNN + Sinkhorn optimal transport | O(N²) data association (surpasses MFAST) |
+| C | `pinn_orbit.py` | Physics-Informed Neural Network | Sparse-data orbit determination |
+| D | `non_gaussian_pc.py` | Skewness tensor propagation | False-alarm collision reduction |
+| E | `digital_twin.html` + `twin_ws.py` | CesiumJS + WebSocket | Real-time 3D visualization |
+| F | `data_assimilation_engine.py` | Global meteorological model | Space weather-coupled catalog |
+| G | `thermospheric_model.py` | ML-corrected NRLMSISE-00 | 40% → 20% density error |
+| H | `bayesian_iod.py` | Admissible Region + MCMC | UCT orbit probability cloud |
+| I | `srp_estimator.py` | SRP + A/m estimation | GEO HAMR debris tracking |
+| J | `koopman_propagator.py` | EDMD linearization | Ultra-fast matrix propagation |
+| K | `cislunar_dynamics.py` | CR3BP + Lagrange manifolds | Earth-Moon tracking |
+| L | `fourier_neural_operator.py` | Spectral convolution | Single-pass orbit surrogate |
+| M | `spectral_characterizer.py` | Multi-band color indices | Satellite material ID |
+| N | `rcs_fusion.py` | NASA SEM + optical fusion | Joint radar-optical sizing |
+
+---
+
+## The Pipeline
 
 ```
-HUMAN sets goal
-    → Agent 20 (Orchestrator) decomposes into tasks
-    → Agent 17 (Sprint Planner) assigns to builder agents
-    → Tier 1-2 agents write code
-    → Agent 19 (Code Reviewer) reviews
-    → Tier 3 agents test (synthetic data, benchmarks, shadow validation)
-    → Agent 12 (Regression Guard) gates the merge
-    → Tier 4 agents build containers, deploy, monitor
-    → Agent 18 (Doc Writer) generates documentation
-    → Agent 20 reports results to HUMAN
-```
-
-### The Surveillance Pipeline
-
-```
-Raw CCD frame (32 MB)
-    → calibration.cu (dark subtract, flat field, sky background)
-    → streak_detect.cu (matched filter bank, 900 filters, 5σ extraction)
-    → plate_solver.cpp (Gaia DR3 triangle matching, WCS fit)
-    → source_extract.py (detection table assembly)
-    → correlator.py (Mahalanobis distance vs. catalog)
-    → anomaly_detect.py (NEW OBJECT / MANEUVER / BREAKUP alerts)
-    → Detection package (60 KB) uploaded to cloud
-    → multi_sensor_fusion.py (Kalman filter across 20 sites)
-    → orbit_propagator.py (Gauss IOD, Kepler+J2)
-    → conjunction_screener.py (Foster-Estes collision probability)
-    → observation_scheduler.py (telescope tasking for next night)
+Raw CCD Frame (32 MB)
+  → calibration.cu         (dark subtract, flat field, sky background)
+  → streak_detect.cu       (matched filter bank, 900 filters, 5σ)
+  → plate_solver.cpp       (Gaia DR3 triangle matching, WCS fit)
+  → source_extract.py      (detection table assembly)
+  → correlator.py          (Mahalanobis distance vs. catalog)
+  → graph_associator.py    (Sinkhorn OT assignment + UCT flagging)
+  → bayesian_iod.py        (MCMC orbit determination for UCTs)
+  → light_curve_analyzer.py (FFT spin + contrastive fingerprint)
+  → Detection package (10 KB) uploaded to cloud via Kafka
+  → data_assimilation_engine.py (global catalog correction)
+  → conjunction_screener.py (non-Gaussian Pc evaluation)
+  → observation_scheduler.py (telescope tasking for next pass)
 ```
 
 ---
 
-## Verification Steps
+## Quick Start
 
-### 1. Structural Verification
-Confirm all 44 Python files are present and parseable:
 ```bash
-python -c "
-import ast, pathlib
-files = list(pathlib.Path('.').rglob('*.py'))
-for f in files:
-    try:
-        ast.parse(f.read_text())
-        print(f'  OK  {f}')
-    except SyntaxError as e:
-        print(f'FAIL  {f}: {e}')
-print(f'\nTotal: {len(files)} files')
-"
-```
+# 1. Clone
+git clone https://github.com/KARLalpha4768/SentinelForge.git
+cd SentinelForge
 
-### 2. Database Verification
-Inspect the task tracking database:
-```bash
-python -c "
-import sqlite3
-conn = sqlite3.connect('data/sentinelforge.db')
-for table in conn.execute(\"SELECT name FROM sqlite_master WHERE type='table'\").fetchall():
-    count = conn.execute(f'SELECT COUNT(*) FROM {table[0]}').fetchone()[0]
-    print(f'  {table[0]}: {count} rows')
-conn.close()
-"
-```
+# 2. Install
+pip install -r requirements.txt
 
-### 3. Knowledge Base Verification
-Confirm domain knowledge is populated:
-```bash
-python -c "
-import json
-for f in ['data/knowledge/algorithms.json', 'data/knowledge/equations.json', 'data/knowledge/hardware.json']:
-    data = json.load(open(f))
-    print(f'  {f}: {len(data)} entries')
-"
-```
-
-### 4. Agent Execution Test
-Run the full end-to-end test:
-```bash
+# 3. Verify
+python main.py
 python end_to_end_test.py
+
+# 4. Run science modules independently
+cd output/builds/src/science/
+python light_curve_analyzer.py      # FFT spin estimation + contrastive embedding
+python graph_associator.py          # Sinkhorn data association + UCT detection
+python bayesian_iod.py              # MCMC orbit determination
+python koopman_propagator.py        # EDMD linearized propagation
+python cislunar_dynamics.py         # CR3BP Lagrange points + manifolds
+python data_assimilation_engine.py  # Global catalog assimilation
+
+# 5. Launch Digital Twin
+pip install fastapi uvicorn websockets
+uvicorn src.api.twin_ws:app --port 8001
+# Open frontend/digital_twin.html in browser
 ```
-
-### 5. Pipeline Module Tests
-Each generated pipeline module can be run independently:
-```bash
-cd output/builds/src/
-python orbit_propagator.py      # Should compute orbital elements
-python conjunction_screener.py  # Should evaluate collision probability
-python multi_sensor_fusion.py   # Should run Kalman filter
-```
-
----
-
-## Domain Science
-
-The system implements real orbital mechanics and signal processing:
-
-- **Calibration:** Dark subtraction, flat fielding, sigma-clipped sky background
-- **Detection:** Matched filter bank (180 angles × 5 lengths), non-maximum suppression
-- **Astrometry:** Triangle pattern matching against Gaia DR3, WCS polynomial fit
-- **Correlation:** Mahalanobis distance gating with uncertainty propagation
-- **Orbit Determination:** Gauss's method (3-observation IOD), Kepler equation with J2 perturbation
-- **Conjunction Screening:** Foster-Estes collision probability integral
-- **Scheduling:** Visibility geometry, priority queuing, weather-aware tasking
 
 ---
 
 ## Tech Stack
 
-| Component | Technology |
-|---|---|
-| Language | Python 3.10+ |
-| AI Backbone | Google Gemini 2.0 Flash |
-| ML Framework | PyTorch + ONNX export |
-| Numerical | NumPy |
-| Database | SQLite |
-| Containers | Docker (multi-stage CUDA builds) |
-| Fleet Ops | Ansible + Docker Compose over VPN |
+| Layer | Technology |
+|-------|-----------|
+| Edge Inference | C++/CUDA on NVIDIA Jetson AGX Orin |
+| Cloud Backend | FastAPI + Async Kafka + PostgreSQL/PostGIS |
+| ML Framework | PyTorch + ONNX + TensorRT |
+| Visualization | CesiumJS + WebSocket (1Hz streaming) |
+| Orchestration | Kubernetes (EKS) + Docker |
+| Infrastructure | Terraform (AWS EKS/MSK/RDS) |
+| CI/CD | GitHub Actions |
 | Monitoring | Prometheus + Grafana |
 
 ---
 
 ## Author
 
-Karl David — Principal Engineer, Kham Enterprises LLC
+**Karl David** — Principal Engineer, Kham Enterprises LLC
 
-Built as a demonstration of autonomous multi-agent software engineering applied to space domain awareness. The system demonstrates that a single engineer can architect, build, and operate the equivalent of a 20-person engineering team through AI agent orchestration.
+Built as an enterprise architecture demonstration of autonomous space surveillance engineering. The system demonstrates that a single engineer can architect and operate the equivalent of a 20-person team through AI agent orchestration, while implementing research-grade astrophysics across 14 scientific domains.
 
 ---
 
