@@ -11,34 +11,49 @@ Traditional SDA pipelines suffer from three major bottlenecks:
 **The SentinelForge Solution:** We push inference to the edge using NVIDIA Jetson AGX Orin nodes at every observatory. These nodes perform real-time astrometric calibration and machine-learning streak detection, reducing the data payload by 500:1 (32MB frames → 10KB detection telemetry). This telemetry is streamed asynchronously via Kafka to a highly-concurrent, microservices-based cloud backend for catalog correlation, multi-sensor fusion, and automated conjunction assessment.
 
 ## 2. Elevating the Science (The SOTA 2026 Upgrade)
-To move beyond 2020-era industry standards, SentinelForge incorporates five major theoretical advancements:
+To move beyond 2020-era industry standards, SentinelForge incorporates **fourteen** major theoretical advancements spanning orbital mechanics, sensor physics, machine learning, and applied astrophysics:
 
 ### A. Contrastive Light-Curve Fingerprinting (Surpassing IRL)
-* **The Legacy Method:** Relying on Inverse Reinforcement Learning (IRL) with hand-designed reward functions to detect satellite anomalies.
-* **The SOTA Method:** SentinelForge (`light_curve_analyzer.py`) uses a self-supervised Transformer encoder to map photometric light curves into a 128-dim embedding space.
-* **The Result:** Anomalies (maneuvers, breakups, tumbling) are detected natively as "embedding drift" without needing a brittle, gameable reward function.
+* **The SOTA Method:** SentinelForge (`light_curve_analyzer.py`) uses a self-supervised Transformer encoder to map photometric light curves into a 128-dim embedding space. Anomalies are detected as "embedding drift" — no hand-designed reward function required.
 
 ### B. Differentiable Optimal Transport for Data Association (Surpassing MFAST)
-* **The Legacy Method:** Solving the NP-hard observation-to-catalog multi-frame assignment problem using combinatorial Lagrangian relaxation (e.g., Numerica's MFAST).
-* **The SOTA Method:** SentinelForge (`graph_associator.py`) uses a Graph Neural Network (GNN) to learn the cost matrix, and solves the assignment using Sinkhorn optimal transport.
-* **The Result:** O(N²) polynomial-time scaling, end-to-end differentiable, and GPU-native resolution of Uncorrelated Tracks (UCTs).
+* **The SOTA Method:** `graph_associator.py` uses a Graph Neural Network to learn the cost matrix and solves the assignment via Sinkhorn optimal transport — O(N²), differentiable, GPU-native.
 
 ### C. Physics-Informed Neural Networks (PINNs) for Orbit Determination
-* **The Legacy Method:** Traditional Batch Least-Squares requires constant updates.
-* **The SOTA Method:** SentinelForge utilizes a PyTorch-based PINN (`pinn_orbit.py`) where Keplerian gravity, J2 zonal harmonics, and **Atmospheric Drag** are embedded directly into the loss gradient.
-* **The Result:** 100x faster inference, handling sparse data gaps without divergence.
+* **The SOTA Method:** `pinn_orbit.py` embeds Keplerian gravity, J2 harmonics, and Atmospheric Drag directly into the PyTorch loss gradient. 100x faster inference than numerical integration.
 
-### D. Non-Gaussian Moment Propagation for Conjunction Screening
-* **The SOTA Method:** Employs Differential Algebra (`non_gaussian_pc.py`) to propagate the 3rd-order moment (skewness tensor) through the 7-day warning window.
-* **The Result:** Massive reduction in false-alarm collision alerts caused by "diluted risk" Gaussian assumptions.
+### D. Non-Gaussian Conjunction Screening
+* **The SOTA Method:** `non_gaussian_pc.py` propagates the 3rd-order skewness tensor via Differential Algebra, eliminating false-alarm collisions from Gaussian dilution.
 
 ### E. Open-Architecture Digital Space Twin
-* **The SOTA Method:** A real-time CesiumJS 3D globe (`frontend/digital_twin.html`) connected to a FastAPI WebSocket stream (`twin_ws.py`). It visualizes live orbital propagation and allows for maneuver injection and non-Gaussian conjunction replay directly in the browser.
+* **The SOTA Method:** CesiumJS 3D globe (`digital_twin.html`) + FastAPI WebSocket stream (`twin_ws.py`) for live orbital visualization, maneuver injection, and non-Gaussian conjunction replay.
 
-### F. Supercomputer Global Data Assimilation (The Meteorological Model)
-* **The Legacy Method:** "Object-centric" catalog maintenance. When an observation arrives, the system numerically propagates that *one* satellite forward, completely ignoring the surrounding environment.
-* **The SOTA Method:** SentinelForge treats Space Domain Awareness like Global Weather Forecasting. The `data_assimilation_engine.py` maintains a continuous, GPU-accelerated simulation of the entire space catalog. 
-* **The Result:** When edge observations arrive, they are treated as boundary-condition corrections and backpropagated into the global simulation. If the engine detects higher-than-expected drag on a subset of observed satellites (due to a solar flare), it dynamically updates the global "Space Weather" atmospheric density model. This instantly improves the prediction accuracy for the other 9,950 *unobserved* satellites in the simulation. This is true Global Data Assimilation.
+### F. Global Data Assimilation Engine (The Meteorological Model)
+* **The SOTA Method:** `data_assimilation_engine.py` treats SDA like weather forecasting — a continuous GPU simulation of the full catalog where observations are boundary-condition corrections. A learned global density scalar couples space weather to all 10,000+ objects simultaneously.
+
+### G. ML-Corrected Thermospheric Density
+* **The SOTA Method:** `thermospheric_model.py` replaces static empirical models (NRLMSISE-00) with a neural network residual correction trained on satellite drag data. Reduces density error from 40-60% to ~20%. Ingests real-time solar wind indices (F10.7, Ap, Kp, Dst) from NOAA SWPC.
+
+### H. Bayesian Initial Orbit Determination for UCTs
+* **The SOTA Method:** `bayesian_iod.py` uses Admissible Region theory + MCMC sampling to produce a probability distribution over possible orbits from a single short-arc angles-only observation. This is how asteroid hunters handle newly-discovered objects at the Minor Planet Center.
+
+### I. Solar Radiation Pressure & Area-to-Mass Estimation
+* **The SOTA Method:** `srp_estimator.py` computes SRP acceleration for GEO objects (where drag is negligible), jointly estimates Area-to-Mass ratio from eccentricity oscillations + light curves, and flags High Area-to-Mass Ratio (HAMR) debris fragments.
+
+### J. Koopman Operator for Linearized Propagation
+* **The SOTA Method:** `koopman_propagator.py` lifts nonlinear orbital dynamics into a linear space via Extended Dynamic Mode Decomposition (EDMD). Enables ultra-fast catalog propagation via a single matrix-vector multiply instead of numerical integration.
+
+### K. Cislunar Space Domain Awareness (CR3BP)
+* **The SOTA Method:** `cislunar_dynamics.py` extends tracking beyond GEO into the Earth-Moon system using the Circular Restricted Three-Body Problem. Computes all 5 Lagrange points and generates stable/unstable invariant manifolds — the "highways" of cislunar space.
+
+### L. Fourier Neural Operator (FNO) Propagation Surrogate
+* **The SOTA Method:** `fourier_neural_operator.py` learns the solution *operator* in Fourier space. A single trained FNO propagates any orbit in one forward pass without re-training — replacing per-object PINNs at catalog scale.
+
+### M. Multi-Spectral & Polarimetric Characterization
+* **The SOTA Method:** `spectral_characterizer.py` extends light curves with multi-band photometry (B, V, R, I) and polarimetry. Maps color indices (B-V, V-R) to an aerospace material database (GaAs solar cells, MLI blankets, aluminum, Kapton) for satellite material identification.
+
+### N. Radar Cross Section Fusion
+* **The SOTA Method:** `rcs_fusion.py` fuses optical photometry with radar RCS measurements via NASA's Size Estimation Model. Joint estimation constrains both albedo and physical size independently, producing far more accurate characterization than either sensor alone.
 
 ## 3. Implementation Steps
 The transition to this architecture is executed across four tiers:
