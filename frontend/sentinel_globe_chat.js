@@ -202,6 +202,22 @@ function processQuery(query) {
         resp += `<br><b>Source:</b> site_registry.json → 172-site global constellation`;
         return resp;
     }
+    // Telemetry / data feeds
+    if(q.includes('telemetry') || q.includes('feed') || q.includes('pipeline') || q.includes('data source') || q.includes('kafka') || q.includes('spacetrack') || q.includes('celestrak')) {
+        const t = STATE.telemetry;
+        const active = t.filter(f => f.status==='active').length;
+        const groups = {};
+        t.forEach(f => { groups[f.type] = (groups[f.type]||0)+1; });
+        let resp = `<b>Telemetry Network Status:</b> ${t.length} feeds, ${active} active<br><br>`;
+        Object.entries(groups).forEach(([type, count]) => {
+            const label = {external:'Government/Public',commercial:'Commercial',allied:'Allied',internal:'Internal',edge:'Edge Compute'}[type];
+            resp += `<b>${label}:</b> ${count} feeds<br>`;
+        });
+        resp += `<br><b>Key Feeds:</b><br>`;
+        t.slice(0,6).forEach(f => { resp += `• <b>${f.name}</b>: ${f.throughput}, ${f.latency} latency<br>`; });
+        resp += `<br><b>Source:</b> cloud/kafka_transport.py, cloud/schemas.py`;
+        return resp;
+    }
     // Covariance / NEES
     if(q.includes('covariance') || q.includes('nees') || q.includes('filter') || q.includes('calibrat')) {
         const nees = STATE.gauges.find(g => g.key==='nees');
