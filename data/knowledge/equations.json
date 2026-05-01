@@ -1,0 +1,117 @@
+{
+  "snr": {
+    "name": "Signal-to-Noise Ratio",
+    "formula": "SNR = (S*t) / sqrt(S*t + n_pix*(B*t + D*t + R^2))",
+    "variables": {
+      "S": "Source signal (photons/sec)",
+      "t": "Exposure time (sec)",
+      "n_pix": "Number of pixels object covers",
+      "B": "Sky background (photons/sec/pixel)",
+      "D": "Dark current (electrons/sec/pixel)",
+      "R": "Read noise (electrons/pixel)"
+    },
+    "threshold": 5.0,
+    "used_by": [
+      "streak_detect",
+      "photometry",
+      "simulate_frames"
+    ]
+  },
+  "magnitude": {
+    "name": "Apparent Magnitude",
+    "formula": "m = m_sun - 2.5 * log10(a * A * F(phi) / (R_obj^2 * R_obs^2))",
+    "variables": {
+      "m_sun": "Sun apparent magnitude (-26.74)",
+      "a": "Albedo (0-1)",
+      "A": "Cross-sectional area (m^2)",
+      "F_phi": "Phase function",
+      "R_obj": "Sun-to-object distance (AU)",
+      "R_obs": "Observer-to-object distance (km)"
+    },
+    "used_by": [
+      "photometry",
+      "characterize",
+      "simulate_frames"
+    ]
+  },
+  "streak_length": {
+    "name": "Streak Length",
+    "formula": "L_streak = (omega * t * f) / p",
+    "variables": {
+      "omega": "Angular rate (arcsec/sec)",
+      "t": "Exposure time (sec)",
+      "f": "Focal length (mm)",
+      "p": "Pixel size (microns)"
+    },
+    "used_by": [
+      "streak_detect",
+      "source_extract"
+    ]
+  },
+  "plate_solution": {
+    "name": "Astrometric Plate Solution",
+    "formula": "RA = a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2",
+    "method": "Least-squares fit matching detected stars to Gaia DR3 catalog",
+    "min_stars": 6,
+    "max_residual_arcsec": 0.5,
+    "used_by": [
+      "plate_solver",
+      "source_extract"
+    ]
+  },
+  "psf_gaussian": {
+    "name": "Point Spread Function",
+    "formula": "I(x,y) = A * exp(-((x-x0)^2/(2*sx^2) + (y-y0)^2/(2*sy^2))) + B",
+    "purpose": "Sub-pixel centroid via least-squares Gaussian fit",
+    "typical_fwhm_px": 2.5,
+    "used_by": [
+      "photometry",
+      "plate_solver"
+    ]
+  },
+  "mahalanobis": {
+    "name": "Mahalanobis Distance",
+    "formula": "d = sqrt((dRA/sigma_RA)^2 + (dDec/sigma_Dec)^2)",
+    "threshold": 4.0,
+    "purpose": "Match detections to catalog accounting for position uncertainty",
+    "used_by": [
+      "correlator"
+    ]
+  },
+  "collision_probability": {
+    "name": "Conjunction Probability",
+    "formula": "Pc = (A_combined / (2*pi*sigma_r*sigma_t)) * exp(-d_miss^2 / (2*(sigma_r^2 + sigma_t^2)))",
+    "alert_threshold": 0.0001,
+    "used_by": [
+      "anomaly_detect"
+    ]
+  },
+  "background_estimation": {
+    "name": "Sigma-Clipped Median Background",
+    "formula": "B_local = median(pixels, reject > 3*sigma); sigma = 1.4826 * MAD",
+    "tile_size": 64,
+    "clip_sigma": 3.0,
+    "clip_iterations": 3,
+    "used_by": [
+      "calibration",
+      "background"
+    ]
+  },
+  "lomb_scargle": {
+    "name": "Lomb-Scargle Periodogram",
+    "formula": "Power(omega) = periodogram of unevenly sampled magnitude time series",
+    "purpose": "Extract spin period from light curve",
+    "used_by": [
+      "characterize"
+    ]
+  },
+  "optimal_exposure": {
+    "name": "Optimal Exposure Time",
+    "formula": "t = min(R^2/(B+D), L_max*p/(omega*f))",
+    "purpose": "Balance read noise floor vs. streak smearing",
+    "used_by": [
+      "autonomous",
+      "scheduler"
+    ]
+  }
+}

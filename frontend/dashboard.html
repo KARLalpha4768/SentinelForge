@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelForge Operational Dashboard</title>
+    <!-- Tailwind CSS via CDN for zero-build deployment -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0b0f19; color: #e2e8f0; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .pulse-red { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-6 font-sans">
+    
+    <!-- Header -->
+    <header class="flex justify-between items-center mb-8 pb-4 border-b border-slate-700">
+        <div>
+            <h1 class="text-3xl font-bold text-white tracking-wider">SENTINEL<span class="text-blue-500">FORGE</span></h1>
+            <p class="text-slate-400 text-sm mt-1">SDA Fusion Engine // Live Operations</p>
+        </div>
+        <div class="flex gap-4">
+            <div class="px-4 py-2 glass-panel rounded-lg flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                <span class="text-sm font-mono">KAFKA: SYNCED</span>
+            </div>
+            <div class="px-4 py-2 glass-panel rounded-lg flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                <span class="text-sm font-mono">DB: ONLINE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column: Catalog -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="glass-panel rounded-xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Active Target Catalog</h2>
+                    <span class="text-xs font-mono bg-slate-800 px-2 py-1 rounded text-slate-300">Live API Feed</span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-slate-400 border-b border-slate-700">
+                            <tr>
+                                <th class="pb-3 font-medium">NORAD ID</th>
+                                <th class="pb-3 font-medium">Epoch (UTC)</th>
+                                <th class="pb-3 font-medium">Alt (km)</th>
+                                <th class="pb-3 font-medium">Vel (km/s)</th>
+                                <th class="pb-3 font-medium text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalogTable" class="divide-y divide-slate-800/50">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Alerts -->
+        <div class="space-y-6">
+            <div class="glass-panel rounded-xl p-6 border-red-900/50 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                <h2 class="text-xl font-semibold text-red-400 mb-4 flex items-center gap-2">
+                    <div class="w-3 h-3 bg-red-500 rounded-full pulse-red"></div>
+                    Conjunction Alerts
+                </h2>
+                
+                <div id="alertsContainer" class="space-y-4">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- Global Sensor Network Status -->
+            <div class="glass-panel rounded-xl p-6">
+                <h2 class="text-xl font-semibold mb-4">Sensor Network</h2>
+                <div class="space-y-3 font-mono text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">CHL-01 (Orin)</span>
+                        <span class="text-green-400">Tracking</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">AUS-01 (Orin)</span>
+                        <span class="text-yellow-400">Autofocus</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">NAM-01 (Orin)</span>
+                        <span class="text-red-400">Weather Hold</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // Mock data matching the FastAPI server output
+        const mockCatalog = [
+            { id: 25544, epoch: "2026-04-30 22:45", alt: 420.5, vel: 7.66 },
+            { id: 48274, epoch: "2026-04-30 22:44", alt: 540.2, vel: 7.58 },
+            { id: 99999, epoch: "2026-04-30 22:40", alt: 418.9, vel: 7.67 }
+        ];
+
+        const mockAlerts = [
+            { event: "EV-2026-0881", primary: 25544, secondary: 99999, tca: "14h 22m", miss: 0.52, pc: "1.31e-4", level: "RED" }
+        ];
+
+        // Render Catalog
+        const catalogBody = document.getElementById('catalogTable');
+        mockCatalog.forEach(obj => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-800/50 transition-colors";
+            tr.innerHTML = `
+                <td class="py-3 font-mono text-blue-400">${obj.id}</td>
+                <td class="py-3 text-slate-300">${obj.epoch}</td>
+                <td class="py-3">${obj.alt.toFixed(1)}</td>
+                <td class="py-3">${obj.vel.toFixed(2)}</td>
+                <td class="py-3 text-right">
+                    <button class="text-xs bg-slate-700 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors" onclick="taskSensor(${obj.id})">Task Sensor</button>
+                </td>
+            `;
+            catalogBody.appendChild(tr);
+        });
+
+        // Render Alerts
+        const alertsContainer = document.getElementById('alertsContainer');
+        mockAlerts.forEach(alert => {
+            const div = document.createElement('div');
+            div.className = "bg-red-950/30 border border-red-900/50 rounded-lg p-4";
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="font-mono text-red-400 font-bold">${alert.event}</span>
+                    <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">${alert.level}</span>
+                </div>
+                <div class="text-sm text-slate-300 space-y-1">
+                    <p>Primary: <span class="font-mono">${alert.primary}</span></p>
+                    <p>Secondary: <span class="font-mono text-yellow-400">${alert.secondary}</span></p>
+                    <p>Miss Dist: <span class="text-white">${alert.miss} km</span></p>
+                    <p>Pc (Non-Gaussian): <span class="font-mono text-red-300">${alert.pc}</span></p>
+                    <p>TCA In: <span class="text-white">${alert.tca}</span></p>
+                </div>
+                <button class="mt-3 w-full bg-red-600/20 hover:bg-red-600/40 text-red-300 text-xs py-1.5 rounded transition-colors border border-red-500/30" onclick="alert('Maneuver planner not implemented in UI stub.')">
+                    PLAN MANEUVER
+                </button>
+            `;
+            alertsContainer.appendChild(div);
+        });
+
+        // Stub action
+        window.taskSensor = function(id) {
+            alert(`Tasking request sent to Observation Scheduler for NORAD ID: ${id}`);
+        };
+    </script>
+</body>
+</html>

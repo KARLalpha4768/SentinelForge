@@ -1,0 +1,48 @@
+{
+  "ccd_cameras": {
+    "typical_specs": {
+      "resolution": "4096x4096",
+      "bit_depth": 16,
+      "pixel_size_um": 9.0,
+      "dark_current_e_per_s": 0.001,
+      "read_noise_e": 3.5,
+      "cooling": "Peltier, -40C to -60C delta",
+      "interface": "USB3 or CameraLink",
+      "readout_time_ms": 200
+    },
+    "manufacturers": [
+      "Andor (iKon-L)",
+      "FLI (ProLine)",
+      "QHY",
+      "ZWO"
+    ]
+  },
+  "telescope_mounts": {
+    "protocols": [
+      "LX200 (serial ASCII)",
+      "ASCOM (Windows COM)",
+      "INDI (Linux)",
+      "Alpaca (HTTP REST)"
+    ],
+    "specs": {
+      "tracking_accuracy_arcsec": 0.5,
+      "slew_speed_deg_per_sec": 5.0,
+      "settle_time_sec": 3,
+      "pointing_accuracy_arcmin": 1.0
+    }
+  },
+  "dome_controllers": {
+    "interfaces": [
+      "RS-485",
+      "Ethernet",
+      "USB-serial"
+    ],
+    "operations": [
+      "open_shutter",
+      "close_shutter",
+      "rotate_to_azimuth",
+      "park",
+      "status_query"
+    ]
+  }
+}

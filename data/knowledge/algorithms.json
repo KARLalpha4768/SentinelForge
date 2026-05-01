@@ -1,0 +1,93 @@
+{
+  "background_subtraction": {
+    "name": "Background Subtraction Pipeline",
+    "steps": [
+      "1. Subtract master dark frame (thermal noise pattern)",
+      "2. Divide by master flat field (pixel sensitivity normalization)",
+      "3. Tile image into 64x64 blocks",
+      "4. Compute sigma-clipped median of each tile (3 iterations, 3-sigma)",
+      "5. Bicubic interpolate tile medians to full resolution",
+      "6. Subtract smooth background from frame"
+    ],
+    "gpu_kernels": [
+      "dark_subtract_kernel",
+      "flat_divide_kernel",
+      "tile_median_kernel",
+      "upsample_background_kernel",
+      "subtract_background_kernel"
+    ],
+    "latency_target_ms": 40
+  },
+  "streak_detection": {
+    "name": "Streak Detection Pipeline",
+    "steps": [
+      "1. Estimate local noise in 32x32 windows (MAD-based)",
+      "2. Run matched filter bank: 180 angles x 5 lengths",
+      "3. For each angle/length combo, convolve along line direction",
+      "4. Compute SNR map = response / local_noise",
+      "5. Find peaks above threshold (5-sigma)",
+      "6. Non-maximum suppression (5x5 window)",
+      "7. Extract streak endpoints, brightness, angle"
+    ],
+    "gpu_kernels": [
+      "estimate_noise_kernel",
+      "matched_filter_kernel",
+      "peak_detect_kernel"
+    ],
+    "latency_target_ms": 50
+  },
+  "plate_solving": {
+    "name": "Astrometric Plate Solving",
+    "steps": [
+      "1. Extract bright point sources (SNR > 10)",
+      "2. Compute sub-pixel centroids via PSF fitting",
+      "3. Build triangle patterns from brightest 30 sources",
+      "4. Match triangle patterns to Gaia DR3 catalog",
+      "5. Use RANSAC to find consensus star matches",
+      "6. Fit 2nd-order WCS polynomial (6 coefficients per axis)",
+      "7. Verify: residuals < 0.5 arcsec"
+    ],
+    "catalog": "Gaia DR3",
+    "min_match_stars": 6,
+    "latency_target_ms": 200
+  },
+  "object_correlation": {
+    "name": "Known Object Correlation",
+    "steps": [
+      "1. Propagate all catalog objects to observation epoch (SGP4)",
+      "2. Compute predicted (RA, Dec) with uncertainty ellipsoid",
+      "3. For each detection, compute Mahalanobis distance to all predictions",
+      "4. Single match (d < 4): CORRELATED",
+      "5. Multiple matches: AMBIGUOUS (take closest)",
+      "6. No matches: UNCORRELATED (potential new object)"
+    ],
+    "propagator": "SGP4 (simplified) or numerical (high-accuracy)",
+    "threshold": 4.0
+  },
+  "autonomous_observatory": {
+    "name": "Observatory State Machine",
+    "states": [
+      "BOOT",
+      "IDLE",
+      "CALIBRATING",
+      "OPENING_DOME",
+      "OBSERVING",
+      "WEATHER_HOLD",
+      "CLOSING",
+      "DAWN_SHUTDOWN",
+      "FAULTED",
+      "EMERGENCY"
+    ],
+    "triggers": {
+      "IDLE->CALIBRATING": "sun_altitude < -12 degrees",
+      "CALIBRATING->OPENING": "calibration complete",
+      "OPENING->OBSERVING": "dome open + weather safe",
+      "OBSERVING->WEATHER_HOLD": "humidity>85 OR wind>40mph OR rain",
+      "WEATHER_HOLD->OBSERVING": "conditions improve within 30min",
+      "WEATHER_HOLD->CLOSING": "30min timeout",
+      "OBSERVING->CLOSING": "sun_altitude > -12 degrees",
+      "ANY->FAULTED": "hardware exception",
+      "ANY->EMERGENCY": "power failure"
+    }
+  }
+}

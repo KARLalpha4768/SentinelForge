@@ -1,0 +1,354 @@
+---
+# SentinelForge - Kubernetes Deployment Manifests
+# Edge pipeline + cloud fusion services on K8s
+#
+# Architecture:
+#   - Edge nodes: DaemonSet on Jetson Orin (ARM64, GPU-enabled)
+#   - Cloud services: Deployments on standard nodes
+#   - Kafka/PostGIS: StatefulSets with persistent volumes
+#   - Monitoring: Prometheus + Grafana sidecar
+#
+# Deploy: kubectl apply -f k8s-manifests.yaml
+# Managed via ArgoCD GitOps pipeline
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sentinelforge
+  labels:
+    app: sentinelforge
+    environment: production
+
+---
+# ConfigMap: shared pipeline configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pipeline-config
+  namespace: sentinelforge
+data:
+  DETECTION_SNR_THRESHOLD: "5.0"
+  STREAK_MIN_LENGTH_PX: "3"
+  PLATE_SOLVE_RESIDUAL_MAX_ARCSEC: "0.5"
+  CORRELATION_MAHALANOBIS_MAX: "4.0"
+  KAFKA_BOOTSTRAP: "kafka.sentinelforge.svc.cluster.local:9092"
+  POSTGIS_DSN: "postgresql://sentinelforge:sf@postgis.sentinelforge.svc:5432/catalog"
+  GPU_UTILIZATION_TARGET_PCT: "40"
+  FRAME_PROCESS_MAX_MS: "500"
+
+---
+# Secret: database and Kafka credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pipeline-secrets
+  namespace: sentinelforge
+type: Opaque
+stringData:
+  POSTGIS_PASSWORD: "${POSTGIS_PASSWORD}"
+  KAFKA_SSL_KEY: "${KAFKA_SSL_KEY}"
+  GEMINI_API_KEY: "${GEMINI_API_KEY}"
+
+---
+# Edge Pipeline - DaemonSet (runs on every Jetson Orin node)
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: edge-pipeline
+  namespace: sentinelforge
+  labels:
+    app: sentinelforge
+    component: edge-pipeline
+spec:
+  selector:
+    matchLabels:
+      app: sentinelforge
+      component: edge-pipeline
+  template:
+    metadata:
+      labels:
+        app: sentinelforge
+        component: edge-pipeline
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      nodeSelector:
+        sentinelforge/role: edge
+        nvidia.com/gpu.present: "true"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: pipeline
+          image: ecr.aws-govcloud.slingshot.internal/slingshot-edge:latest
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
+              memory: "32Gi"
+              cpu: "8"
+            requests:
+              memory: "16Gi"
+              cpu: "4"
+          envFrom:
+            - configMapRef:
+                name: pipeline-config
+            - secretRef:
+                name: pipeline-secrets
+          env:
+            - name: SITE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: frame-data
+              mountPath: /data/frames
+            - name: gpu-drivers
+              mountPath: /usr/local/cuda
+              readOnly: true
+          ports:
+            - containerPort: 9090
+              name: metrics
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 60
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: frame-data
+          hostPath:
+            path: /mnt/ssd/frames
+            type: DirectoryOrCreate
+        - name: gpu-drivers
+          hostPath:
+            path: /usr/local/cuda
+
+---
+# Cloud Fusion Service - Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fusion-service
+  namespace: sentinelforge
+  labels:
+    app: sentinelforge
+    component: fusion
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sentinelforge
+      component: fusion
+  template:
+    metadata:
+      labels:
+        app: sentinelforge
+        component: fusion
+    spec:
+      containers:
+        - name: fusion
+          image: ecr.aws-govcloud.slingshot.internal/slingshot-fusion:latest
+          resources:
+            limits:
+              memory: "8Gi"
+              cpu: "4"
+            requests:
+              memory: "4Gi"
+              cpu: "2"
+          envFrom:
+            - configMapRef:
+                name: pipeline-config
+            - secretRef:
+                name: pipeline-secrets
+          ports:
+            - containerPort: 8080
+              name: api
+            - containerPort: 9090
+              name: metrics
+
+---
+# Conjunction Screener - Deployment (CPU-intensive, separate scaling)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conjunction-screener
+  namespace: sentinelforge
+  labels:
+    app: sentinelforge
+    component: conjunction
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sentinelforge
+      component: conjunction
+  template:
+    metadata:
+      labels:
+        app: sentinelforge
+        component: conjunction
+    spec:
+      containers:
+        - name: screener
+          image: ecr.aws-govcloud.slingshot.internal/slingshot-conjunction:latest
+          resources:
+            limits:
+              memory: "16Gi"
+              cpu: "8"
+            requests:
+              memory: "8Gi"
+              cpu: "4"
+          envFrom:
+            - configMapRef:
+                name: pipeline-config
+            - secretRef:
+                name: pipeline-secrets
+
+---
+# Observation Scheduler - Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+  namespace: sentinelforge
+  labels:
+    app: sentinelforge
+    component: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentinelforge
+      component: scheduler
+  template:
+    metadata:
+      labels:
+        app: sentinelforge
+        component: scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: ecr.aws-govcloud.slingshot.internal/slingshot-scheduler:latest
+          resources:
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          envFrom:
+            - configMapRef:
+                name: pipeline-config
+
+---
+# HorizontalPodAutoscaler for fusion service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fusion-hpa
+  namespace: sentinelforge
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fusion-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Pods
+      pods:
+        metric:
+          name: kafka_consumer_lag
+        target:
+          type: AverageValue
+          averageValue: "1000"
+
+---
+# PostGIS StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgis
+  namespace: sentinelforge
+spec:
+  serviceName: postgis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentinelforge
+      component: postgis
+  template:
+    metadata:
+      labels:
+        app: sentinelforge
+        component: postgis
+    spec:
+      containers:
+        - name: postgis
+          image: postgis/postgis:15-3.3
+          env:
+            - name: POSTGRES_DB
+              value: catalog
+            - name: POSTGRES_USER
+              value: sentinelforge
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pipeline-secrets
+                  key: POSTGIS_PASSWORD
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 100Gi
+
+---
+# PostGIS Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgis
+  namespace: sentinelforge
+spec:
+  selector:
+    app: sentinelforge
+    component: postgis
+  ports:
+    - port: 5432
+      targetPort: 5432
+  clusterIP: None  # Headless for StatefulSet
+
+---
+# Prometheus ServiceMonitor (for Grafana dashboards)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sentinelforge-metrics
+  namespace: sentinelforge
+spec:
+  selector:
+    matchLabels:
+      app: sentinelforge
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics
