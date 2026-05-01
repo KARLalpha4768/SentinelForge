@@ -76,7 +76,15 @@ class OrbitalPINN(nn.Module):
         a_J2_z = factor * r[:, 2:3] * (5 * z2 / r2 - 3)
         a_J2 = torch.cat([a_J2_x, a_J2_y, a_J2_z], dim=1)
         
-        a_total = a_gravity + a_J2
+        # Atmospheric Drag Perturbation (Exponential Model)
+        h = r_mag - self.R_E
+        # Simplified scaling for LEO drag coefficient and scale height (8.5 km)
+        C_drag = 1e-6  
+        H_scale = 8.5  
+        v_mag = torch.norm(v, dim=1, keepdim=True)
+        a_drag = -C_drag * torch.exp(-h / H_scale) * v_mag * v
+        
+        a_total = a_gravity + a_J2 + a_drag
         loss_a = torch.mean((dv_dt - a_total)**2)
         
         return loss_v + loss_a

@@ -11,22 +11,29 @@ Traditional SDA pipelines suffer from three major bottlenecks:
 **The SentinelForge Solution:** We push inference to the edge using NVIDIA Jetson AGX Orin nodes at every observatory. These nodes perform real-time astrometric calibration and machine-learning streak detection, reducing the data payload by 500:1 (32MB frames → 10KB detection telemetry). This telemetry is streamed asynchronously via Kafka to a highly-concurrent, microservices-based cloud backend for catalog correlation, multi-sensor fusion, and automated conjunction assessment.
 
 ## 2. Elevating the Science (The SOTA 2026 Upgrade)
-To move beyond 2020-era industry standards, SentinelForge incorporates three major theoretical advancements:
+To move beyond 2020-era industry standards, SentinelForge incorporates five major theoretical advancements:
 
-### A. Physics-Informed Neural Networks (PINNs) for Orbit Determination
-* **The Legacy Method:** Traditional Batch Least-Squares orbit determination requires constant observational updates to maintain accuracy, making it poorly suited for tracking LEO mega-constellations with sparse data.
-* **The SOTA Method:** SentinelForge utilizes a PyTorch-based PINN (`pinn_orbit.py`). By explicitly embedding Keplerian gravity and J2 zonal harmonic differential equations into the neural network's loss gradient, the network is constrained by the laws of physics. 
-* **The Result:** It achieves 100x faster inference speeds compared to numerical integration, dramatically improves prediction accuracy during observational gaps, and natively runs on edge hardware.
+### A. Contrastive Light-Curve Fingerprinting (Surpassing IRL)
+* **The Legacy Method:** Relying on Inverse Reinforcement Learning (IRL) with hand-designed reward functions to detect satellite anomalies.
+* **The SOTA Method:** SentinelForge (`light_curve_analyzer.py`) uses a self-supervised Transformer encoder to map photometric light curves into a 128-dim embedding space.
+* **The Result:** Anomalies (maneuvers, breakups, tumbling) are detected natively as "embedding drift" without needing a brittle, gameable reward function.
 
-### B. Non-Gaussian Moment Propagation for Conjunction Screening
-* **The Legacy Method:** The industry-standard Foster-Estes algorithm assumes positional uncertainty is a 3D Gaussian ellipsoid. Over a 7-day warning window, atmospheric drag warps this uncertainty into a "banana shape," leading to false positives (diluted risk).
-* **The SOTA Method:** SentinelForge employs Differential Algebra (`non_gaussian_pc.py`) to propagate the 3rd-order moment (skewness tensor). Collision probability ($P_c$) is calculated using an Edgeworth Expansion correction.
-* **The Result:** Massive reduction in false-alarm conjunction alerts, allowing satellite operators to avoid burning fuel on unnecessary evasive maneuvers.
+### B. Differentiable Optimal Transport for Data Association (Surpassing MFAST)
+* **The Legacy Method:** Solving the NP-hard observation-to-catalog multi-frame assignment problem using combinatorial Lagrangian relaxation (e.g., Numerica's MFAST).
+* **The SOTA Method:** SentinelForge (`graph_associator.py`) uses a Graph Neural Network (GNN) to learn the cost matrix, and solves the assignment using Sinkhorn optimal transport.
+* **The Result:** O(N²) polynomial-time scaling, end-to-end differentiable, and GPU-native resolution of Uncorrelated Tracks (UCTs).
 
-### C. Neuromorphic Event Streams
-* **The Legacy Method:** Traditional CCD/CMOS sensors capture fixed-rate frames (e.g., 1 Hz). Fast, faint objects smear into the background noise and are lost.
-* **The SOTA Method:** SentinelForge's data layer (`event_stream.py`) is engineered to parse Address-Event Representation (AER) streams from Neuromorphic Event Cameras. These cameras operate asynchronously, registering only photon intensity changes at the microsecond level.
-* **The Result:** Enables daytime optical tracking and continuous custody of high-velocity, tumbling objects (like missile bodies or hyper-velocity debris) that are invisible to traditional astronomy cameras.
+### C. Physics-Informed Neural Networks (PINNs) for Orbit Determination
+* **The Legacy Method:** Traditional Batch Least-Squares requires constant updates.
+* **The SOTA Method:** SentinelForge utilizes a PyTorch-based PINN (`pinn_orbit.py`) where Keplerian gravity, J2 zonal harmonics, and **Atmospheric Drag** are embedded directly into the loss gradient.
+* **The Result:** 100x faster inference, handling sparse data gaps without divergence.
+
+### D. Non-Gaussian Moment Propagation for Conjunction Screening
+* **The SOTA Method:** Employs Differential Algebra (`non_gaussian_pc.py`) to propagate the 3rd-order moment (skewness tensor) through the 7-day warning window.
+* **The Result:** Massive reduction in false-alarm collision alerts caused by "diluted risk" Gaussian assumptions.
+
+### E. Open-Architecture Digital Space Twin
+* **The SOTA Method:** A real-time CesiumJS 3D globe (`frontend/digital_twin.html`) connected to a FastAPI WebSocket stream (`twin_ws.py`). It visualizes live orbital propagation and allows for maneuver injection and non-Gaussian conjunction replay directly in the browser.
 
 ## 3. Implementation Steps
 The transition to this architecture is executed across four tiers:
