@@ -34,12 +34,35 @@ try {
     // Defer site loading until registry is fetched
     window._addGlobeSites = addGlobeSites;
 
-    // Simulated satellite population
-    const regimeColors = {
-        leo: Cesium.Color.fromCssColorString('#00e5ff').withAlpha(0.7),
-        meo: Cesium.Color.fromCssColorString('#76ff03').withAlpha(0.7),
-        geo: Cesium.Color.fromCssColorString('#ffd740').withAlpha(0.7),
+    // Simulated satellite population — differentiated by type
+    const regimeBaseColors = {
+        leo: [0, 229, 255],   // cyan
+        meo: [118, 255, 3],   // green
+        geo: [255, 215, 64],  // gold
     };
+    // Object type visual config: [sizeMult, alphaMult, label]
+    const typeConfig = {
+        payload:    { size: 3, alpha: 0.9 },
+        rocketbody: { size: 4, alpha: 0.75 },
+        debris:     { size: 1.5, alpha: 0.4 },
+        unknown:    { size: 2, alpha: 0.55 },
+    };
+    // Realistic type distribution per regime
+    const typeDistrib = {
+        leo: { payload: 0.35, rocketbody: 0.08, debris: 0.52, unknown: 0.05 },
+        meo: { payload: 0.40, rocketbody: 0.12, debris: 0.42, unknown: 0.06 },
+        geo: { payload: 0.55, rocketbody: 0.10, debris: 0.30, unknown: 0.05 },
+    };
+
+    function pickType(regime) {
+        const d = typeDistrib[regime];
+        const r = Math.random();
+        if (r < d.payload) return 'payload';
+        if (r < d.payload + d.rocketbody) return 'rocketbody';
+        if (r < d.payload + d.rocketbody + d.debris) return 'debris';
+        return 'unknown';
+    }
+
     function addSimSats(regime, count, alt, incRange) {
         for(let i=0; i<count; i++) {
             const inc = (Math.random()*incRange - incRange/2) * Math.PI/180;
@@ -47,17 +70,29 @@ try {
             const anom = Math.random() * 360;
             const lon = raan + anom;
             const lat = Math.asin(Math.sin(inc) * Math.sin(anom * Math.PI/180)) * 180/Math.PI;
+            const objType = pickType(regime);
+            const tc = typeConfig[objType];
+            const bc = regimeBaseColors[regime];
+            // Debris is dimmer, payloads are brighter
+            const color = Cesium.Color.fromBytes(bc[0], bc[1], bc[2], Math.round(255 * tc.alpha));
             const e = viewer.entities.add({
                 position: Cesium.Cartesian3.fromDegrees(lon % 360 - 180, lat, alt * 1000),
-                point: { pixelSize: 2, color: regimeColors[regime] },
+                point: {
+                    pixelSize: tc.size,
+                    color: color,
+                    outlineColor: objType === 'rocketbody' ? Cesium.Color.WHITE.withAlpha(0.3) : undefined,
+                    outlineWidth: objType === 'rocketbody' ? 1 : 0,
+                },
             });
+            e._sfType = objType; // tag for filtering
             globeLayers[regime].push(e);
         }
     }
-    addSimSats('leo', 200, 550, 98);
-    addSimSats('leo', 150, 800, 70);
-    addSimSats('meo', 60, 20200, 56);
-    addSimSats('geo', 80, 35786, 2);
+    addSimSats('leo', 350, 550, 98);
+    addSimSats('leo', 200, 800, 70);
+    addSimSats('leo', 100, 1200, 45);
+    addSimSats('meo', 80, 20200, 56);
+    addSimSats('geo', 120, 35786, 2);
 
     // Add conjunction markers
     if(typeof STATE !== 'undefined') {
