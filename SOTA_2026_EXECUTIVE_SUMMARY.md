@@ -11,7 +11,7 @@ Traditional SDA pipelines suffer from three major bottlenecks:
 **The SentinelForge Solution:** We push inference to the edge using NVIDIA Jetson AGX Orin nodes at every observatory. These nodes perform real-time astrometric calibration and machine-learning streak detection, reducing the data payload by 500:1 (32MB frames → 10KB detection telemetry). This telemetry is streamed asynchronously via Kafka to a highly-concurrent, microservices-based cloud backend for catalog correlation, multi-sensor fusion, and automated conjunction assessment.
 
 ## 2. Elevating the Science (The SOTA 2026 Upgrade)
-To move beyond 2020-era industry standards, SentinelForge incorporates **fifteen** major theoretical advancements spanning orbital mechanics, sensor physics, machine learning, and applied astrophysics:
+To move beyond 2020-era industry standards, SentinelForge incorporates **eighteen** major theoretical advancements spanning orbital mechanics, sensor physics, machine learning, applied astrophysics, and operational workflow:
 
 ### A. Contrastive Light-Curve Fingerprinting (Surpassing IRL)
 * **The SOTA Method:** SentinelForge (`light_curve_analyzer.py`) uses a self-supervised Transformer encoder to map photometric light curves into a 128-dim embedding space. Anomalies are detected as "embedding drift" — no hand-designed reward function required.
@@ -20,7 +20,7 @@ To move beyond 2020-era industry standards, SentinelForge incorporates **fifteen
 * **The SOTA Method:** `graph_associator.py` uses a Graph Neural Network to learn the cost matrix and solves the assignment via Sinkhorn optimal transport — O(N²), differentiable, GPU-native.
 
 ### C. Physics-Informed Neural Networks (PINNs) for Orbit Determination
-* **The SOTA Method:** `pinn_orbit.py` embeds Keplerian gravity, J2 harmonics, and Atmospheric Drag directly into the PyTorch loss gradient. 100x faster inference than numerical integration.
+* **The SOTA Method:** `pinn_orbit.py` embeds Keplerian gravity, **J2-J6 zonal harmonics** (operational-grade), and exponential atmospheric drag directly into the PyTorch loss gradient. 100x faster inference than numerical integration.
 
 ### D. Non-Gaussian Conjunction Screening
 * **The SOTA Method:** `non_gaussian_pc.py` propagates the 3rd-order skewness tensor via Differential Algebra, eliminating false-alarm collisions from Gaussian dilution.
@@ -57,6 +57,15 @@ To move beyond 2020-era industry standards, SentinelForge incorporates **fifteen
 
 ### O. Neuromorphic Event Stream Ingestion
 * **The SOTA Method:** `event_stream.py` parses Address-Event Representation (AER) streams from Neuromorphic Event Cameras. These sensors operate asynchronously at microsecond resolution, enabling daytime optical tracking and continuous custody of high-velocity tumbling objects invisible to traditional CCD/CMOS cameras.
+
+### P. Catalog Lifecycle State Machine
+* **The SOTA Method:** `catalog_lifecycle.py` models the full operational lifecycle: UCT → Tentative → Cataloged → Stale → Lost → Decayed. Supports track merge (two tracks = one object), track split (breakup events producing fragments), and automatic staleness demotion with configurable thresholds.
+
+### Q. Conjunction Decision Support
+* **The SOTA Method:** `conjunction_decision.py` goes beyond Pc computation to produce actionable recommendations: GREEN/YELLOW/RED/EMERGENCY risk tiers, avoidance maneuver planning (delta-v cost, fuel budget via Tsiolkovsky), and secondary conjunction screening to ensure the burn doesn't create new collisions.
+
+### R. Covariance Realism Testing
+* **The SOTA Method:** `covariance_realism.py` continuously validates that predicted covariances match observed errors using Normalized Estimation Error Squared (NEES) and Covariance Consistency Ratio (CCR). Flags overconfident filters that would corrupt every downstream conjunction assessment.
 
 ## 3. Implementation Steps
 The transition to this architecture is executed across four tiers:

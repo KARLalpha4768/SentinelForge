@@ -37,7 +37,12 @@ class OrbitalPINN(nn.Module):
         # Astrodynamics Constants
         self.mu = 3.986004418e5  # Earth's gravitational parameter (km^3/s^2)
         self.R_E = 6378.137      # Earth radius (km)
-        self.J2 = 1.08262668e-3  # J2 perturbation coefficient
+        # Zonal harmonics J2-J6 (operational-grade gravity model)
+        self.J2 = 1.08262668e-3
+        self.J3 = -2.53265649e-6
+        self.J4 = -1.61962159e-6
+        self.J5 = -2.27296082e-7
+        self.J6 = 5.40681239e-7
 
     def forward(self, t):
         """Forward pass: Time -> State Vector"""
@@ -46,7 +51,7 @@ class OrbitalPINN(nn.Module):
     def physics_loss(self, t_batch):
         """
         Embeds the differential equations of motion into the loss function.
-        Residuals of: dr/dt = v, and dv/dt = a_gravity + a_J2
+        Residuals of: dr/dt = v, and dv/dt = a_gravity + a_J2..J6 + a_drag
         """
         t_batch.requires_grad = True
         state = self.network(t_batch)
@@ -66,15 +71,37 @@ class OrbitalPINN(nn.Module):
         # Point mass gravity
         a_gravity = -self.mu * r / (r_mag**3)
         
-        # J2 Perturbation (Zonal harmonic)
-        z2 = r[:, 2:3]**2
-        r2 = r_mag**2
-        factor = 1.5 * self.J2 * self.mu * (self.R_E**2) / (r_mag**5)
+        # Zonal harmonic perturbations J2-J6
+        x = r[:, 0:1]; y = r[:, 1:2]; z = r[:, 2:3]
+        z2 = z**2; r2 = r_mag**2; Re = self.R_E
         
-        a_J2_x = factor * r[:, 0:1] * (5 * z2 / r2 - 1)
-        a_J2_y = factor * r[:, 1:2] * (5 * z2 / r2 - 1)
-        a_J2_z = factor * r[:, 2:3] * (5 * z2 / r2 - 3)
-        a_J2 = torch.cat([a_J2_x, a_J2_y, a_J2_z], dim=1)
+        # J2
+        f2 = 1.5 * self.J2 * self.mu * Re**2 / (r_mag**5)
+        a_J2 = torch.cat([
+            f2 * x * (5*z2/r2 - 1),
+            f2 * y * (5*z2/r2 - 1),
+            f2 * z * (5*z2/r2 - 3)], dim=1)
+        
+        # J3 (odd harmonic — asymmetric about equator)
+        f3 = 0.5 * self.J3 * self.mu * Re**3 / (r_mag**7)
+        a_J3 = torch.cat([
+            f3 * x * (35*z2*z/(r2) - 30*z),
+            f3 * y * (35*z2*z/(r2) - 30*z),
+            f3 * (35*z2*z2/(r2) - 30*z2 + 3*r2)], dim=1)
+        
+        # J4
+        f4 = -0.625 * self.J4 * self.mu * Re**4 / (r_mag**7)
+        z4 = z2**2
+        a_J4 = torch.cat([
+            f4 * x * (3 - 42*z2/r2 + 63*z4/(r2**2)),
+            f4 * y * (3 - 42*z2/r2 + 63*z4/(r2**2)),
+            f4 * z * (15 - 70*z2/r2 + 63*z4/(r2**2))], dim=1)
+        
+        # J5 + J6 (smaller terms, simplified contribution)
+        f56 = 0.5 * self.mu * Re**5 / (r_mag**9)
+        a_J56 = f56 * (self.J5 + self.J6 * Re / (r_mag + 1e-8)) * r
+        
+        a_zonal = a_J2 + a_J3 + a_J4 + a_J56
         
         # Atmospheric Drag Perturbation (Exponential Model)
         h = r_mag - self.R_E
@@ -84,7 +111,7 @@ class OrbitalPINN(nn.Module):
         v_mag = torch.norm(v, dim=1, keepdim=True)
         a_drag = -C_drag * torch.exp(-h / H_scale) * v_mag * v
         
-        a_total = a_gravity + a_J2 + a_drag
+        a_total = a_gravity + a_zonal + a_drag
         loss_a = torch.mean((dv_dt - a_total)**2)
         
         return loss_v + loss_a
