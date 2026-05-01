@@ -14,11 +14,8 @@ const STATE = {
         { id:'EVT-2042', pri:48274, priName:'STARLINK-3391', sec:99201, secName:'CZ-3B DEB', tca:'2026-05-03T08:55Z', miss:1.8, pc:8.1e-5, tier:'YELLOW' },
         { id:'EVT-2043', pri:43013, priName:'NOAA-20', sec:27386, secName:'FENGYUN DEB', tca:'2026-05-02T22:10Z', miss:0.18, pc:0.041, vel:13.8, tier:'EMERGENCY' },
     ],
-    sites: [
-        { id:'CHL-01', name:'Cerro Pachón, Chile', lat:-30.2, lon:-70.7, status:'active', gpu:62, temp:12, seeing:0.8, queue:4, detections:187, sensor:'VARDA-7' },
-        { id:'AUS-01', name:'Siding Spring, Australia', lat:-31.3, lon:149.1, status:'active', gpu:71, temp:18, seeing:1.1, queue:2, detections:143, sensor:'HORUS-4' },
-        { id:'NAM-01', name:'Gamsberg, Namibia', lat:-23.3, lon:16.2, status:'degraded', gpu:45, temp:22, seeing:1.8, queue:7, detections:94, sensor:'VARDA-3' },
-    ],
+    sites: [], // Loaded from site_registry.json
+    siteNetworks: {},
     gauges: [
         { key:'detection', label:'Detection Rate', value:87.2, unit:'%', min:0, max:100, green:90, yellow:80 },
         { key:'freshness', label:'Catalog Freshness', value:6.4, unit:'hrs', min:0, max:48, green:8, yellow:24, invert:true },
@@ -79,18 +76,30 @@ function renderGauges() {
 // ── Ground Sites ────────────────────────────────────
 function renderSites() {
     const el = document.getElementById('groundSites');
-    el.innerHTML = '<div class="card-header">Sites</div>' + STATE.sites.map(s => `
-        <div class="site-card">
+    // Group by network
+    const nets = {};
+    STATE.sites.forEach(s => { if(!nets[s.network]) nets[s.network]=[]; nets[s.network].push(s); });
+    const sorted = Object.entries(nets).sort((a,b) => b[1].length - a[1].length);
+    el.innerHTML = '<div class="card-header">Networks · ' + STATE.sites.length + ' Sites</div>' +
+    sorted.map(([net, sites]) => {
+        const active = sites.filter(s => s.status==='active').length;
+        const deg = sites.filter(s => s.status==='degraded').length;
+        const off = sites.filter(s => s.status==='offline').length;
+        const radar = sites.filter(s => s.type==='radar').length;
+        const optical = sites.length - radar;
+        const dotCls = off > 0 ? 'degraded' : deg > 0 ? 'degraded' : 'active';
+        return `<div class="site-card">
             <div class="site-header">
-                <div class="site-dot ${s.status}"></div>
-                <span class="site-name">${s.id}</span>
+                <div class="site-dot ${dotCls}"></div>
+                <span class="site-name">${net}</span>
                 <span style="flex:1"></span>
-                <span style="font-size:10px;color:var(--text-secondary)">${s.sensor}</span>
+                <span style="font-size:10px;color:var(--text-secondary)">${sites.length}</span>
             </div>
             <div class="site-stats">
-                GPU <span>${s.gpu}%</span> | Seeing <span>${s.seeing}"</span> | Temp <span>${s.temp}°C</span> | Queue <span>${s.queue}</span> | Det <span>${s.detections}</span>
+                🟢<span>${active}</span> 🟡<span>${deg}</span> 🔴<span>${off}</span> | Radar <span>${radar}</span> Optical <span>${optical}</span>
             </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 }
 
 // ── Ground Map (Canvas) ─────────────────────────────
@@ -112,24 +121,27 @@ function renderMap() {
     ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.setLineDash([4,4]);
     const eqY = 10+(canvas.height-20)*0.5; ctx.beginPath(); ctx.moveTo(10,eqY); ctx.lineTo(canvas.width-10,eqY); ctx.stroke();
     ctx.setLineDash([]);
-    // Plot sites
+    // Plot all sites color-coded by network
+    const netColors = {
+        'USSF-SSN':'#ff1744','LeoLabs':'#00e5ff','Slingshot':'#ffd740',
+        'ExoAnalytic':'#76ff03','ESA-SST':'#448aff','Contributing':'#e040fb',
+    };
     const toXY = (lat,lon) => ({ x: 10+(lon+180)/360*(canvas.width-20), y: 10+(90-lat)/180*(canvas.height-20) });
     STATE.sites.forEach(s => {
         const p = toXY(s.lat, s.lon);
-        const col = s.status==='active' ? '#00e676' : '#ffab00';
-        // Pulse ring
-        ctx.beginPath(); ctx.arc(p.x,p.y,8,0,Math.PI*2);
-        ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
-        // Center dot
-        ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2);
-        ctx.fillStyle = col; ctx.fill();
-        // Label
-        ctx.fillStyle = '#b0bec5'; ctx.font = '10px Inter'; ctx.fillText(s.id, p.x+12, p.y+4);
-        // Glow
-        const grad = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,16);
-        grad.addColorStop(0, col.replace(')',',0.15)').replace('rgb','rgba'));
-        grad.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(p.x,p.y,16,0,Math.PI*2); ctx.fill();
+        const col = netColors[s.network] || (s.status==='active' ? '#00e676' : s.status==='degraded' ? '#ffab00' : '#ff1744');
+        const r = s.type === 'radar' ? 3 : 2;
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+        ctx.fillStyle = s.status==='offline' ? '#555' : col;
+        ctx.globalAlpha = s.status==='offline' ? 0.3 : 0.8;
+        ctx.fill(); ctx.globalAlpha = 1;
+    });
+    // Legend
+    ctx.font = '9px Inter'; let lx = 14, ly = canvas.height - 8;
+    Object.entries(netColors).forEach(([name, col]) => {
+        ctx.fillStyle = col; ctx.fillRect(lx, ly-6, 8, 8);
+        ctx.fillStyle = '#b0bec5'; ctx.fillText(name, lx+11, ly+1);
+        lx += ctx.measureText(name).width + 22;
     });
 }
 
@@ -193,8 +205,24 @@ function pushAlert(level, msg) {
 }
 
 // ── Initial Render ──────────────────────────────────
-renderGauges(); renderSites(); renderInventory('overview');
-setTimeout(renderMap, 100);
+renderGauges(); renderInventory('overview');
+
+// Load full site registry
+fetch('site_registry.json').then(r => r.json()).then(data => {
+    STATE.sites = data;
+    renderSites(); setTimeout(renderMap, 100);
+    // Update command bar site count
+    const el = document.getElementById('catalogCount');
+    if(el) el.title = STATE.sites.length + ' ground sensors';
+}).catch(() => {
+    // Fallback to 3 demo sites
+    STATE.sites = [
+        {id:'CHL-01',name:'Cerro Pachón',lat:-30.2,lon:-70.7,status:'active',type:'optical',sensor:'VARDA',network:'SentinelForge',gpu:62,detections_24h:187,queue:4,seeing:0.8},
+        {id:'AUS-01',name:'Siding Spring',lat:-31.3,lon:149.1,status:'active',type:'optical',sensor:'HORUS',network:'SentinelForge',gpu:71,detections_24h:143,queue:2,seeing:1.1},
+        {id:'NAM-01',name:'Gamsberg',lat:-23.3,lon:16.2,status:'degraded',type:'optical',sensor:'VARDA',network:'SentinelForge',gpu:45,detections_24h:94,queue:7,seeing:1.8},
+    ];
+    renderSites(); setTimeout(renderMap, 100);
+});
 window.addEventListener('resize', renderMap);
 
 // Push initial alerts after 2 seconds

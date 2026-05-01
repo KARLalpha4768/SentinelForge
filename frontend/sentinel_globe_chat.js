@@ -117,13 +117,20 @@ function processQuery(query) {
         return resp;
     }
     // Site queries
-    if(q.includes('site') || q.includes('ground') || q.includes('observatory') || q.includes('telescope') || q.includes('chl') || q.includes('aus') || q.includes('nam')) {
-        let resp = '<b>Ground Network Status:</b><br>';
-        STATE.sites.forEach(s => {
-            const icon = s.status==='active' ? '🟢' : '🟡';
-            resp += `${icon} <b>${s.id}</b> — ${s.name}<br>&nbsp;&nbsp;GPU: ${s.gpu}%, Seeing: ${s.seeing}", Detections: ${s.detections}, Queue: ${s.queue}<br>`;
-        });
-        resp += `<br><b>Source:</b> site_monitor.py → HealthPoller`;
+    if(q.includes('site') || q.includes('ground') || q.includes('observatory') || q.includes('telescope') || q.includes('network') || q.includes('sensor')) {
+        const total = STATE.sites.length;
+        const active = STATE.sites.filter(s => s.status==='active').length;
+        const deg = STATE.sites.filter(s => s.status==='degraded').length;
+        const off = STATE.sites.filter(s => s.status==='offline').length;
+        const radar = STATE.sites.filter(s => s.type==='radar').length;
+        const nets = {};
+        STATE.sites.forEach(s => { nets[s.network] = (nets[s.network]||0)+1; });
+        const sorted = Object.entries(nets).sort((a,b) => b[1]-a[1]);
+        let resp = `<b>Global Sensor Network:</b> ${total} sites across ${sorted.length} networks<br>
+            🟢 Active: ${active} | 🟡 Degraded: ${deg} | 🔴 Offline: ${off}<br>
+            Radar: ${radar} | Optical: ${total-radar}<br><br><b>Networks:</b><br>`;
+        sorted.forEach(([n,c]) => { resp += `• <b>${n}</b>: ${c} sites<br>`; });
+        resp += `<br><b>Source:</b> site_registry.json → 172-site global constellation`;
         return resp;
     }
     // Covariance / NEES
