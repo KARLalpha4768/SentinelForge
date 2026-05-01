@@ -35,6 +35,11 @@ To move beyond 2020-era industry standards, SentinelForge incorporates five majo
 ### E. Open-Architecture Digital Space Twin
 * **The SOTA Method:** A real-time CesiumJS 3D globe (`frontend/digital_twin.html`) connected to a FastAPI WebSocket stream (`twin_ws.py`). It visualizes live orbital propagation and allows for maneuver injection and non-Gaussian conjunction replay directly in the browser.
 
+### F. Supercomputer Global Data Assimilation (The Meteorological Model)
+* **The Legacy Method:** "Object-centric" catalog maintenance. When an observation arrives, the system numerically propagates that *one* satellite forward, completely ignoring the surrounding environment.
+* **The SOTA Method:** SentinelForge treats Space Domain Awareness like Global Weather Forecasting. The `data_assimilation_engine.py` maintains a continuous, GPU-accelerated simulation of the entire space catalog. 
+* **The Result:** When edge observations arrive, they are treated as boundary-condition corrections and backpropagated into the global simulation. If the engine detects higher-than-expected drag on a subset of observed satellites (due to a solar flare), it dynamically updates the global "Space Weather" atmospheric density model. This instantly improves the prediction accuracy for the other 9,950 *unobserved* satellites in the simulation. This is true Global Data Assimilation.
+
 ## 3. Implementation Steps
 The transition to this architecture is executed across four tiers:
 
