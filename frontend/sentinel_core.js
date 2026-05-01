@@ -188,10 +188,7 @@ document.querySelectorAll('.inv-tab').forEach(tab => {
     });
 });
 
-// Globe layer toggles
-document.querySelectorAll('.globe-btn').forEach(btn => {
-    btn.addEventListener('click', () => btn.classList.toggle('active'));
-});
+// Globe layer toggles — wired in sentinel_globe_chat.js
 
 // ── Push Alerts ─────────────────────────────────────
 function pushAlert(level, msg) {
@@ -211,6 +208,8 @@ renderGauges(); renderInventory('overview');
 fetch('site_registry.json').then(r => r.json()).then(data => {
     STATE.sites = data;
     renderSites(); setTimeout(renderMap, 100);
+    // Add sites to 3D globe
+    if(window._addGlobeSites) window._addGlobeSites();
     // Update command bar site count
     const el = document.getElementById('catalogCount');
     if(el) el.title = STATE.sites.length + ' ground sensors';

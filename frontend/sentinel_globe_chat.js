@@ -2,6 +2,8 @@
 
 // ── CesiumJS Globe ──────────────────────────────────
 let viewer;
+const globeLayers = { leo: [], meo: [], geo: [], conj: [], uct: [], sites: [] };
+
 try {
     viewer = new Cesium.Viewer('cesiumContainer', {
         baseLayerPicker: false, geocoder: false, homeButton: false,
@@ -16,18 +18,21 @@ try {
     viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#060810');
     viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0d1020');
 
-    // Add ground sites
-    const siteColors = { active: Cesium.Color.fromCssColorString('#00e676'), degraded: Cesium.Color.fromCssColorString('#ffab00') };
-    if(typeof STATE !== 'undefined') {
-        STATE.sites.forEach(s => {
-            viewer.entities.add({
+    // Add ground sites (from registry or fallback)
+    const siteColors = { active: Cesium.Color.fromCssColorString('#00e676'), degraded: Cesium.Color.fromCssColorString('#ffab00'), offline: Cesium.Color.fromCssColorString('#555555') };
+    function addGlobeSites() {
+        const src = (typeof STATE !== 'undefined' && STATE.sites.length > 0) ? STATE.sites : [];
+        src.forEach(s => {
+            const col = siteColors[s.status] || siteColors.active;
+            const e = viewer.entities.add({
                 position: Cesium.Cartesian3.fromDegrees(s.lon, s.lat, 0),
-                point: { pixelSize: 8, color: siteColors[s.status] || siteColors.active, outlineColor: Cesium.Color.WHITE.withAlpha(0.3), outlineWidth: 1 },
-                label: { text: s.id, font: '11px Inter', fillColor: Cesium.Color.fromCssColorString('#b0bec5'), pixelOffset: new Cesium.Cartesian2(16, 0), style: Cesium.LabelStyle.FILL, showBackground: true, backgroundColor: Cesium.Color.fromCssColorString('#0a0c14').withAlpha(0.7) },
-                ellipse: { semiMajorAxis: 800000, semiMinorAxis: 800000, material: (siteColors[s.status] || siteColors.active).withAlpha(0.06), outline: true, outlineColor: (siteColors[s.status] || siteColors.active).withAlpha(0.2) },
+                point: { pixelSize: s.type === 'radar' ? 5 : 4, color: col, outlineColor: Cesium.Color.WHITE.withAlpha(0.2), outlineWidth: 1 },
             });
+            globeLayers.sites.push(e);
         });
     }
+    // Defer site loading until registry is fetched
+    window._addGlobeSites = addGlobeSites;
 
     // Simulated satellite population
     const regimeColors = {
@@ -40,13 +45,13 @@ try {
             const inc = (Math.random()*incRange - incRange/2) * Math.PI/180;
             const raan = Math.random() * 360;
             const anom = Math.random() * 360;
-            const R = 6378 + alt;
             const lon = raan + anom;
             const lat = Math.asin(Math.sin(inc) * Math.sin(anom * Math.PI/180)) * 180/Math.PI;
-            viewer.entities.add({
+            const e = viewer.entities.add({
                 position: Cesium.Cartesian3.fromDegrees(lon % 360 - 180, lat, alt * 1000),
                 point: { pixelSize: 2, color: regimeColors[regime] },
             });
+            globeLayers[regime].push(e);
         }
     }
     addSimSats('leo', 200, 550, 98);
@@ -60,12 +65,29 @@ try {
             const lon = Math.random()*360 - 180;
             const lat = Math.random()*100 - 50;
             const alt = c.tier === 'EMERGENCY' ? 400000 : 600000;
-            viewer.entities.add({
+            const e = viewer.entities.add({
                 position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
                 point: { pixelSize: c.tier==='EMERGENCY' ? 10 : 7, color: c.tier==='EMERGENCY' ? Cesium.Color.RED : Cesium.Color.fromCssColorString('#ff1744').withAlpha(0.6) },
                 label: { text: `${c.id} Pc=${c.pc.toExponential(1)}`, font: '10px JetBrains Mono', fillColor: Cesium.Color.fromCssColorString('#ff8a80'), pixelOffset: new Cesium.Cartesian2(14, 0), showBackground: true, backgroundColor: Cesium.Color.BLACK.withAlpha(0.6) },
                 ellipsoid: c.tier==='EMERGENCY' ? { radii: new Cesium.Cartesian3(50000,50000,50000), material: Cesium.Color.RED.withAlpha(0.08), outline: true, outlineColor: Cesium.Color.RED.withAlpha(0.3) } : undefined,
             });
+            globeLayers.conj.push(e);
+        });
+    }
+
+    // Add UCT probability markers
+    if(typeof STATE !== 'undefined') {
+        STATE.ucts.forEach(u => {
+            const lon = Math.random()*360 - 180;
+            const lat = Math.random()*120 - 60;
+            const alt = (u.sma - 6378) * 1000;
+            const e = viewer.entities.add({
+                position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+                point: { pixelSize: 6, color: Cesium.Color.fromCssColorString('#e040fb').withAlpha(0.7) },
+                label: { text: u.id, font: '9px JetBrains Mono', fillColor: Cesium.Color.fromCssColorString('#e040fb'), pixelOffset: new Cesium.Cartesian2(10, 0), showBackground: true, backgroundColor: Cesium.Color.BLACK.withAlpha(0.5) },
+            });
+            e.show = false; // UCTs hidden by default (button not active)
+            globeLayers.uct.push(e);
         });
     }
 
@@ -75,6 +97,18 @@ try {
     console.warn('CesiumJS init skipped:', e.message);
     document.getElementById('cesiumContainer').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);font-size:14px">3D Globe — CesiumJS requires valid Ion token</div>';
 }
+
+// ── Globe Button Wiring ─────────────────────────────
+document.querySelectorAll('.globe-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        const layer = btn.dataset.layer;
+        const visible = btn.classList.contains('active');
+        if(globeLayers[layer]) {
+            globeLayers[layer].forEach(entity => { entity.show = visible; });
+        }
+    });
+});
 
 // ── Natural Language Chat Engine ────────────────────
 const chatMessages = document.getElementById('chatMessages');
