@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelForge — Operations Center</title>
+    <meta name="description" content="Enterprise Space Domain Awareness Operations Dashboard">
+    <link rel="stylesheet" href="sentinel_ops.css">
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.113/Build/Cesium/Cesium.js"></script>
+    <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.113/Build/Cesium/Widgets/widgets.css">
+</head>
+<body>
+<div class="ops-grid">
+
+    <!-- ① COMMAND BAR -->
+    <header class="command-bar">
+        <span class="cmd-logo">SentinelForge</span>
+        <div class="cmd-health" id="sysHealth" title="System Health"></div>
+        <div class="cmd-divider"></div>
+        <div class="cmd-metric"><span class="cmd-metric-label">Catalog</span><span class="cmd-metric-value" id="catalogCount">12,847</span></div>
+        <div class="cmd-metric"><span class="cmd-metric-label">Observed 24h</span><span class="cmd-metric-value" id="obs24h">3,291</span></div>
+        <div class="cmd-metric"><span class="cmd-metric-label">UCTs</span><span class="cmd-metric-value" id="uctCount">14</span></div>
+        <div class="cmd-divider"></div>
+        <div class="cmd-weather">
+            <div class="cmd-weather-item"><span class="cmd-metric-label">F10.7</span><span class="cmd-metric-value" id="f107">148</span></div>
+            <div class="cmd-weather-item"><span class="cmd-metric-label">Kp</span><span class="cmd-metric-value" id="kpIdx">3</span></div>
+            <div class="cmd-weather-item"><span class="cmd-metric-label">Dst</span><span class="cmd-metric-value" id="dstIdx">-22</span></div>
+        </div>
+        <div class="cmd-spacer"></div>
+        <div class="cmd-alerts" id="alertBadge">⚠ 3 Alerts</div>
+        <div class="cmd-divider"></div>
+        <div class="cmd-metric"><span class="cmd-metric-label">UTC</span><span class="cmd-metric-value" id="utcClock">--:--:--</span></div>
+    </header>
+
+    <!-- ② 3D GLOBE -->
+    <div class="globe-zone">
+        <div class="globe-controls">
+            <button class="globe-btn active" data-layer="leo">LEO</button>
+            <button class="globe-btn active" data-layer="meo">MEO</button>
+            <button class="globe-btn active" data-layer="geo">GEO</button>
+            <button class="globe-btn" data-layer="conj">Conjunctions</button>
+            <button class="globe-btn" data-layer="uct">UCTs</button>
+            <button class="globe-btn" data-layer="sites">Sites</button>
+        </div>
+        <div id="cesiumContainer"></div>
+        <!-- Chat Overlay on Globe -->
+        <div class="chat-overlay">
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-msg system">SentinelForge AI ready. Ask me about any tracked object, conjunction event, system metric, or module status.</div>
+            </div>
+            <div class="chat-input-row">
+                <input class="chat-input" id="chatInput" type="text" placeholder="Ask SentinelForge... (e.g. 'What's the highest Pc conjunction right now?')" autocomplete="off">
+                <button class="chat-send" id="chatSend">ASK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ④ GAUGE PANEL -->
+    <div class="gauge-panel" id="gaugePanel"></div>
+
+    <!-- ③ GROUND NETWORK -->
+    <div class="ground-zone">
+        <div class="ground-map" id="groundMap">
+            <div class="card-header">Ground Network</div>
+            <canvas id="mapCanvas" style="width:100%;height:calc(100% - 33px);display:block;"></canvas>
+        </div>
+        <div class="ground-sites" id="groundSites"></div>
+    </div>
+
+    <!-- ⑤ CATALOG INVENTORY -->
+    <div class="inventory-zone">
+        <div class="inv-tabs">
+            <div class="inv-tab active" data-tab="overview">Overview</div>
+            <div class="inv-tab" data-tab="uct">UCT Pipeline</div>
+            <div class="inv-tab" data-tab="conj">Conjunctions</div>
+        </div>
+        <div class="inv-content" id="invContent"></div>
+    </div>
+</div>
+
+<!-- Alert Toast Stack -->
+<div class="alert-stack" id="alertStack"></div>
+
+<script src="sentinel_core.js"></script>
+<script src="sentinel_globe_chat.js"></script>
+</body>
+</html>
