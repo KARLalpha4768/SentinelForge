@@ -75,9 +75,20 @@
     <div class="ground-zone">
         <div class="ground-map" id="groundMap">
             <div class="card-header">Ground Network</div>
-            <canvas id="mapCanvas" style="width:100%;height:calc(100% - 33px);display:block;"></canvas>
+            <canvas id="mapCanvas" style="width:100%;height:calc(100% - 33px);display:block;cursor:crosshair;"></canvas>
+            <div id="mapTooltip" class="map-tooltip" style="display:none;"></div>
         </div>
         <div class="ground-sites" id="groundSites"></div>
+    </div>
+    <!-- Site Detail Modal -->
+    <div id="siteModal" class="site-modal" style="display:none;">
+        <div class="site-modal-content">
+            <div class="site-modal-header">
+                <span id="siteModalTitle">Site Detail</span>
+                <button id="siteModalClose" class="site-modal-close">✕</button>
+            </div>
+            <div id="siteModalBody" class="site-modal-body"></div>
+        </div>
     </div>
 
     <!-- ⑤ CATALOG INVENTORY -->
@@ -94,6 +105,7 @@
             <div class="inv-tab" data-tab="debris">Debris</div>
             <div class="inv-tab" data-tab="trending">Trending</div>
             <div class="inv-tab" data-tab="escalation">Escalation</div>
+            <div class="inv-tab" data-tab="diagnostics">Diagnostics</div>
         </div>
         <div class="inv-content" id="invContent"></div>
     </div>

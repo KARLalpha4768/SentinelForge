@@ -333,6 +333,187 @@ function renderMap() {
     });
 }
 
+// ── Site Technology Catalog ─────────────────────────
+// Maps site types/networks to installed equipment
+const TECH_CATALOG = {
+    optical: [
+        {name:'Primary Telescope',model:'RASA 14" f/2.2 Astrograph',role:'Wide-field survey',power:'120W',installed:'2024-Q3',status:'operational'},
+        {name:'Focal Plane Array',model:'QHY600M CMOS (61MP)',role:'Streak detection',power:'25W',installed:'2024-Q3',status:'operational'},
+        {name:'Mount',model:'ASA DDM160 Direct Drive',role:'Sidereal & rate tracking',power:'280W',installed:'2024-Q3',status:'operational'},
+        {name:'Filter Wheel',model:'SBIG FW8G-STX (BVRI+Clear)',role:'Photometric classification',power:'15W',installed:'2025-Q1',status:'operational'},
+        {name:'Autoguider',model:'ZWO ASI174MM Mini',role:'Sub-arcsec guiding',power:'5W',installed:'2024-Q3',status:'operational'},
+        {name:'All-Sky Camera',model:'ZWO ASI120MC-S',role:'Cloud/weather monitor',power:'3W',installed:'2024-Q4',status:'operational'},
+        {name:'GPS Timing Receiver',model:'u-blox ZED-F9T (ns-grade)',role:'UTC sync for TDM',power:'1.5W',installed:'2025-Q1',status:'operational'},
+        {name:'Weather Station',model:'Davis Vantage Pro2',role:'Seeing/humidity monitor',power:'2W',installed:'2024-Q3',status:'operational'},
+    ],
+    radar: [
+        {name:'Phased Array Radar',model:'S-band 2.8 GHz PA (1024 elements)',role:'Object detection & tracking',power:'45kW peak',installed:'2023-Q4',status:'operational'},
+        {name:'Signal Processor',model:'FPGA-based RFSoC (Xilinx ZCU111)',role:'Pulse compression & Doppler',power:'150W',installed:'2024-Q1',status:'operational'},
+        {name:'Timing Reference',model:'Rb Frequency Standard (SRS FS725)',role:'Coherent integration',power:'40W',installed:'2023-Q4',status:'operational'},
+        {name:'Range Safety',model:'IFF Mode-S Transponder',role:'Aircraft deconfliction',power:'35W',installed:'2023-Q4',status:'operational'},
+        {name:'Calibration Horn',model:'Standard Gain Horn (20 dBi)',role:'Radar cross-section cal',power:'0W',installed:'2023-Q4',status:'operational'},
+        {name:'UPS',model:'APC Smart-UPS 5kVA',role:'Power continuity',power:'5kVA',installed:'2023-Q4',status:'operational'},
+    ],
+    edge: [
+        {name:'Edge GPU',model:'NVIDIA Jetson Orin AGX 64GB',role:'PINN streak detection',power:'60W',installed:'2025-Q1',status:'operational'},
+        {name:'Edge Storage',model:'Samsung 990 PRO NVMe 4TB',role:'24h raw frame buffer',power:'8W',installed:'2025-Q1',status:'operational'},
+        {name:'Network Uplink',model:'Starlink Business (100 Mbps)',role:'TDM/obs upload to cloud',power:'50W',installed:'2025-Q2',status:'operational'},
+        {name:'Environmental Enclosure',model:'IP67 Pelican Rack (climate-controlled)',role:'Hardware protection',power:'35W HVAC',installed:'2025-Q1',status:'operational'},
+        {name:'Power Mgmt',model:'Victron MultiPlus 3kVA + LiFePO4',role:'Off-grid backup (8h)',power:'3kVA',installed:'2025-Q1',status:'operational'},
+    ],
+    software: [
+        {name:'Streak Detector',model:'streak_detect.cu v3.2',role:'PINN J2-J6 matched filter',version:'3.2.1',status:'running'},
+        {name:'Orbit Determination',model:'bayesian_iod.py v2.1',role:'Initial orbit from 3 obs',version:'2.1.0',status:'running'},
+        {name:'Catalog Correlator',model:'catalog_lifecycle.py v1.4',role:'UCT → TENTATIVE → CATALOGED',version:'1.4.2',status:'running'},
+        {name:'Telemetry Agent',model:'kafka_transport.py v1.0',role:'Kafka producer/consumer',version:'1.0.5',status:'running'},
+        {name:'Site Monitor',model:'site_monitor.py v1.2',role:'Health, weather, queue mgmt',version:'1.2.0',status:'running'},
+    ],
+};
+
+// ── Map Hover Tooltip ───────────────────────────────
+const mapTooltip = document.getElementById('mapTooltip');
+const mapCanvas = document.getElementById('mapCanvas');
+let _sitePositions = []; // cached pixel positions
+
+// Store site positions during render for hit-testing
+const _origRenderMap = renderMap;
+renderMap = function() {
+    _origRenderMap();
+    // Cache positions for hit testing
+    const canvas = document.getElementById('mapCanvas');
+    if(!canvas) return;
+    const W = canvas.width, H = canvas.height;
+    const toXY = (lat,lon) => ({ x: (lon+180)/360*W, y: (90-lat)/180*H });
+    _sitePositions = STATE.sites.map(s => ({ ...s, px: toXY(s.lat,s.lon) }));
+};
+
+function findSiteAtPoint(mx, my) {
+    const threshold = 8;
+    for(let i = _sitePositions.length-1; i>=0; i--) {
+        const s = _sitePositions[i];
+        const dx = mx - s.px.x, dy = my - s.px.y;
+        if(dx*dx + dy*dy < threshold*threshold) return s;
+    }
+    return null;
+}
+
+if(mapCanvas) {
+    mapCanvas.addEventListener('mousemove', (e) => {
+        const rect = mapCanvas.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) * (mapCanvas.width / rect.width);
+        const my = (e.clientY - rect.top) * (mapCanvas.height / rect.height);
+        const site = findSiteAtPoint(mx, my);
+        if(site) {
+            const statusColor = site.status==='active'?'#00e676':site.status==='degraded'?'#ffab00':'#ff1744';
+            const statusIcon = site.status==='active'?'🟢':site.status==='degraded'?'🟡':'🔴';
+            mapTooltip.style.display = 'block';
+            mapTooltip.style.left = (e.clientX - rect.left + 14) + 'px';
+            mapTooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+            mapTooltip.innerHTML = `
+                <div class="tt-name">${statusIcon} ${site.name}</div>
+                <div class="tt-loc">${site.lat.toFixed(1)}°${site.lat>=0?'N':'S'}, ${Math.abs(site.lon).toFixed(1)}°${site.lon>=0?'E':'W'} · ${site.network}</div>
+                <div class="tt-stat">
+                    <span style="color:${statusColor};font-weight:600">${site.status.toUpperCase()}</span> · ${site.type} · ${site.sensor}<br>
+                    GPU: <b>${site.gpu}%</b> · Detections 24h: <b>${site.detections_24h}</b> · Queue: <b>${site.queue}</b>${site.seeing ? ` · Seeing: <b>${site.seeing}"</b>` : ''}
+                </div>
+                <div style="margin-top:4px;color:#78909c;font-size:9px">Click for full tech catalog →</div>`;
+            mapCanvas.style.cursor = 'pointer';
+        } else {
+            mapTooltip.style.display = 'none';
+            mapCanvas.style.cursor = 'crosshair';
+        }
+    });
+
+    mapCanvas.addEventListener('mouseleave', () => { mapTooltip.style.display = 'none'; });
+
+    mapCanvas.addEventListener('click', (e) => {
+        const rect = mapCanvas.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) * (mapCanvas.width / rect.width);
+        const my = (e.clientY - rect.top) * (mapCanvas.height / rect.height);
+        const site = findSiteAtPoint(mx, my);
+        if(site) openSiteModal(site);
+    });
+}
+
+// ── Site Detail Modal ───────────────────────────────
+const siteModal = document.getElementById('siteModal');
+const siteModalClose = document.getElementById('siteModalClose');
+if(siteModalClose) siteModalClose.addEventListener('click', () => { siteModal.style.display = 'none'; });
+if(siteModal) siteModal.addEventListener('click', (e) => { if(e.target === siteModal) siteModal.style.display = 'none'; });
+
+function openSiteModal(site) {
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    title.textContent = `${site.id} — ${site.name}`;
+    const statusColor = site.status==='active'?'#00e676':site.status==='degraded'?'#ffab00':'#ff1744';
+    const sensorEquip = TECH_CATALOG[site.type] || TECH_CATALOG.optical;
+    const edgeEquip = TECH_CATALOG.edge;
+    const swEquip = TECH_CATALOG.software;
+    // Simulate per-site health variation
+    const seed = site.id.charCodeAt(0) + site.id.charCodeAt(site.id.length-1);
+    const jitter = (idx) => Math.min(100, Math.max(60, 85 + ((seed*7 + idx*13) % 30) - 15));
+
+    body.innerHTML = `
+        <h3>📍 Location & Status</h3>
+        <table>
+            <tr><td style="color:#78909c;width:130px">Coordinates</td><td><b>${site.lat.toFixed(2)}°${site.lat>=0?'N':'S'}, ${Math.abs(site.lon).toFixed(2)}°${site.lon>=0?'E':'W'}</b></td></tr>
+            <tr><td style="color:#78909c">Network</td><td>${site.network}</td></tr>
+            <tr><td style="color:#78909c">Type</td><td>${site.type.charAt(0).toUpperCase()+site.type.slice(1)}</td></tr>
+            <tr><td style="color:#78909c">Sensor</td><td>${site.sensor}</td></tr>
+            <tr><td style="color:#78909c">Status</td><td><span style="color:${statusColor};font-weight:700">${site.status.toUpperCase()}</span></td></tr>
+            <tr><td style="color:#78909c">GPU Load</td><td>${site.gpu}%</td></tr>
+            <tr><td style="color:#78909c">Detections (24h)</td><td>${site.detections_24h}</td></tr>
+            <tr><td style="color:#78909c">Tasking Queue</td><td>${site.queue} pending</td></tr>
+            ${site.seeing ? `<tr><td style="color:#78909c">Seeing</td><td>${site.seeing}"</td></tr>` : ''}
+        </table>
+
+        <h3>🔭 ${site.type === 'radar' ? 'Radar' : 'Optical'} Equipment Catalog</h3>
+        <table>
+            <tr><th>Component</th><th>Model</th><th>Role</th><th>Power</th><th>Status</th></tr>
+            ${sensorEquip.map((t,i) => `<tr>
+                <td style="color:#e8eaf6">${t.name}</td><td>${t.model}</td><td style="color:#78909c">${t.role}</td>
+                <td>${t.power}</td>
+                <td><span style="color:${jitter(i)>75?'#00e676':'#ffab00'}">${jitter(i)>75?'✓ Operational':'⚠ Check'}</span></td>
+            </tr>`).join('')}
+        </table>
+
+        <h3>🖥️ Edge Compute Stack</h3>
+        <table>
+            <tr><th>Component</th><th>Model</th><th>Role</th><th>Power</th><th>Health</th></tr>
+            ${edgeEquip.map((t,i) => {
+                const h = jitter(i+10);
+                const col = h > 80 ? '#00e676' : h > 60 ? '#ffab00' : '#ff1744';
+                return `<tr>
+                    <td style="color:#e8eaf6">${t.name}</td><td>${t.model}</td><td style="color:#78909c">${t.role}</td>
+                    <td>${t.power}</td>
+                    <td><div class="diag-bar"><div class="diag-fill" style="width:${h}%;background:${col}"></div></div> ${h}%</td>
+                </tr>`;
+            }).join('')}
+        </table>
+
+        <h3>💻 Software Stack</h3>
+        <table>
+            <tr><th>Module</th><th>Version</th><th>Role</th><th>Status</th></tr>
+            ${swEquip.map(t => `<tr>
+                <td style="color:#e8eaf6">${t.name}</td><td style="font-family:JetBrains Mono,mono;color:#76ff03">${t.version}</td>
+                <td style="color:#78909c">${t.role}</td>
+                <td><span style="color:#00e676">● Running</span></td>
+            </tr>`).join('')}
+        </table>
+
+        <h3>📊 24h Performance Summary</h3>
+        <table>
+            <tr><td style="color:#78909c;width:180px">Detections</td><td><b>${site.detections_24h}</b></td></tr>
+            <tr><td style="color:#78909c">False Positive Rate</td><td>${(0.15 + (seed%10)*0.03).toFixed(2)}%</td></tr>
+            <tr><td style="color:#78909c">Data Reduction Ratio</td><td>${(400 + (seed%200))}:1</td></tr>
+            <tr><td style="color:#78909c">Uplink Throughput</td><td>${(45 + (seed%50)).toFixed(0)} Mbps</td></tr>
+            <tr><td style="color:#78909c">Mean Track Duration</td><td>${(12 + (seed%20)).toFixed(1)}s</td></tr>
+            <tr><td style="color:#78909c">Uptime (30d)</td><td>${(96 + Math.random()*3.5).toFixed(1)}%</td></tr>
+        </table>
+    `;
+    siteModal.style.display = 'flex';
+}
+
 // ── Inventory Tabs ──────────────────────────────────
 function renderInventory(tab) {
     const el = document.getElementById('invContent');
@@ -580,6 +761,68 @@ function renderInventory(tab) {
             x2.fillStyle='#78909c';x2.font='8px JetBrains Mono';
             dr.forEach((pt,i)=>x2.fillText(pt.date.slice(5),40+i*xS2-12,c2.height-2));
         }, 50);
+    } else if(tab === 'diagnostics') {
+        // ── Systems Diagnostic Panel ──────────────────
+        const active = STATE.sites.filter(s => s.status==='active').length;
+        const deg = STATE.sites.filter(s => s.status==='degraded').length;
+        const off = STATE.sites.filter(s => s.status==='offline').length;
+        const total = STATE.sites.length;
+        const siteUpPct = Math.round(active/total*100);
+        const edgeUpPct = Math.round((active+deg*0.7)/total*100);
+
+        const subsystems = [
+            {name:'Sensor Network',pct:siteUpPct,detail:`${active}/${total} sites active`,icon:'📡'},
+            {name:'Edge GPU Fleet',pct:edgeUpPct,detail:`${total} Orin AGX nodes deployed`,icon:'🖥️'},
+            {name:'Streak Detection Pipeline',pct:94,detail:'PINN J2-J6 v3.2.1 — 12.3 fps avg',icon:'⚡'},
+            {name:'Orbit Determination',pct:98,detail:'Bayesian IOD v2.1 — 42ms latency',icon:'🛰️'},
+            {name:'Kafka Telemetry Bus',pct:99,detail:`${STATE.telemetry.length} feeds, <5ms p99`,icon:'📊'},
+            {name:'Catalog Correlator',pct:96,detail:'46K objects, 0.23% FPR',icon:'📋'},
+            {name:'Conjunction Screening',pct:100,detail:`${STATE.conjunctions.length} active events monitored`,icon:'⚠️'},
+            {name:'Starlink Uplinks',pct:87,detail:`${Math.round(total*0.85)} nodes connected`,icon:'📶'},
+            {name:'Cloud PostGIS Ingest',pct:99,detail:'Ingest rate: 1,247 TDMs/min',icon:'☁️'},
+            {name:'Covariance Engine',pct:97,detail:`NEES=${STATE.gauges.find(g=>g.key==='nees')?.value} (calibrated)`,icon:'📐'},
+        ];
+
+        el.innerHTML = `
+            <div style="padding:4px 8px;font-size:11px;color:var(--text-secondary);margin-bottom:8px">
+                <b style="color:var(--text-primary)">Systems Diagnostic</b> — Real-time health of installed technology
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 8px">
+                <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.15);border-radius:6px;padding:8px;text-align:center">
+                    <div style="font-size:20px;font-weight:700;color:#00e676">${siteUpPct}%</div>
+                    <div style="font-size:9px;color:#78909c">Network Uptime</div>
+                </div>
+                <div style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);border-radius:6px;padding:8px;text-align:center">
+                    <div style="font-size:20px;font-weight:700;color:#00e5ff">${edgeUpPct}%</div>
+                    <div style="font-size:9px;color:#78909c">Edge Fleet Health</div>
+                </div>
+            </div>
+            <div style="padding:8px;margin-top:6px">
+                ${subsystems.map(s => {
+                    const col = s.pct >= 95 ? '#00e676' : s.pct >= 80 ? '#ffab00' : '#ff1744';
+                    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                        <span style="width:20px;text-align:center">${s.icon}</span>
+                        <div style="flex:1">
+                            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+                                <span style="color:#e8eaf6">${s.name}</span>
+                                <span style="color:${col};font-weight:600;font-family:JetBrains Mono,mono">${s.pct}%</span>
+                            </div>
+                            <div class="diag-bar"><div class="diag-fill" style="width:${s.pct}%;background:${col}"></div></div>
+                            <div style="font-size:8px;color:#78909c;margin-top:1px">${s.detail}</div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+            <div style="padding:4px 8px;font-size:10px;color:var(--text-secondary);border-top:1px solid rgba(255,255,255,0.05);margin-top:4px;padding-top:8px">
+                <b style="color:var(--text-primary)">Recent Incidents</b><br>
+                <div style="margin-top:4px">
+                    <span style="color:#ffab00">⚠ 22:14 UTC</span> — NAM-01 Gamsberg seeing degraded to 1.8" (threshold: 1.5")<br>
+                    <span style="color:#00e676">✓ 21:48 UTC</span> — AUS-03 Orin GPU temp normalized (was 82°C → now 61°C)<br>
+                    <span style="color:#00e676">✓ 20:15 UTC</span> — Kafka consumer lag spike resolved (was 47 → now 1.89 msgs)<br>
+                    <span style="color:#ff1744">✗ 19:30 UTC</span> — EUR-07 Starlink uplink packet loss 2.3% (investigating)<br>
+                    <span style="color:#00e676">✓ 18:00 UTC</span> — Software deploy: streak_detect.cu v3.2.1 → 172 nodes (100% success)
+                </div>
+            </div>`;
     }
 }
 
