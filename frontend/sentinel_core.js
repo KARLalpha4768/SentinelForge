@@ -514,6 +514,13 @@ let _blinkAnimId = null;
 let _blinkStartTime = 0;
 
 // Draw blink effects directly onto the map canvas
+// Key radar sites that get event labels (keep it clean — labels only on major facilities)
+const LABEL_SITES = new Set([
+    'SSN-EGLIN','SSN-CLEAR','SSN-FENCE','SSN-HAYSTACK','SSN-COBRADANE',
+    'SSN-GEODSS-NM','SSN-GEODSS-HI','SSN-ALTAIR','SSN-THULE','SSN-CAVALIER',
+    'ALLIED-GRAVES','ALLIED-TIRA',
+]);
+
 function drawBlinkEffects(ctx, W, H, now) {
     if(Object.keys(_blinkTrackingMap).length === 0) return;
     const toXY = (lat,lon) => ({ x: (lon+180)/360*W, y: (90-lat)/180*H });
@@ -524,47 +531,36 @@ function drawBlinkEffects(ctx, W, H, now) {
         const hex = a.color;
         const rr = parseInt(hex.slice(1,3),16), gg = parseInt(hex.slice(3,5),16), bb = parseInt(hex.slice(5,7),16);
 
-        // Pulse speed varies by tier
-        const speed = a.tier === 'EMERGENCY' ? 2.0 : a.tier === 'RED' ? 1.4 : 1.0;
+        // 10x slower pulse — gentle breathing effect
+        const speed = a.tier === 'EMERGENCY' ? 0.2 : a.tier === 'RED' ? 0.14 : 0.1;
 
-        // Ring 1 — expanding outward
-        const phase1 = (elapsed * speed) % 1.0;
-        const r1 = 8 + phase1 * 20;
-        const a1 = (1 - phase1) * 0.8;
+        // Single expanding ring — slow and calm
+        const phase = (elapsed * speed) % 1.0;
+        const ringR = 8 + phase * 16;
+        const ringA = (1 - phase) * 0.45;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, r1, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(${rr},${gg},${bb},${a1})`;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        // Ring 2 — offset phase
-        const phase2 = ((elapsed * speed) + 0.5) % 1.0;
-        const r2 = 8 + phase2 * 20;
-        const a2 = (1 - phase2) * 0.6;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r2, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(${rr},${gg},${bb},${a2})`;
+        ctx.arc(p.x, p.y, ringR, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${rr},${gg},${bb},${ringA})`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Pulsing glow
-        const pulseA = 0.2 + Math.sin(elapsed * speed * Math.PI * 2) * 0.2;
-        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 16);
-        grad.addColorStop(0, `rgba(${rr},${gg},${bb},${pulseA + 0.25})`);
-        grad.addColorStop(0.5, `rgba(${rr},${gg},${bb},${pulseA * 0.4})`);
+        // Soft glow — gentle pulse
+        const pulseA = 0.08 + Math.sin(elapsed * speed * Math.PI * 2) * 0.08;
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 12);
+        grad.addColorStop(0, `rgba(${rr},${gg},${bb},${pulseA + 0.1})`);
+        grad.addColorStop(0.7, `rgba(${rr},${gg},${bb},${pulseA * 0.3})`);
         grad.addColorStop(1, `rgba(${rr},${gg},${bb},0)`);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 16, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
         ctx.fillStyle = grad;
         ctx.fill();
 
-        // Event label for EMERGENCY/RED
-        if(a.tier === 'EMERGENCY' || a.tier === 'RED') {
-            const labelA = 0.6 + Math.sin(elapsed * speed * Math.PI * 2) * 0.35;
-            ctx.font = 'bold 8px Inter';
-            ctx.fillStyle = `rgba(${rr},${gg},${bb},${labelA})`;
+        // Event label — only on key radar facilities
+        if(LABEL_SITES.has(a.siteId)) {
+            ctx.font = 'bold 7px Inter';
+            ctx.fillStyle = `rgba(${rr},${gg},${bb},0.5)`;
             ctx.textAlign = 'left';
-            ctx.fillText(a.evtId, p.x + 12, p.y - 4);
+            ctx.fillText(a.evtId, p.x + 10, p.y - 3);
         }
     });
 
@@ -573,10 +569,10 @@ function drawBlinkEffects(ctx, W, H, now) {
     ctx.font = 'bold 10px Inter';
     const badgeText = `⚡ ${trackCount} SITES TRACKING`;
     const tw = ctx.measureText(badgeText).width;
-    ctx.fillStyle = 'rgba(255,23,68,0.15)';
+    ctx.fillStyle = 'rgba(255,23,68,0.12)';
     const bx = 4, by = 4, bw = tw + 20, bh = 20;
     ctx.fillRect(bx, by, bw, bh);
-    ctx.strokeStyle = 'rgba(255,23,68,0.4)';
+    ctx.strokeStyle = 'rgba(255,23,68,0.25)';
     ctx.lineWidth = 1;
     ctx.strokeRect(bx, by, bw, bh);
     ctx.fillStyle = '#ff5252';
