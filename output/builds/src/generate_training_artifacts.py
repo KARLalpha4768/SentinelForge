@@ -49,7 +49,7 @@ MODELS = [
     {
         'name': 'pinn_orbit_j2drag',
         'module': 'pinn_orbit.py',
-        'architecture': 'MLP(7→256→256→256→6) + PhysicsLoss(J2+J3+J4+Drag)',
+        'architecture': 'MLP(7-256-256-256-6) + PhysicsLoss(J2-J6+Drag)',
         'task': 'Physics-informed orbit state prediction (position + velocity)',
         'input_shape': '(batch, 7) — [t, r0, v0]',
         'params': 201_734,

@@ -3,9 +3,9 @@ pinn_orbit.py - SentinelForge SOTA 2026 Pipeline
 Tier 2 (Correlator) - Physics-Informed Neural Network (PINN) Orbit Determination
 
 Replaces traditional Batch Least-Squares with a deep learning model that
-embeds Keplerian dynamics and J2 perturbations directly into the loss function.
-Achieves 100x faster inference once trained and handles sparse observational
-data without diverging.
+embeds Keplerian dynamics and J2-J6 zonal harmonic perturbations directly
+into the loss function. Achieves 100x faster inference once trained and
+handles sparse observational data without diverging.
 """
 import torch
 import torch.nn as nn

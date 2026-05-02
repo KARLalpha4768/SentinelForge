@@ -136,7 +136,7 @@ The `models/` directory contains **actual trained weights** produced by `train_m
 | Model | Parameters | Training Data | Key Metric |
 |-------|-----------|---------------|------------|
 | Streak Detection CNN | 541,699 | 90K synthetic cutouts | 98.31% test accuracy |
-| PINN Orbit (J2+Drag) | 201,734 | 450K SP ephemeris residuals | 0.48 km RMSE |
+| PINN Orbit (J2-J6+Drag) | 201,734 | 450K SP ephemeris residuals | 0.48 km RMSE |
 | Contrastive Light Curve Encoder | 892,416 | 558K light curve passes | 0.971 AUC |
 | FNO Propagator | 1,245,190 | 700K RK78 ground truth orbits | 0.19 km RMSE (340× faster than RK78) |
 | Thermospheric Density Corrector | 25,601 | 2.4M CHAMP/GRACE/GOCE densities | 42.3% → 18.7% density error |

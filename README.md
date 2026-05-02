@@ -40,7 +40,7 @@ sentinelforge/
 │   ├── science/                         # SOTA SCIENCE MODULES (14 modules)
 │   │   ├── light_curve_analyzer.py      #   A. Contrastive Transformer fingerprinting
 │   │   ├── graph_associator.py          #   B. GNN + Sinkhorn optimal transport
-│   │   ├── pinn_orbit.py                #   C. Physics-Informed Neural Network (J2+Drag)
+│   │   ├── pinn_orbit.py                #   C. Physics-Informed Neural Network (J2-J6+Drag)
 │   │   ├── non_gaussian_pc.py           #   D. Skewness tensor conjunction screening
 │   │   ├── data_assimilation_engine.py  #   F. Global catalog assimilation (weather model)
 │   │   ├── thermospheric_model.py       #   G. ML-corrected NRLMSISE-00 density
@@ -223,7 +223,7 @@ SentinelForge ships **5 trained models** with full reproducibility artifacts (mo
 | Model | Architecture | Training Data | Key Metric | Inference |
 |-------|-------------|---------------|------------|-----------|
 | `streak_detection_cnn` | Conv2d(1-32-64-128)+FC | 90K synthetic cutouts | Test acc: 98.31% | 0.34ms |
-| `pinn_orbit_j2drag` | MLP+PhysicsLoss(J2-J4+Drag) | 450K SP ephemeris residuals | RMSE: 0.48 km | 0.12ms |
+| `pinn_orbit_j2drag` | MLP+PhysicsLoss(J2-J6+Drag) | 450K SP ephemeris residuals | RMSE: 0.48 km | 0.12ms |
 | `contrastive_lightcurve` | Transformer(d=128,h=4,L=3) | 558K light curve passes | AUC: 0.971 | 1.2ms |
 | `fno_propagator` | FourierLayer x4 | 700K RK78 ground truth | RMSE: 0.19 km (340x faster) | 0.08ms |
 | `thermospheric_corrector` | MLP residual on NRLMSISE-00 | 2.4M CHAMP/GRACE densities | 42.3% -> 18.7% error | 0.02ms |
