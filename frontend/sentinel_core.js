@@ -613,6 +613,7 @@ function findSiteAtPoint(mx, my) {
     }
     return null;
 }
+let _hoveredSite = null; // current hover target for tooltip links
 
 // ── Per-Site Unique Equipment Registry ──────────────
 // Maps sensor names / networks to unique, site-specific equipment and specs
@@ -797,7 +798,11 @@ if(mapCanvas) {
                     }).join('')}
                 </div>
 
-                <div style="margin-top:6px;color:#546e7a;font-size:8px;text-align:center">Click for full tech catalog & detection inventory →</div>`;
+                <div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center">
+                    <a href="#" onclick="_hoveredSite&&openTechnicianSheet(_hoveredSite);return false" style="color:#ffd740;font-size:9px;font-weight:700;text-decoration:none;cursor:pointer;padding:3px 8px;border:1px solid rgba(255,215,64,0.3);border-radius:4px;background:rgba(255,215,64,0.08)">📋 TECHNICIAN UPGRADE SHEET →</a>
+                    <span style="color:#546e7a;font-size:8px">Click dot for full catalog</span>
+                </div>`;
+            _hoveredSite = site; // store ref for technician sheet link
             mapCanvas.style.cursor = 'pointer';
         } else {
             mapTooltip.style.display = 'none';
@@ -868,7 +873,165 @@ function openSiteModal(site) {
             <tr><td style="color:#78909c">Mean Track</td><td>${(12+(seed%20)).toFixed(1)}s</td></tr>
             <tr><td style="color:#78909c">Uptime (30d)</td><td>${(96+Math.random()*3.5).toFixed(1)}%</td></tr>
         </table>
+        <div style="margin-top:12px;text-align:center;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">
+            <a href="#" onclick="openTechnicianSheet(_lastModalSite);return false" style="color:#ffd740;font-size:10px;font-weight:700;text-decoration:none;padding:5px 14px;border:1px solid rgba(255,215,64,0.3);border-radius:4px;background:rgba(255,215,64,0.08)">📋 OPEN TECHNICIAN UPGRADE SHEET →</a>
+        </div>
     `;
+    siteModal.style.display = 'flex';
+}
+
+// ── Technician Upgrade Sheet ────────────────────────
+function openTechnicianSheet(site) {
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    const siteModal = document.getElementById('siteModal');
+    if(!title || !body || !siteModal) return;
+    // Hide tooltip
+    const tt = document.getElementById('mapTooltip'); if(tt) tt.style.display = 'none';
+
+    title.textContent = `📋 TECHNICIAN UPGRADE SHEET — ${site.id}`;
+    const statusColor = site.status==='active'?'#00e676':site.status==='degraded'?'#ffab00':'#ff1744';
+    const spec = SENSOR_SPECS[site.sensor] || SENSOR_SPECS['Generic Telescope'] || {};
+    const upgrades = getUpgradePath(site);
+    const progStack = getProgrammingStack(site);
+    const seed = site.id.charCodeAt(0) + site.id.charCodeAt(site.id.length-1);
+
+    // Access & clearance requirements by network
+    const access = site.network === 'USSF-SSN' ? {
+        clearance: 'SECRET/SCI', escort: 'Required — USSF Site Security', badge: 'CAC + Visitor Badge',
+        safety: 'OSHA PPE, ESD wrist strap, hearing protection (radar sites)', restricted: 'RF hazard zones — 50m exclusion during transmit',
+        hours: 'Coordinated with site OIC, 48h advance notice', poc: 'Site Operations Officer (OIC)'
+    } : site.network === 'LeoLabs' ? {
+        clearance: 'UNCLASSIFIED', escort: 'Not required — badge access', badge: 'LeoLabs Employee Badge',
+        safety: 'Standard PPE, ESD wrist strap', restricted: 'Antenna array — maintain 20m during operations',
+        hours: 'Business hours preferred, 24h notice', poc: 'Site Ops Lead'
+    } : site.network === 'Slingshot' ? {
+        clearance: 'UNCLASSIFIED / CUI', escort: 'Buddy system recommended', badge: 'Slingshot Contractor Badge',
+        safety: 'Standard PPE, laptop w/ VPN token', restricted: 'None — commercial site',
+        hours: 'Flexible, 24h notice preferred', poc: 'Slingshot Regional Ops Manager'
+    } : {
+        clearance: 'UNCLASSIFIED', escort: 'Site-dependent', badge: 'Visitor Badge',
+        safety: 'Standard PPE, ESD wrist strap', restricted: 'Check local site rules',
+        hours: '24h advance notice', poc: 'Network Operations Center'
+    };
+
+    // Generate upgrade task cards with part numbers and tools
+    const taskCards = upgrades.map((u, i) => {
+        const partNo = `SF-${site.type === 'radar' ? 'R' : 'O'}${(seed*7+i*31)%9000+1000}`;
+        const tools = u.item.includes('GPU') ? 'Phillips #2, ESD mat, thermal paste, PCIe riser cable'
+            : u.item.includes('Receiver') || u.item.includes('T/R') ? 'Torx T10/T15, RF torque wrench (5 in-lb), spectrum analyzer'
+            : u.item.includes('CMOS') || u.item.includes('Detector') ? 'Hex 2.5mm, clean room gloves, optical collimation laser'
+            : u.item.includes('firmware') || u.item.includes('Firmware') ? 'Laptop w/ JTAG programmer, USB-serial adapter'
+            : u.item.includes('Starlink') || u.item.includes('uplink') ? 'Starlink kit, PoE injector, Cat6 outdoor cable, cable tester'
+            : 'Standard toolkit, multimeter, laptop';
+        const estHours = u.priority === 'HIGH' ? '4-6h' : u.priority === 'MEDIUM' ? '2-4h' : '1-2h';
+        const pCol = u.priority==='HIGH'?'#ff1744':u.priority==='MEDIUM'?'#ffab00':'#76ff03';
+        return `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:10px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <div style="display:flex;align-items:center;gap:6px">
+                    <span style="background:${pCol}22;color:${pCol};padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700">${u.priority}</span>
+                    <b style="color:#e8eaf6;font-size:11px">${u.item}</b>
+                </div>
+                <span style="color:#546e7a;font-size:9px">Est: ${estHours}</span>
+            </div>
+            <div style="font-size:9px;color:#90a4ae;margin-bottom:6px">${u.reason}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:9px">
+                <div>Part #: <b style="color:#00e5ff;font-family:JetBrains Mono,mono">${partNo}</b></div>
+                <div>Cost: <b>${u.cost}</b> · ETA: <b>${u.eta}</b></div>
+            </div>
+            <div style="margin-top:6px;font-size:9px;color:#78909c">🔧 Tools: ${tools}</div>
+        </div>`;
+    }).join('');
+
+    // Pre-visit checklist
+    const checklist = [
+        `Verify ${access.clearance} clearance is current`,
+        `Obtain ${access.badge} from ${access.poc}`,
+        `Review RF/safety restrictions: ${access.restricted}`,
+        `Pack required PPE: ${access.safety}`,
+        `Confirm upgrade parts shipped to site (check tracking)`,
+        `Download latest firmware images to offline USB`,
+        `Coordinate maintenance window with ${access.poc}`,
+        `Backup current site configuration via ${progStack.cicd}`,
+    ];
+
+    // Post-upgrade validation steps
+    const validation = site.type === 'radar' ? [
+        'Run built-in calibration sequence (15 min)',
+        'Verify noise floor < -110 dBm across all channels',
+        'Confirm track accuracy on known calibration target (ISS pass)',
+        'Validate data pipeline: edge → cloud latency < 200ms',
+        'Run 1-hour autonomous detection cycle, confirm ≥95% of expected tracks',
+    ] : [
+        'Run flat-field and dark calibration (20 min)',
+        'Verify focus using star FWHM < 2.5 arcsec',
+        'Confirm autoguider lock on guide star within 30s',
+        'Validate plate solve accuracy < 0.5 arcsec RMS',
+        'Run 30-min streak detection test, confirm pipeline end-to-end',
+    ];
+
+    body.innerHTML = `
+        <div style="background:rgba(255,215,64,0.06);border:1px solid rgba(255,215,64,0.15);border-radius:6px;padding:10px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                    <div style="font-size:14px;font-weight:700;color:#ffd740">⚠ FIELD SERVICE ORDER</div>
+                    <div style="font-size:10px;color:#b0bec5;margin-top:2px">${site.name} · ${site.lat.toFixed(2)}°${site.lat>=0?'N':'S'}, ${Math.abs(site.lon).toFixed(2)}°${site.lon>=0?'E':'W'}</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:9px;color:#78909c">Site Status</div>
+                    <div style="color:${statusColor};font-weight:700;font-size:12px">${site.status.toUpperCase()}</div>
+                </div>
+            </div>
+        </div>
+
+        <h3>🔐 Site Access Requirements</h3>
+        <table>
+            <tr><td style="color:#78909c;width:140px">Clearance</td><td><b style="color:#ffd740">${access.clearance}</b></td></tr>
+            <tr><td style="color:#78909c">Escort</td><td>${access.escort}</td></tr>
+            <tr><td style="color:#78909c">Badge</td><td>${access.badge}</td></tr>
+            <tr><td style="color:#78909c">Safety Gear</td><td>${access.safety}</td></tr>
+            <tr><td style="color:#78909c">Restrictions</td><td style="color:#ffab00">${access.restricted}</td></tr>
+            <tr><td style="color:#78909c">Scheduling</td><td>${access.hours}</td></tr>
+            <tr><td style="color:#78909c">Site POC</td><td><b>${access.poc}</b></td></tr>
+        </table>
+
+        <h3>✅ Pre-Visit Checklist</h3>
+        <div style="display:flex;flex-direction:column;gap:4px">
+            ${checklist.map((item, i) => `<label style="display:flex;align-items:flex-start;gap:6px;font-size:10px;color:#b0bec5;cursor:pointer">
+                <input type="checkbox" style="margin-top:2px;accent-color:#ffd740"> ${item}
+            </label>`).join('')}
+        </div>
+
+        <h3>🔧 Upgrade Tasks (${upgrades.length} items)</h3>
+        ${taskCards || '<div style="color:#546e7a;font-size:10px;padding:8px">No upgrades recommended — site is current.</div>'}
+
+        <h3>📊 Post-Upgrade Validation</h3>
+        <div style="display:flex;flex-direction:column;gap:3px">
+            ${validation.map((step, i) => `<div style="font-size:10px;color:#b0bec5;display:flex;gap:6px">
+                <span style="color:#546e7a;min-width:16px">${i+1}.</span> ${step}
+            </div>`).join('')}
+        </div>
+
+        <h3>⏱ Estimated Downtime</h3>
+        <table>
+            <tr><td style="color:#78909c;width:180px">Total Maintenance Window</td><td><b style="color:#ffab00">${upgrades.length > 2 ? '8-12 hours' : upgrades.length > 0 ? '4-6 hours' : '0 hours'}</b></td></tr>
+            <tr><td style="color:#78909c">Site Offline Period</td><td>${upgrades.some(u=>u.priority==='HIGH') ? '2-4 hours (sensor swap)' : '< 1 hour (hot-swap capable)'}</td></tr>
+            <tr><td style="color:#78909c">Preferred Window</td><td>${site.type === 'optical' ? 'Daytime (non-observing hours)' : 'Low-traffic period (02:00-06:00 local)'}</td></tr>
+            <tr><td style="color:#78909c">Rollback Plan</td><td>Restore from pre-upgrade config backup</td></tr>
+        </table>
+
+        <h3>✍ Technician Sign-Off</h3>
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:10px">
+            <div><span style="color:#78909c">Technician:</span> <input type="text" placeholder="Name" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8eaf6;padding:3px 6px;border-radius:3px;font-size:10px;width:120px"></div>
+            <div><span style="color:#78909c">Date:</span> <input type="text" value="${new Date().toISOString().slice(0,10)}" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8eaf6;padding:3px 6px;border-radius:3px;font-size:10px;width:100px"></div>
+            <div><span style="color:#78909c">Badge #:</span> <input type="text" placeholder="ID" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8eaf6;padding:3px 6px;border-radius:3px;font-size:10px;width:80px"></div>
+            <div><span style="color:#78909c">Status:</span> <select style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8eaf6;padding:3px 6px;border-radius:3px;font-size:10px"><option>Pending</option><option>In Progress</option><option>Complete</option><option>Deferred</option></select></div>
+        </div>
+        <div style="margin-top:10px;text-align:center">
+            <a href="#" onclick="openSiteModal(_lastModalSite||${JSON.stringify(site).replace(/"/g,'&quot;')});return false" style="color:#00e5ff;font-size:9px;text-decoration:underline">← Back to Site Tech Catalog</a>
+        </div>
+    `;
+    _lastModalSite = site;
     siteModal.style.display = 'flex';
 }
 
