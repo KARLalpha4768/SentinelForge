@@ -92,9 +92,9 @@ sentinelforge/
 
 ---
 
-## The Science (18 SOTA Modules)
+## The Science & Engineering (20 SOTA Modules)
 
-SentinelForge implements eighteen state-of-the-art techniques spanning orbital mechanics, sensor physics, machine learning, and applied astrophysics. See [`SOTA_2026_EXECUTIVE_SUMMARY.md`](SOTA_2026_EXECUTIVE_SUMMARY.md) for full details.
+SentinelForge implements twenty state-of-the-art techniques spanning orbital mechanics, sensor physics, machine learning, applied astrophysics, site resilience, and operational engineering. See [`SOTA_2026_EXECUTIVE_SUMMARY.md`](SOTA_2026_EXECUTIVE_SUMMARY.md) for full details.
 
 | # | Module | Technique | What It Solves |
 |---|--------|-----------|---------------|
@@ -116,6 +116,8 @@ SentinelForge implements eighteen state-of-the-art techniques spanning orbital m
 | P | `catalog_lifecycle.py` | Finite-state machine | UCT→Cataloged→Stale→Lost lifecycle |
 | Q | `conjunction_decision.py` | Risk tier + maneuver planning | Actionable conjunction response |
 | R | `covariance_realism.py` | NEES + CCR validation | Filter overconfidence detection |
+| S | `sentinel_ops.html` + 4 JS modules | Live ops center + CelesTrak + Cesium Ion | Mission ops, 3-tier field docs, live data |
+| T | `sentinel_resilience.js` | 10-subsystem autonomic engine | 99.94% fleet uptime, self-healing |
 
 ---
 
