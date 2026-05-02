@@ -11,7 +11,7 @@ Traditional SDA pipelines suffer from three major bottlenecks:
 **The SentinelForge Solution:** We push inference to the edge using NVIDIA Jetson AGX Orin nodes at every observatory. These nodes perform real-time astrometric calibration and machine-learning streak detection, reducing the data payload by 500:1 (32MB frames → 10KB detection telemetry). This telemetry is streamed asynchronously via Kafka to a highly-concurrent, microservices-based cloud backend for catalog correlation, multi-sensor fusion, and automated conjunction assessment.
 
 ## 2. Elevating the Science (The SOTA 2026 Upgrade)
-To move beyond 2020-era industry standards, SentinelForge incorporates **eighteen** major theoretical advancements spanning orbital mechanics, sensor physics, machine learning, applied astrophysics, and operational workflow:
+To move beyond 2020-era industry standards, SentinelForge incorporates **nineteen** major theoretical advancements spanning orbital mechanics, sensor physics, machine learning, applied astrophysics, and operational workflow:
 
 ### A. Contrastive Light-Curve Fingerprinting (Surpassing IRL)
 * **The SOTA Method:** SentinelForge (`light_curve_analyzer.py`) uses a self-supervised Transformer encoder to map photometric light curves into a 128-dim embedding space. Anomalies are detected as "embedding drift" — no hand-designed reward function required.
@@ -66,6 +66,17 @@ To move beyond 2020-era industry standards, SentinelForge incorporates **eightee
 
 ### R. Covariance Realism Testing
 * **The SOTA Method:** `covariance_realism.py` continuously validates that predicted covariances match observed errors using Normalized Estimation Error Squared (NEES) and Covariance Consistency Ratio (CCR). Flags overconfident filters that would corrupt every downstream conjunction assessment.
+
+### S. SentinelForge Operations Center (Live Dashboard)
+* **The SOTA Method:** `sentinel_ops.html` + `sentinel_core.js` (1,560 lines) provides a full mission operations center with:
+  - **Live Telemetry Simulation:** Mean-reverting gauge drift across 8 system health metrics (detection rate, NEES, GPU utilization, Kafka lag, etc.) with 3-second refresh cadence.
+  - **3D Globe Visualization:** CesiumJS globe with conjunction event markers, orbit regime filters, and time slider for predictive views.
+  - **Ground Network Map:** Interactive 172-site global sensor network with hover tooltips, site detail modals, and technology catalogs (radar/optical/phased array specs).
+  - **Priority Reacquisition Queue:** 18 stale/lost objects sorted by priority (CRITICAL→LOW) with NORAD ID, custody confidence gauges, in-track/cross-track error growth estimates, and sensor tasking status. Clickable rows open full object identity modals with observation history, search strategy recommendations, and custody degradation analysis.
+  - **SOTA Module Status Panel:** Live health monitoring of all 18 science modules (A–R) with latency drift and degraded-state detection.
+  - **Dynamic Alert System:** Real-time toast notifications for catalog updates, covariance violations, edge throughput drops, Kafka lag spikes, and conjunction escalations — each with full drill-down to escalation tiers and notification rosters.
+  - **Conjunction Decision Support:** Pc Timeline charts, maneuver planning panels, and GREEN/YELLOW/RED/EMERGENCY escalation protocols.
+  - **Space Weather Integration:** Live F10.7, Kp, and Dst indices with color-coded storm-level indicators.
 
 ## 3. Implementation Steps
 The transition to this architecture is executed across four tiers:

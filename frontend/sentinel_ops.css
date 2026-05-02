@@ -244,3 +244,51 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-space); color:
 .site-modal-body td { padding: 4px 8px; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.03); }
 .diag-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
 .diag-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+/* ── Live Telemetry Transitions ──────────────── */
+.gauge-value { transition: color 0.5s ease; }
+.gauge-svg path { transition: d 0.8s ease, stroke 0.5s ease; }
+.cmd-metric-value { transition: color 0.3s ease; }
+.cmd-weather-num { transition: color 0.5s ease; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+.cmd-weather-val { font-size: 9px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
+.cmd-health { transition: background 0.5s ease, box-shadow 0.5s ease; }
+
+/* ── Enhanced Alert Toast Effects ────────────── */
+.alert-toast.critical {
+    background: rgba(255,23,68,0.2); border: 1px solid rgba(255,23,68,0.4); color: #ff8a80;
+    animation: slide-in .4s cubic-bezier(0.34,1.56,0.64,1), alert-pulse-critical 2s 0.4s infinite, fade-out .5s 11s forwards;
+}
+@keyframes alert-pulse-critical {
+    0%, 100% { box-shadow: 0 0 4px rgba(255,23,68,0.2), inset 0 0 8px rgba(255,23,68,0.05); }
+    50% { box-shadow: 0 0 20px rgba(255,23,68,0.4), inset 0 0 12px rgba(255,23,68,0.1); }
+}
+.alert-toast.warning {
+    animation: slide-in .4s cubic-bezier(0.34,1.56,0.64,1), fade-out .5s 11s forwards;
+}
+.alert-toast.info {
+    animation: slide-in .3s ease-out, fade-out .5s 11s forwards;
+}
+
+/* ── Smooth Tab Transitions ──────────────────── */
+.inv-tab { transition: color 0.3s ease, border-bottom-color 0.3s ease, background 0.2s ease; }
+.inv-tab:hover { background: var(--bg-glass); color: var(--text-primary); }
+.inv-content { scroll-behavior: smooth; }
+
+/* ── SOTA Module Table Hover ─────────────────── */
+.inv-table tbody tr { transition: background 0.15s ease; }
+.inv-table tbody tr:hover { background: rgba(124,77,255,0.06); }
+
+/* ── Gauge Card Pulse on Update ──────────────── */
+.gauge-card { transition: background 0.3s ease, box-shadow 0.3s ease; }
+
+/* ── Globe Button Active Glow ────────────────── */
+.globe-btn.active { box-shadow: 0 0 8px rgba(124,77,255,0.3); }
+
+/* ── Scrollbar Polish ────────────────────────── */
+.ground-sites::-webkit-scrollbar { width: 4px; }
+.ground-sites::-webkit-scrollbar-thumb { background: var(--border-glass); border-radius: 2px; }
+.inv-content::-webkit-scrollbar { width: 4px; }
+.inv-content::-webkit-scrollbar-thumb { background: var(--border-glass); border-radius: 2px; }
+.site-modal-body::-webkit-scrollbar { width: 4px; }
+.site-modal-body::-webkit-scrollbar-thumb { background: rgba(100,160,255,0.2); border-radius: 2px; }
+

@@ -4,7 +4,7 @@
 
 SentinelForge is a full-stack space surveillance pipeline that pushes ML inference to the edge, fuses multi-sensor observations in the cloud, and applies state-of-the-art astrophysics to solve the catalog staleness problem plaguing the U.S. Space Surveillance Network.
 
-**13,575 lines of code** across **60+ files** — Python, C++/CUDA, HTML/JS, Terraform, Kubernetes.
+**16,500+ lines of code** across **80 files** — Python, C++/CUDA, HTML/JS, Terraform, Kubernetes.
 
 ---
 
@@ -72,7 +72,10 @@ sentinelforge/
 │   └── monitor.py                      # Site health monitoring
 │
 ├── frontend/                            # VISUALIZATION
-│   ├── dashboard.html                   #   Operations dashboard
+│   ├── sentinel_ops.html                #   S. Operations Center (mission ops dashboard)
+│   ├── sentinel_ops.css                 #   S. Ops Center design system (300 lines)
+│   ├── sentinel_core.js                 #   S. Ops Center engine (1,560 lines)
+│   ├── dashboard.html                   #   Legacy operations dashboard
 │   └── digital_twin.html               #   E. CesiumJS 3D globe + WebSocket
 │
 ├── terraform/                           # INFRASTRUCTURE AS CODE
@@ -85,9 +88,9 @@ sentinelforge/
 
 ---
 
-## The Science (14 SOTA Modules)
+## The Science (18 SOTA Modules)
 
-SentinelForge implements fourteen state-of-the-art techniques spanning orbital mechanics, sensor physics, machine learning, and applied astrophysics. See [`SOTA_2026_EXECUTIVE_SUMMARY.md`](SOTA_2026_EXECUTIVE_SUMMARY.md) for full details.
+SentinelForge implements eighteen state-of-the-art techniques spanning orbital mechanics, sensor physics, machine learning, and applied astrophysics. See [`SOTA_2026_EXECUTIVE_SUMMARY.md`](SOTA_2026_EXECUTIVE_SUMMARY.md) for full details.
 
 | # | Module | Technique | What It Solves |
 |---|--------|-----------|---------------|
@@ -105,6 +108,10 @@ SentinelForge implements fourteen state-of-the-art techniques spanning orbital m
 | L | `fourier_neural_operator.py` | Spectral convolution | Single-pass orbit surrogate |
 | M | `spectral_characterizer.py` | Multi-band color indices | Satellite material ID |
 | N | `rcs_fusion.py` | NASA SEM + optical fusion | Joint radar-optical sizing |
+| O | `event_stream.py` | Neuromorphic AER + Hough | Microsecond-resolution streak detection |
+| P | `catalog_lifecycle.py` | Finite-state machine | UCT→Cataloged→Stale→Lost lifecycle |
+| Q | `conjunction_decision.py` | Risk tier + maneuver planning | Actionable conjunction response |
+| R | `covariance_realism.py` | NEES + CCR validation | Filter overconfidence detection |
 
 ---
 
@@ -151,7 +158,12 @@ python koopman_propagator.py        # EDMD linearized propagation
 python cislunar_dynamics.py         # CR3BP Lagrange points + manifolds
 python data_assimilation_engine.py  # Global catalog assimilation
 
-# 5. Launch Digital Twin
+# 5. Launch Operations Center
+cd frontend/
+python -m http.server 9876
+# Open http://localhost:9876/sentinel_ops.html
+
+# 6. Launch Digital Twin
 pip install fastapi uvicorn websockets
 uvicorn src.api.twin_ws:app --port 8001
 # Open frontend/digital_twin.html in browser
@@ -178,7 +190,7 @@ uvicorn src.api.twin_ws:app --port 8001
 
 **Karl David** — Principal Engineer, Kham Enterprises LLC
 
-Built as an enterprise architecture demonstration of autonomous space surveillance engineering. The system demonstrates that a single engineer can architect and operate the equivalent of a 20-person team through AI agent orchestration, while implementing research-grade astrophysics across 14 scientific domains.
+Built as an enterprise architecture demonstration of autonomous space surveillance engineering. The system demonstrates that a single engineer can architect and operate the equivalent of a 20-person team through AI agent orchestration, while implementing research-grade astrophysics across 18 scientific domains.
 
 ---
 

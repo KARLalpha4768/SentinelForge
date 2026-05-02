@@ -201,6 +201,27 @@ const STATE = {
             {date:'2026-04-29',rate:86.9},{date:'2026-04-30',rate:87.2},{date:'2026-05-01',rate:87.2},
         ],
     },
+    // ── Reacquisition Queue (Stale/Lost Objects) ────────
+    reacquisition: [
+        { norad:39271, name:'COSMOS 2499', regime:'LEO', state:'LOST', daysSince:14, priority:'CRITICAL', owner:'Russia/VKS', type:'Payload', rcs:1.2, reason:'Suspected maneuver — orbital elements diverged', taskingSite:'CHL-01', taskingStatus:'QUEUED', lastObs:'2026-04-17T08:22Z', custodyWindow:'3 days' },
+        { norad:40258, name:'COSMOS 1408 DEB #247', regime:'LEO', state:'STALE', daysSince:8, priority:'HIGH', owner:'Debris', type:'Debris', rcs:0.04, reason:'Small fragment, low SNR — requires dark sky + good seeing', taskingSite:'AUS-01', taskingStatus:'SCHEDULED', lastObs:'2026-04-23T14:10Z', custodyWindow:'5 days' },
+        { norad:46114, name:'USA-310 (GSSAP-5)', regime:'GEO', state:'STALE', daysSince:6, priority:'CRITICAL', owner:'USSF', type:'Payload', rcs:0.3, reason:'GEO inspector satellite — national security asset, erratic station-keeping', taskingSite:'ExoAnalytic', taskingStatus:'IN PROGRESS', lastObs:'2026-04-25T02:45Z', custodyWindow:'7 days' },
+        { norad:99903, name:'UCT-2025-1847', regime:'HEO', state:'LOST', daysSince:22, priority:'HIGH', owner:'UCT', type:'Unknown', rcs:0.08, reason:'Molniya-type orbit, only visible at apogee — short window', taskingSite:'EUR-02', taskingStatus:'QUEUED', lastObs:'2026-04-09T19:33Z', custodyWindow:'14 days' },
+        { norad:44832, name:'COSMOS 2251 DEB #19', regime:'LEO', state:'STALE', daysSince:5, priority:'MEDIUM', owner:'Debris', type:'Debris', rcs:0.02, reason:'Size below detection threshold in poor seeing', taskingSite:'NAM-01', taskingStatus:'BLOCKED (seeing)', lastObs:'2026-04-26T11:20Z', custodyWindow:'5 days' },
+        { norad:43602, name:'BEIDOU-3 M13', regime:'MEO', state:'STALE', daysSince:9, priority:'MEDIUM', owner:'PRC/BDS', type:'Payload', rcs:2.5, reason:'MEO tracking gap — insufficient sensor coverage at 20,200 km', taskingSite:'ISON', taskingStatus:'QUEUED', lastObs:'2026-04-22T06:55Z', custodyWindow:'10 days' },
+        { norad:37348, name:'CZ-5B R/B (2021-035B)', regime:'LEO', state:'STALE', daysSince:4, priority:'HIGH', owner:'PRC/CASC', type:'Rocket Body', rcs:8.0, reason:'Rapidly decaying orbit — altitude dropping, reentry predicted', taskingSite:'LeoLabs', taskingStatus:'SCHEDULED', lastObs:'2026-04-27T15:40Z', custodyWindow:'2 days' },
+        { norad:28868, name:'GALAXY 15', regime:'GEO', state:'STALE', daysSince:11, priority:'MEDIUM', owner:'Intelsat', type:'Payload', rcs:5.0, reason:'Zombie satellite — unresponsive since 2010, drifting in GEO belt', taskingSite:'Slingshot', taskingStatus:'QUEUED', lastObs:'2026-04-20T23:15Z', custodyWindow:'14 days' },
+        { norad:25730, name:'Iridium 16 (defunct)', regime:'LEO', state:'LOST', daysSince:18, priority:'LOW', owner:'USA', type:'Payload', rcs:3.0, reason:'Defunct constellation sat, low priority but collision risk persists', taskingSite:'USSF-SSN', taskingStatus:'DEFERRED', lastObs:'2026-04-13T07:12Z', custodyWindow:'7 days' },
+        { norad:41862, name:'MUOS-5', regime:'GEO', state:'STALE', daysSince:7, priority:'CRITICAL', owner:'USN', type:'Payload', rcs:6.0, reason:'US military comms satellite — high-value asset, anomalous drift detected', taskingSite:'GEODSS', taskingStatus:'IN PROGRESS', lastObs:'2026-04-24T18:30Z', custodyWindow:'7 days' },
+        { norad:49445, name:'STARLINK-3271', regime:'LEO', state:'STALE', daysSince:3, priority:'LOW', owner:'SpaceX', type:'Payload', rcs:0.5, reason:'Routine — autonomous deorbit in progress, verifying disposal', taskingSite:'LeoLabs', taskingStatus:'SCHEDULED', lastObs:'2026-04-28T22:05Z', custodyWindow:'5 days' },
+        { norad:99904, name:'UCT-2026-0512', regime:'LEO', state:'LOST', daysSince:30, priority:'HIGH', owner:'UCT', type:'Unknown', rcs:0.01, reason:'Sub-10cm fragment, detected once by Space Fence — never reacquired', taskingSite:'Space Fence', taskingStatus:'PRIORITY TASKED', lastObs:'2026-04-01T04:18Z', custodyWindow:'N/A' },
+        { norad:27386, name:'FENGYUN 1C DEB #891', regime:'LEO', state:'STALE', daysSince:6, priority:'MEDIUM', owner:'Debris', type:'Debris', rcs:0.03, reason:'ASAT debris — high collision risk corridor, needs updated TLE', taskingSite:'CHL-01', taskingStatus:'QUEUED', lastObs:'2026-04-25T09:44Z', custodyWindow:'5 days' },
+        { norad:39084, name:'YAOGAN-17A', regime:'LEO', state:'STALE', daysSince:10, priority:'HIGH', owner:'PRC/PLA', type:'Payload', rcs:4.0, reason:'Chinese ELINT triplet — suspected formation change, elements stale', taskingSite:'ExoAnalytic', taskingStatus:'IN PROGRESS', lastObs:'2026-04-21T13:28Z', custodyWindow:'5 days' },
+        { norad:41335, name:'GAOFEN-4', regime:'GEO', state:'STALE', daysSince:8, priority:'MEDIUM', owner:'CNSA', type:'Payload', rcs:7.0, reason:'Chinese GEO imager — station-keeping maneuver detected, TLE invalid', taskingSite:'GEODSS', taskingStatus:'QUEUED', lastObs:'2026-04-23T01:55Z', custodyWindow:'7 days' },
+        { norad:99905, name:'UCT-2026-0601', regime:'GEO', state:'LOST', daysSince:16, priority:'CRITICAL', owner:'UCT', type:'Unknown', rcs:0.2, reason:'Possible clandestine GEO deployment — 3 detections, no catalog match', taskingSite:'Slingshot', taskingStatus:'PRIORITY TASKED', lastObs:'2026-04-15T20:10Z', custodyWindow:'N/A' },
+        { norad:43235, name:'COSMOS 2535', regime:'LEO', state:'STALE', daysSince:5, priority:'HIGH', owner:'Russia/VKS', type:'Payload', rcs:1.0, reason:'Russian inspector satellite — proximity ops suspected near USA-245', taskingSite:'USSF-SSN', taskingStatus:'IN PROGRESS', lastObs:'2026-04-26T16:02Z', custodyWindow:'3 days' },
+        { norad:26038, name:'FENGYUN 1C DEB #1204', regime:'LEO', state:'LOST', daysSince:25, priority:'LOW', owner:'Debris', type:'Debris', rcs:0.005, reason:'Sub-5cm fragment — below tracking threshold for most sensors', taskingSite:'Space Fence', taskingStatus:'DEFERRED', lastObs:'2026-04-06T12:30Z', custodyWindow:'N/A' },
+    ],
 };
 
 // ── UTC Clock ───────────────────────────────────────
@@ -644,6 +665,12 @@ function renderInventory(tab) {
     const el = document.getElementById('invContent');
     if(tab === 'overview') {
         const c = STATE.catalog;
+        const rq = STATE.reacquisition;
+        const rqCrit = rq.filter(r => r.priority==='CRITICAL').length;
+        const rqHigh = rq.filter(r => r.priority==='HIGH').length;
+        const rqLost = rq.filter(r => r.state==='LOST').length;
+        const rqStale = rq.filter(r => r.state==='STALE').length;
+        const rqInProg = rq.filter(r => r.taskingStatus.includes('PROGRESS')).length;
         el.innerHTML = `<div class="inv-summary">
             <div class="inv-stat"><div class="inv-stat-value" style="color:var(--color-leo)">${c.leo.toLocaleString()}</div><div class="inv-stat-label">LEO</div></div>
             <div class="inv-stat"><div class="inv-stat-value" style="color:var(--color-meo)">${c.meo.toLocaleString()}</div><div class="inv-stat-label">MEO</div></div>
@@ -659,6 +686,51 @@ function renderInventory(tab) {
                 <div style="flex:${c.heo};background:var(--color-heo);opacity:.7" title="HEO"></div>
                 <div style="flex:${c.cislunar};background:var(--color-cislunar);opacity:.7" title="Cislunar"></div>
             </div>
+        </div>
+        <!-- Reacquisition Queue -->
+        <div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px;margin-bottom:6px">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--status-critical)">
+                    🔍 Priority Reacquisition Queue — ${rq.length} Objects
+                </div>
+                <div style="display:flex;gap:6px;font-size:9px">
+                    <span style="color:#ff1744;font-weight:600">${rqCrit} CRITICAL</span>
+                    <span style="color:#ff5252">${rqHigh} HIGH</span>
+                    <span style="color:#ffab00">${rqLost} LOST</span>
+                    <span style="color:#448aff">${rqStale} STALE</span>
+                    <span style="color:#00e676">${rqInProg} IN PROGRESS</span>
+                </div>
+            </div>
+            <table class="inv-table" style="font-size:9px">
+                <thead><tr>
+                    <th>NORAD</th><th>Object</th><th>Regime</th><th>State</th><th>Days</th><th>Priority</th><th>Reason</th><th>Tasking</th><th>Status</th>
+                </tr></thead>
+                <tbody>
+                    ${rq.sort((a,b) => {
+                        const pOrder = {CRITICAL:0,HIGH:1,MEDIUM:2,LOW:3};
+                        return (pOrder[a.priority]||4) - (pOrder[b.priority]||4) || b.daysSince - a.daysSince;
+                    }).map(r => {
+                        const stateCol = r.state==='LOST'?'#ff1744':'#ffab00';
+                        const stateIcon = r.state==='LOST'?'✗':'◐';
+                        const priCol = r.priority==='CRITICAL'?'#ff1744':r.priority==='HIGH'?'#ff5252':r.priority==='MEDIUM'?'#ffab00':'#448aff';
+                        const priBadge = r.priority==='CRITICAL'?'badge-red':r.priority==='HIGH'?'badge-red':r.priority==='MEDIUM'?'badge-yellow':'badge-blue';
+                        const daysCol = r.daysSince > 14 ? '#ff1744' : r.daysSince > 7 ? '#ffab00' : '#b0bec5';
+                        const ownerCol = r.owner.includes('PRC')||r.owner.includes('Russia')?'#ff5252':r.owner.includes('USA')||r.owner==='USSF'||r.owner==='USN'?'#448aff':r.owner==='UCT'?'#e040fb':'#b0bec5';
+                        const taskCol = r.taskingStatus.includes('PROGRESS')?'#00e676':r.taskingStatus.includes('PRIORITY')?'#ffd740':r.taskingStatus.includes('BLOCKED')?'#ff1744':r.taskingStatus==='DEFERRED'?'#78909c':'#b0bec5';
+                        return `<tr title="Owner: ${r.owner} | RCS: ${r.rcs} m² | Last: ${r.lastObs} | Window: ${r.custodyWindow}" style="cursor:pointer" onclick="openReacqDetail(${rq.indexOf(r)})">
+                            <td style="font-family:JetBrains Mono,mono;color:#78909c">${r.norad}</td>
+                            <td style="color:#e8eaf6;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name}</td>
+                            <td style="color:${r.regime==='LEO'?'var(--color-leo)':r.regime==='GEO'?'var(--color-geo)':r.regime==='MEO'?'var(--color-meo)':'var(--color-heo)'}">${r.regime}</td>
+                            <td><span style="color:${stateCol};font-weight:600">${stateIcon} ${r.state}</span></td>
+                            <td style="font-family:JetBrains Mono,mono;color:${daysCol};font-weight:600">${r.daysSince}d</td>
+                            <td><span class="badge ${priBadge}">${r.priority}</span></td>
+                            <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#78909c;font-family:Inter,sans-serif" title="${r.reason}">${r.reason}</td>
+                            <td style="font-size:8px;color:#b0bec5">${r.taskingSite}</td>
+                            <td style="font-size:8px;color:${taskCol};font-weight:600">${r.taskingStatus}</td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
         </div>`;
     } else if(tab === 'feeds') {
         const groups = { external: [], commercial: [], allied: [], internal: [], edge: [] };
@@ -1116,6 +1188,102 @@ function openAlertDetail(level, msg, meta) {
     document.getElementById('siteModal').style.display = 'flex';
 }
 
+// ── Reacquisition Detail Modal ──────────────────────
+function openReacqDetail(idx) {
+    const r = STATE.reacquisition[idx];
+    if(!r) return;
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    const stateCol = r.state==='LOST'?'#ff1744':'#ffab00';
+    const priCol = r.priority==='CRITICAL'?'#ff1744':r.priority==='HIGH'?'#ff5252':r.priority==='MEDIUM'?'#ffab00':'#448aff';
+    const ownerCol = r.owner.includes('PRC')||r.owner.includes('Russia')?'#ff5252':r.owner.includes('USA')||r.owner==='USSF'||r.owner==='USN'?'#448aff':r.owner==='UCT'?'#e040fb':'#b0bec5';
+    const taskCol = r.taskingStatus.includes('PROGRESS')?'#00e676':r.taskingStatus.includes('PRIORITY')?'#ffd740':r.taskingStatus.includes('BLOCKED')?'#ff1744':r.taskingStatus==='DEFERRED'?'#78909c':'#b0bec5';
+
+    // Simulate observation history (3-6 recent obs)
+    const nObs = 3 + (r.norad % 4);
+    const obsHistory = [];
+    for(let i = 0; i < nObs; i++) {
+        const daysAgo = r.daysSince + i * (2 + (r.norad % 3));
+        const d = new Date(Date.now() - daysAgo * 86400000);
+        const site = ['CHL-01','AUS-01','NAM-01','GEODSS','ExoAnalytic','LeoLabs','ISON','Space Fence'][r.norad % 8];
+        const snr = (6 + ((r.norad+i*7)%20)).toFixed(1);
+        const residual = (0.1 + ((r.norad+i*3)%15)*0.1).toFixed(2);
+        obsHistory.push({date:d.toISOString().slice(0,16)+'Z', site, snr, residual, status: i===0?'Latest':'Historical'});
+    }
+
+    // Custody analysis
+    const custodyPct = r.state==='LOST' ? 0 : Math.max(5, Math.round(100 - r.daysSince * 10));
+    const custodyBar = custodyPct > 60 ? '#00e676' : custodyPct > 30 ? '#ffab00' : '#ff1744';
+    const tleAge = r.daysSince;
+    const crossTrackErr = (0.5 * tleAge * tleAge * 0.01).toFixed(1); // Approximate growth
+    const inTrackErr = (2.0 * tleAge * tleAge * 0.1).toFixed(1);
+
+    title.innerHTML = `<span style="color:${priCol}">🔍 ${r.priority}</span> — ${r.name} (NORAD ${r.norad})`;
+    body.innerHTML = `
+        <h3>📋 Object Identity</h3>
+        <table>
+            <tr><td style="color:#78909c;width:160px">NORAD ID</td><td style="font-family:JetBrains Mono,mono">${r.norad}</td></tr>
+            <tr><td style="color:#78909c">Name</td><td style="color:#e8eaf6;font-weight:700">${r.name}</td></tr>
+            <tr><td style="color:#78909c">Owner / Operator</td><td style="color:${ownerCol}">${r.owner}</td></tr>
+            <tr><td style="color:#78909c">Type</td><td>${r.type}</td></tr>
+            <tr><td style="color:#78909c">Orbit Regime</td><td style="color:${r.regime==='LEO'?'#00e5ff':r.regime==='GEO'?'#ffd740':r.regime==='MEO'?'#76ff03':'#ff9100'};font-weight:600">${r.regime}</td></tr>
+            <tr><td style="color:#78909c">RCS</td><td style="font-family:JetBrains Mono,mono">${r.rcs} m²</td></tr>
+            <tr><td style="color:#78909c">Catalog State</td><td><span style="color:${stateCol};font-weight:700">${r.state}</span> — ${r.daysSince} days since last observation</td></tr>
+            <tr><td style="color:#78909c">Custody Window</td><td>${r.custodyWindow}</td></tr>
+        </table>
+
+        <h3 style="color:${priCol}">⚠ Reacquisition Reason</h3>
+        <div style="background:${priCol}15;border:1px solid ${priCol}30;border-radius:8px;padding:12px;font-size:11px;color:#e8eaf6;line-height:1.6">${r.reason}</div>
+
+        <h3>📐 Custody & Accuracy Degradation</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:20px;font-weight:700;color:${custodyBar}">${custodyPct}%</div>
+                <div style="font-size:8px;color:#78909c">Custody Confidence</div>
+                <div class="diag-bar" style="margin-top:4px"><div class="diag-fill" style="width:${custodyPct}%;background:${custodyBar}"></div></div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:20px;font-weight:700;color:#ff5252">${inTrackErr} km</div>
+                <div style="font-size:8px;color:#78909c">In-Track Error (est.)</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:20px;font-weight:700;color:#ffab00">${crossTrackErr} km</div>
+                <div style="font-size:8px;color:#78909c">Cross-Track Error (est.)</div>
+            </div>
+        </div>
+        <div style="font-size:10px;color:#78909c;padding:4px">
+            TLE age: <b style="color:${r.daysSince>7?'#ff1744':'#ffab00'}">${tleAge} days</b> — 
+            Position uncertainty grows as O(t²) without observations. ${r.daysSince > 14 ? '<span style="color:#ff1744;font-weight:600">SEARCH MODE REQUIRED — predicted position unreliable.</span>' : r.daysSince > 7 ? '<span style="color:#ffab00">Pointed reacquisition may need expanded search box.</span>' : 'Standard pointed reacquisition should succeed.'}
+        </div>
+
+        <h3>📡 Sensor Tasking</h3>
+        <table>
+            <tr><td style="color:#78909c;width:160px">Assigned Site</td><td style="color:#e8eaf6;font-weight:600">${r.taskingSite}</td></tr>
+            <tr><td style="color:#78909c">Tasking Status</td><td style="color:${taskCol};font-weight:700">${r.taskingStatus}</td></tr>
+            <tr><td style="color:#78909c">Last Observation</td><td style="font-family:JetBrains Mono,mono">${r.lastObs}</td></tr>
+            <tr><td style="color:#78909c">Search Strategy</td><td>${r.daysSince > 14 ? 'Area search (±2° × ±10 min in-track)' : r.daysSince > 7 ? 'Expanded pointed (±0.5° × ±2 min)' : 'Standard pointed reacquisition'}</td></tr>
+            <tr><td style="color:#78909c">Estimated Obs Window</td><td>${r.regime==='GEO' ? 'Any clear night (GEO belt visible)' : r.regime==='HEO' ? 'Next apogee pass (~12h intervals)' : 'Next overhead pass (~90 min intervals)'}</td></tr>
+        </table>
+
+        <h3>📊 Recent Observation History</h3>
+        <table>
+            <tr><th>Date (UTC)</th><th>Site</th><th>SNR</th><th>Residual (″)</th><th>Note</th></tr>
+            ${obsHistory.map(o => `<tr>
+                <td style="font-family:JetBrains Mono,mono">${o.date}</td>
+                <td>${o.site}</td>
+                <td>${o.snr}</td>
+                <td>${o.residual}</td>
+                <td style="color:${o.status==='Latest'?'#00e5ff':'#78909c'}">${o.status}</td>
+            </tr>`).join('')}
+        </table>
+
+        <div style="margin-top:12px;padding:8px;background:rgba(100,160,255,0.06);border:1px solid rgba(100,160,255,0.12);border-radius:8px;font-size:10px;color:#78909c">
+            <a href="#" onclick="renderInventory('overview');document.getElementById('siteModal').style.display='none';return false" style="color:#00e5ff">← Back to Reacquisition Queue</a>
+        </div>
+    `;
+    document.getElementById('siteModal').style.display = 'flex';
+}
+
 // ── Initial Render ──────────────────────────────────
 renderGauges(); renderInventory('overview');
 
@@ -1197,3 +1365,198 @@ setTimeout(() => {
         detail:'Uncorrelated track UCT-0093 has been promoted to TENTATIVE after 5 consistent passes across 3 sites (ExoAnalytic network). Orbital elements suggest GEO belt insertion (a=42,164 km, e=0.0002, i=0.05°). Does not match any known launch manifest entry. Possible clandestine GEO deployment. Flagged for priority follow-up observation and cross-reference with NRO database.'
     });
 }, 7000);
+
+// ═══════════════════════════════════════════════════════════
+// LIVE TELEMETRY SIMULATION ENGINE
+// Realistically drifts gauges, command bar metrics, and
+// space weather every 3 seconds to create operational feel.
+// ═══════════════════════════════════════════════════════════
+
+(function initLiveTelemetry() {
+    // Smooth random walk with mean-reversion
+    function drift(current, target, noise, min, max) {
+        const pull = (target - current) * 0.08;
+        const jitter = (Math.random() - 0.5) * noise;
+        return Math.max(min, Math.min(max, current + pull + jitter));
+    }
+
+    // Gauge target values (oscillate around these)
+    const gTargets = { detection:88, freshness:6.4, nees:3.0, throughput:12.4, conjActive:3, gpu:62, kafkaLag:4, densityErr:18 };
+
+    setInterval(() => {
+        // ── Drift gauge values ──
+        STATE.gauges.forEach(g => {
+            const t = gTargets[g.key] ?? g.value;
+            g.value = parseFloat(drift(g.value, t, g.max*0.02, g.min, g.max).toFixed(g.unit==='%'||g.unit===''?1:1));
+            if(g.key==='conjActive') g.value = Math.round(g.value);
+            if(g.key==='kafkaLag') g.value = Math.max(0, Math.round(g.value));
+        });
+        renderGauges();
+
+        // ── Drift command bar metrics ──
+        const obs24 = document.getElementById('obs24h');
+        if(obs24) {
+            let v = parseInt(obs24.textContent.replace(/,/g,''));
+            v = Math.round(drift(v, 11847, 40, 11000, 13000));
+            obs24.textContent = v.toLocaleString();
+        }
+        const catEl = document.getElementById('catalogCount');
+        if(catEl) {
+            let v = parseInt(catEl.textContent.replace(/,/g,''));
+            v = Math.round(drift(v, 46238, 3, 46200, 46300));
+            catEl.textContent = v.toLocaleString();
+        }
+
+        // ── Drift space weather ──
+        const wNums = document.querySelectorAll('.cmd-weather-num');
+        if(wNums.length >= 3) {
+            STATE.weather.f107 = drift(STATE.weather.f107, 148, 3, 70, 300);
+            STATE.weather.kp = drift(STATE.weather.kp, 2.5, 0.4, 0, 9);
+            STATE.weather.dst = drift(STATE.weather.dst, -22, 5, -200, 50);
+            wNums[0].textContent = STATE.weather.f107.toFixed(0);
+            wNums[1].textContent = STATE.weather.kp.toFixed(2);
+            wNums[2].textContent = STATE.weather.dst.toFixed(0);
+            // Color Kp by storm level
+            wNums[1].style.color = STATE.weather.kp >= 7 ? '#ff1744' : STATE.weather.kp >= 5 ? '#ffab00' : '#e8eaf6';
+        }
+
+        // ── Drift site GPU/detection values ──
+        STATE.sites.forEach(s => {
+            if(s.status !== 'offline') {
+                s.gpu = Math.round(drift(s.gpu, 65, 5, 20, 99));
+                s.detections_24h = Math.round(drift(s.detections_24h, s.detections_24h, 3, Math.max(10, s.detections_24h-50), s.detections_24h+50));
+            }
+        });
+
+        // ── Pulse system health indicator ──
+        const healthEl = document.getElementById('sysHealth');
+        if(healthEl) {
+            const deg = STATE.sites.filter(s => s.status==='degraded').length;
+            const off = STATE.sites.filter(s => s.status==='offline').length;
+            healthEl.style.background = off > 0 ? '#ff1744' : deg > 0 ? '#ffab00' : '#00e676';
+            healthEl.style.boxShadow = `0 0 ${8 + Math.sin(Date.now()/500)*4}px ${off > 0 ? '#ff1744' : deg > 0 ? '#ffab00' : '#00e676'}`;
+        }
+    }, 3000);
+
+    // ── Periodic dynamic alerts ──
+    const dynamicAlerts = [
+        { level:'info', msg:'<b>Catalog Update:</b> Space-Track bulk GP refresh — 4,218 TLEs ingested', meta:{tier:'INFO',type:'site'} },
+        { level:'info', msg:'<b>Edge Deploy:</b> streak_detect.cu v3.2.2 hotfix pushed to 8 Pacific-rim nodes', meta:{tier:'INFO',type:'edge'} },
+        { level:'warning', msg:'<b>Covariance Alert:</b> NEES exceeded 5.0 for STARLINK-3391 track — filter reset triggered', meta:{tier:'YELLOW',type:'conjunction',detail:'NEES=5.42 exceeded threshold of 5.0. Covariance inflated by 3x and filter re-initialized with last 6 observations. Root cause: maneuver detected but not yet incorporated.'} },
+        { level:'info', msg:'<b>Thermospheric Update:</b> F10.7 spike to 155 sfu — density model corrected +8.2%', meta:{tier:'INFO',type:'weather'} },
+        { level:'warning', msg:'<b>Edge Throughput:</b> AUS-01 dropped to 8.1 fps — cloud cover 62%', meta:{tier:'YELLOW',type:'edge',detail:'Siding Spring observatory experiencing intermittent cloud cover. All-sky camera confirms 62% coverage. Streak detection SNR degraded. Queue growing.'} },
+        { level:'info', msg:'<b>PINN Inference:</b> Orbit refinement batch complete — 847 objects updated in 12.4s', meta:{tier:'INFO',type:'site'} },
+        { level:'info', msg:'<b>Cislunar Track:</b> ARTEMIS-III relay satellite updated via DSN pass — Δa=0.02 km', meta:{tier:'INFO',type:'site'} },
+        { level:'warning', msg:'<b>Kafka Lag:</b> Consumer group sf-fusion lag spiked to 127 msgs — auto-scaling triggered', meta:{tier:'YELLOW',type:'edge',detail:'Kafka consumer group sf-fusion experienced a transient lag spike. HPA auto-scaler provisioning 2 additional fusion pods. Expected recovery: 30s.'} },
+    ];
+    let alertIdx = 0;
+    setInterval(() => {
+        const a = dynamicAlerts[alertIdx % dynamicAlerts.length];
+        pushAlert(a.level, a.msg, a.meta);
+        alertIdx++;
+    }, 25000);
+})();
+
+// ═══════════════════════════════════════════════════════════
+// SOTA MODULE STATUS PANEL
+// Shows all 18 SOTA 2026 science modules with live health
+// indicators. Injected into the Diagnostics tab.
+// ═══════════════════════════════════════════════════════════
+
+const SOTA_MODULES = [
+    { id:'A', name:'Light-Curve Fingerprinting', file:'light_curve_analyzer.py', tier:'Science', status:'running', latency:'18ms', desc:'Self-supervised Transformer encoder mapping photometric light curves to 128-dim embedding space' },
+    { id:'B', name:'Optimal Transport Associator', file:'graph_associator.py', tier:'Science', status:'running', latency:'42ms', desc:'GNN cost matrix + Sinkhorn OT for multi-frame track association' },
+    { id:'C', name:'Physics-Informed Neural OD', file:'pinn_orbit.py', tier:'Science', status:'running', latency:'6ms', desc:'PyTorch PINN embedding J2-J6 zonal harmonics in loss gradient' },
+    { id:'D', name:'Non-Gaussian Pc Screener', file:'non_gaussian_pc.py', tier:'Science', status:'running', latency:'34ms', desc:'3rd-order skewness tensor via Differential Algebra moment propagation' },
+    { id:'E', name:'Digital Space Twin', file:'twin_ws.py', tier:'Platform', status:'running', latency:'5ms', desc:'CesiumJS 3D globe + FastAPI WebSocket for live orbital viz' },
+    { id:'F', name:'Data Assimilation Engine', file:'data_assimilation_engine.py', tier:'Science', status:'running', latency:'220ms', desc:'Continuous GPU simulation of full catalog with learned density scalar' },
+    { id:'G', name:'Thermospheric Density Model', file:'thermospheric_model.py', tier:'Science', status:'running', latency:'8ms', desc:'Neural residual correction over NRLMSISE-00 with real-time solar wind' },
+    { id:'H', name:'Bayesian IOD', file:'bayesian_iod.py', tier:'Science', status:'running', latency:'85ms', desc:'Admissible Region + MCMC sampling for single short-arc orbit distribution' },
+    { id:'I', name:'SRP & A/M Estimator', file:'srp_estimator.py', tier:'Science', status:'running', latency:'12ms', desc:'Solar radiation pressure + joint area-to-mass estimation for GEO debris' },
+    { id:'J', name:'Koopman Propagator', file:'koopman_propagator.py', tier:'Science', status:'running', latency:'0.8ms', desc:'Extended DMD lifting nonlinear dynamics to linear operator space' },
+    { id:'K', name:'Cislunar Dynamics (CR3BP)', file:'cislunar_dynamics.py', tier:'Science', status:'running', latency:'45ms', desc:'Earth-Moon CR3BP with Lagrange points and invariant manifold generation' },
+    { id:'L', name:'Fourier Neural Operator', file:'fourier_neural_operator.py', tier:'Science', status:'running', latency:'1.2ms', desc:'FNO learning solution operator in Fourier space for catalog-scale propagation' },
+    { id:'M', name:'Multi-Spectral Characterizer', file:'spectral_characterizer.py', tier:'Science', status:'running', latency:'15ms', desc:'BVRI photometry + polarimetry mapping to aerospace material database' },
+    { id:'N', name:'Radar Cross Section Fusion', file:'rcs_fusion.py', tier:'Science', status:'running', latency:'9ms', desc:'NASA SEM joint optical/radar estimation constraining albedo + physical size' },
+    { id:'O', name:'Neuromorphic Event Stream', file:'event_stream.py', tier:'Data', status:'running', latency:'0.2ms', desc:'AER format parser with spatio-temporal voxel grid for microsecond resolution' },
+    { id:'P', name:'Catalog Lifecycle FSM', file:'catalog_lifecycle.py', tier:'Ops', status:'running', latency:'2ms', desc:'UCT→Tentative→Cataloged→Stale→Lost→Decayed state machine with merge/split' },
+    { id:'Q', name:'Conjunction Decision Support', file:'conjunction_decision.py', tier:'Ops', status:'running', latency:'55ms', desc:'GREEN/YELLOW/RED/EMERGENCY tiers + avoidance maneuver planning' },
+    { id:'R', name:'Covariance Realism Testing', file:'covariance_realism.py', tier:'Ops', status:'running', latency:'28ms', desc:'NEES + CCR validation ensuring predicted covariances match observed errors' },
+];
+
+// Drift module latencies for liveness
+setInterval(() => {
+    SOTA_MODULES.forEach(m => {
+        const base = parseFloat(m.latency);
+        const jitter = base * 0.15 * (Math.random() - 0.5);
+        m._currentLatency = Math.max(0.1, base + jitter).toFixed(base < 1 ? 2 : base < 10 ? 1 : 0);
+        // Occasional degraded state
+        m._status = Math.random() < 0.02 ? 'degraded' : 'running';
+    });
+}, 4000);
+
+// Override the diagnostics tab to include SOTA panel
+const _origRenderInventory = renderInventory;
+renderInventory = function(tab) {
+    if(tab === 'diagnostics') {
+        _origRenderInventory(tab);
+        const el = document.getElementById('invContent');
+        // Append SOTA panel after existing diagnostics content
+        const sotaHtml = `
+            <div style="padding:4px 8px;margin-top:12px;border-top:1px solid rgba(255,255,255,0.05)">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-secondary);margin-bottom:6px">
+                    🧬 SOTA 2026 Science Modules — ${SOTA_MODULES.length} Active
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:8px">
+                    <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.15);border-radius:6px;padding:6px;text-align:center">
+                        <div style="font-size:16px;font-weight:700;color:#00e676">${SOTA_MODULES.filter(m=>m._status!=='degraded').length || SOTA_MODULES.length}</div>
+                        <div style="font-size:8px;color:#78909c">Running</div>
+                    </div>
+                    <div style="background:rgba(255,171,0,0.08);border:1px solid rgba(255,171,0,0.15);border-radius:6px;padding:6px;text-align:center">
+                        <div style="font-size:16px;font-weight:700;color:#ffab00">${SOTA_MODULES.filter(m=>m._status==='degraded').length || 0}</div>
+                        <div style="font-size:8px;color:#78909c">Degraded</div>
+                    </div>
+                    <div style="background:rgba(124,77,255,0.08);border:1px solid rgba(124,77,255,0.15);border-radius:6px;padding:6px;text-align:center">
+                        <div style="font-size:16px;font-weight:700;color:#7c4dff">${SOTA_MODULES.length}</div>
+                        <div style="font-size:8px;color:#78909c">Total Modules</div>
+                    </div>
+                </div>
+                <table class="inv-table" style="font-size:9px">
+                    <thead><tr><th style="width:20px">#</th><th>Module</th><th>File</th><th>Tier</th><th>Latency</th><th>Status</th></tr></thead>
+                    <tbody>
+                        ${SOTA_MODULES.map(m => {
+                            const lat = m._currentLatency || m.latency.replace('ms','');
+                            const st = m._status || 'running';
+                            const stCol = st==='running'?'#00e676':'#ffab00';
+                            const stIcon = st==='running'?'●':'◐';
+                            const tierCol = m.tier==='Science'?'#7c4dff':m.tier==='Ops'?'#00e5ff':m.tier==='Data'?'#76ff03':'#ffd740';
+                            return `<tr title="${m.desc}">
+                                <td style="color:#78909c;font-weight:600">${m.id}</td>
+                                <td style="color:#e8eaf6;font-weight:600">${m.name}</td>
+                                <td style="font-family:JetBrains Mono,mono;color:#76ff03;font-size:8px">${m.file}</td>
+                                <td><span style="color:${tierCol};font-size:8px;font-weight:600">${m.tier}</span></td>
+                                <td style="font-family:JetBrains Mono,mono;color:#00e5ff">${lat}ms</td>
+                                <td><span style="color:${stCol}">${stIcon} ${st}</span></td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+        el.innerHTML += sotaHtml;
+    } else {
+        _origRenderInventory(tab);
+    }
+};
+
+// ── Auto-refresh active Pc chart if visible ──
+setInterval(() => {
+    const activeTab = document.querySelector('.inv-tab.active');
+    if(activeTab && activeTab.dataset.tab === 'pcTimeline') {
+        // Slightly evolve Pc values for liveness
+        Object.values(STATE.pcTimeline).forEach(evt => {
+            const last = evt.series[evt.series.length - 1];
+            last.pc *= (1 + (Math.random() - 0.48) * 0.04);
+        });
+        renderInventory('pcTimeline');
+    }
+}, 8000);
