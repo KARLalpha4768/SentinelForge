@@ -134,7 +134,7 @@ try {
 }
 
 // ── Globe Button Wiring ─────────────────────────────
-document.querySelectorAll('.globe-btn').forEach(btn => {
+document.querySelectorAll('.globe-btn[data-layer]').forEach(btn => {
     btn.addEventListener('click', () => {
         btn.classList.toggle('active');
         const layer = btn.dataset.layer;
@@ -144,6 +144,33 @@ document.querySelectorAll('.globe-btn').forEach(btn => {
         }
     });
 });
+
+// ── Live Map Toggle (satellitemap.space) ────────────
+const liveMapBtn = document.getElementById('liveMapToggle');
+const liveMapFrame = document.getElementById('liveMapFrame');
+const cesiumEl = document.getElementById('cesiumContainer');
+let liveMapActive = false;
+
+if(liveMapBtn && liveMapFrame) {
+    liveMapBtn.addEventListener('click', () => {
+        liveMapActive = !liveMapActive;
+        if(liveMapActive) {
+            // Lazy load iframe on first toggle
+            if(!liveMapFrame.src || liveMapFrame.src === '' || liveMapFrame.src === window.location.href) {
+                liveMapFrame.src = 'https://satellitemap.space/';
+            }
+            liveMapFrame.style.display = 'block';
+            cesiumEl.style.display = 'none';
+            liveMapBtn.classList.add('active');
+            liveMapBtn.textContent = 'SentinelForge Globe';
+        } else {
+            liveMapFrame.style.display = 'none';
+            cesiumEl.style.display = 'block';
+            liveMapBtn.classList.remove('active');
+            liveMapBtn.textContent = 'Live Map ↗';
+        }
+    });
+}
 
 // ── Natural Language Chat Engine ────────────────────
 const chatMessages = document.getElementById('chatMessages');
