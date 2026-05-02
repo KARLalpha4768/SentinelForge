@@ -1,0 +1,190 @@
+{
+  "fetched_at": "2026-05-02T00:09:16Z",
+  "sources": {
+    "celestrak": {
+      "status": "error",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    "swpc": {
+      "status": "ok",
+      "f107_flux": "145",
+      "kp_latest": "1.67",
+      "kp_time": "2026-05-01T21:00:00",
+      "dst_latest": "-30",
+      "dst_time": "2026-05-01T23:00:00",
+      "solar_wind_bt": "3",
+      "solar_wind_bz": "N/A",
+      "solar_wind_speed": "N/A",
+      "recent_alerts": [
+        {
+          "message": "Space Weather Message Code: ALTTP2\r\nSerial Number: 1481\r\nIssue Time: 2026 May 01 1550 UTC\r\n\r\nALERT: Type II Radio Emission\r\nBegin Time: 2026 May 01 1535 UTC\r\nEstimated Velocity: 593 km/s\r\n\r\n\r\n\r\nDescri",
+          "issue_datetime": "2026-05-01 15:50:32.247"
+        },
+        {
+          "message": "Space Weather Message Code: ALTK05\r\nSerial Number: 2013\r\nIssue Time: 2026 Apr 30 2359 UTC\r\n\r\nALERT: Geomagnetic K-index of 5\r\n Threshold Reached: 2026 Apr 30 2359 UTC\r\nSynoptic Period: 2100-2400 UTC\r\n",
+          "issue_datetime": "2026-04-30 23:59:26.927"
+        },
+        {
+          "message": "Space Weather Message Code: WARK04\r\nSerial Number: 5332\r\nIssue Time: 2026 Apr 30 2311 UTC\r\n\r\nEXTENDED WARNING: Geomagnetic K-index of 4 expected\r\nExtension to Serial Number: 5331\r\nValid From: 2026 Apr",
+          "issue_datetime": "2026-04-30 23:11:27.400"
+        },
+        {
+          "message": "Space Weather Message Code: WARK05\r\nSerial Number: 2230\r\nIssue Time: 2026 Apr 30 2309 UTC\r\n\r\nWARNING: Geomagnetic K-index of 5 expected\r\nValid From: 2026 Apr 30 2309 UTC\r\nValid To: 2026 May 01 0900 UT",
+          "issue_datetime": "2026-04-30 23:09:26.960"
+        },
+        {
+          "message": "Space Weather Message Code: ALTK04\r\nSerial Number: 2653\r\nIssue Time: 2026 Apr 30 2035 UTC\r\n\r\nALERT: Geomagnetic K-index of 4\r\n Threshold Reached: 2026 Apr 30 2035 UTC\r\nSynoptic Period: 1800-2100 UTC\r\n",
+          "issue_datetime": "2026-04-30 20:35:36.850"
+        }
+      ]
+    },
+    "iers_eop": {
+      "status": "ok",
+      "total_records": 19901,
+      "latest_mjd": 27.0,
+      "x_pole_arcsec": null,
+      "y_pole_arcsec": null,
+      "ut1_utc_seconds": null,
+      "recent_records": [
+        {
+          "mjd": 23.0
+        },
+        {
+          "mjd": 24.0
+        },
+        {
+          "mjd": 25.0
+        },
+        {
+          "mjd": 26.0
+        },
+        {
+          "mjd": 27.0
+        }
+      ]
+    },
+    "spacetrack": {
+      "status": "ok",
+      "authenticated": false,
+      "note": "Using CelesTrak mirror",
+      "catalog_via_celestrak": "N/A"
+    },
+    "gps_timing": {
+      "status": "ok",
+      "tai_utc_seconds": 37,
+      "gps_utc_seconds": 18,
+      "total_leap_records": 28,
+      "next_leap_second": "None announced",
+      "source": "Hardcoded (IETF unavailable)"
+    },
+    "ilrs_slr": {
+      "status": "ok",
+      "ilrs_reachable": true,
+      "active_stations": 10,
+      "stations": [
+        {
+          "name": "Yarragadee",
+          "country": "Australia"
+        },
+        {
+          "name": "Greenbelt",
+          "country": "USA"
+        },
+        {
+          "name": "Herstmonceux",
+          "country": "UK"
+        },
+        {
+          "name": "Matera",
+          "country": "Italy"
+        },
+        {
+          "name": "Wettzell",
+          "country": "Germany"
+        },
+        {
+          "name": "Zimmerwald",
+          "country": "Switzerland"
+        },
+        {
+          "name": "Shanghai",
+          "country": "China"
+        },
+        {
+          "name": "Tanegashima",
+          "country": "Japan"
+        },
+        {
+          "name": "Hartebeesthoek",
+          "country": "S. Africa"
+        },
+        {
+          "name": "Mt Stromlo",
+          "country": "Australia"
+        }
+      ],
+      "tracked_targets": [
+        {
+          "name": "LAGEOS-1",
+          "norad": 8820,
+          "alt_km": 5860,
+          "purpose": "Geodesy reference"
+        },
+        {
+          "name": "LAGEOS-2",
+          "norad": 22195,
+          "alt_km": 5620,
+          "purpose": "Geodesy reference"
+        },
+        {
+          "name": "Starlette",
+          "norad": 7646,
+          "alt_km": 812,
+          "purpose": "Gravity field"
+        },
+        {
+          "name": "Stella",
+          "norad": 22824,
+          "alt_km": 800,
+          "purpose": "Gravity field"
+        },
+        {
+          "name": "LARES",
+          "norad": 38077,
+          "alt_km": 1450,
+          "purpose": "Frame-dragging"
+        },
+        {
+          "name": "LARES-2",
+          "norad": 53104,
+          "alt_km": 5890,
+          "purpose": "Frame-dragging"
+        },
+        {
+          "name": "Ajisai",
+          "norad": 16908,
+          "alt_km": 1490,
+          "purpose": "Geodesy"
+        },
+        {
+          "name": "Etalon-1",
+          "norad": 19751,
+          "alt_km": 19120,
+          "purpose": "Geodesy"
+        },
+        {
+          "name": "Etalon-2",
+          "norad": 20026,
+          "alt_km": 19120,
+          "purpose": "Geodesy"
+        },
+        {
+          "name": "GLONASS-134",
+          "norad": 40001,
+          "alt_km": 19140,
+          "purpose": "GNSS validation"
+        }
+      ]
+    }
+  }
+}

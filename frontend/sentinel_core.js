@@ -254,6 +254,45 @@ function pushAlert(level, msg) {
 // ── Initial Render ──────────────────────────────────
 renderGauges(); renderInventory('overview');
 
+// Load live telemetry data from external APIs (fetched by fetch_telemetry.py)
+fetch('live_telemetry.json').then(r => r.json()).then(live => {
+    STATE.liveData = live;
+    const s = live.sources || {};
+    // Update SWPC space weather in command bar
+    if(s.swpc && s.swpc.status === 'ok') {
+        const f107El = document.querySelector('.cmd-weather-num');
+        const weatherNums = document.querySelectorAll('.cmd-weather-num');
+        if(weatherNums[0]) weatherNums[0].textContent = s.swpc.f107_flux;
+        if(weatherNums[1]) weatherNums[1].textContent = parseFloat(s.swpc.kp_latest).toFixed(1);
+        if(weatherNums[2]) weatherNums[2].textContent = s.swpc.dst_latest;
+        STATE.weather = { f107: parseFloat(s.swpc.f107_flux), kp: parseFloat(s.swpc.kp_latest), dst: parseFloat(s.swpc.dst_latest) };
+        // Update telemetry feed status
+        const swpcFeed = STATE.telemetry.find(t => t.id === 'SWPC');
+        if(swpcFeed) swpcFeed.throughput = `F10.7=${s.swpc.f107_flux} Kp=${s.swpc.kp_latest}`;
+    }
+    // Update CelesTrak stats
+    if(s.celestrak && s.celestrak.status === 'ok') {
+        const ctFeed = STATE.telemetry.find(t => t.id === 'CELESTRAK');
+        if(ctFeed) ctFeed.throughput = `${s.celestrak.active_satellites.toLocaleString()} active sats`;
+    }
+    // Update IERS EOP
+    if(s.iers_eop && s.iers_eop.status === 'ok') {
+        const eopFeed = STATE.telemetry.find(t => t.id === 'USGS-EOP');
+        if(eopFeed) eopFeed.throughput = `MJD ${s.iers_eop.latest_mjd} | ${s.iers_eop.total_records.toLocaleString()} records`;
+    }
+    // Update GPS timing
+    if(s.gps_timing && s.gps_timing.status === 'ok') {
+        const gpsFeed = STATE.telemetry.find(t => t.id === 'GNSS-TIME');
+        if(gpsFeed) gpsFeed.throughput = `TAI-UTC=${s.gps_timing.tai_utc_seconds}s GPS-UTC=${s.gps_timing.gps_utc_seconds}s`;
+    }
+    // Update ILRS
+    if(s.ilrs_slr && s.ilrs_slr.status === 'ok') {
+        const ilrsFeed = STATE.telemetry.find(t => t.id === 'ILRS');
+        if(ilrsFeed) ilrsFeed.throughput = `${s.ilrs_slr.active_stations} stations, ${s.ilrs_slr.tracked_targets.length} targets`;
+    }
+    console.log(`[SentinelForge] Live telemetry loaded: ${Object.keys(s).length} sources, fetched ${live.fetched_at}`);
+}).catch(e => console.log('[SentinelForge] No live_telemetry.json available — using defaults'));
+
 // Load full site registry
 fetch('site_registry.json').then(r => r.json()).then(data => {
     STATE.sites = data;
