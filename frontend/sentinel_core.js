@@ -456,43 +456,13 @@ function renderMap(now) {
 }
 
 // ── Conjunction Detection Blink Animation ───────────
-// Maps conjunction events to the ground stations tasked with tracking them
+// Slingshot network sites pulse yellow to indicate active tracking
 function getConjTrackingSites() {
     const assignments = [];
-    STATE.conjunctions.forEach(c => {
-        let siteFilter;
-        if(c.id === 'EVT-2041') {
-            siteFilter = s => (
-                ['SSN-EGLIN','SSN-CLEAR','SSN-FYLING','SSN-HAYSTACK','SSN-MILLSTONE',
-                 'SSN-CAPE','SSN-CAVALIER','SSN-BEALE','SSN-VANDENBERG',
-                 'SSN-GEODSS-NM','SSN-GEODSS-HI','SSN-GEODSS-DG','SSN-FENCE','SSN-ALTAIR',
-                 'ALLIED-GRAVES','ALLIED-TIRA','ALLIED-EISCAT'].includes(s.id) ||
-                (s.network === 'LeoLabs') ||
-                (s.network === 'ExoAnalytic' && s.type === 'optical')
-            );
-        } else if(c.id === 'EVT-2042') {
-            siteFilter = s => (
-                s.network === 'LeoLabs' ||
-                (s.network === 'Slingshot' && s.status === 'active') ||
-                ['SSN-FENCE','SSN-COBRADANE','LL-PFISR','LL-MBAR','LL-WARK'].includes(s.id)
-            );
-        } else if(c.id === 'EVT-2043') {
-            siteFilter = s => (
-                s.network === 'USSF-SSN' ||
-                s.network === 'LeoLabs' ||
-                s.network === 'ExoAnalytic' ||
-                s.network === 'Slingshot' ||
-                s.network === 'ESA-SST' ||
-                ['ALLIED-GRAVES','ALLIED-TIRA','ALLIED-EISCAT','ALLIED-CHILBOLTON'].includes(s.id)
-            );
-        } else {
-            siteFilter = s => false;
+    STATE.sites.forEach(s => {
+        if(s.network === 'Slingshot' && s.status !== 'offline') {
+            assignments.push({ siteId: s.id, lat: s.lat, lon: s.lon, evtId: '', tier: 'SLINGSHOT', color: '#ffd740' });
         }
-        const tierColor = c.tier === 'EMERGENCY' ? '#ff1744' : c.tier === 'RED' ? '#ff6d00' : '#ffd740';
-        const sites = STATE.sites.filter(siteFilter);
-        sites.forEach(s => {
-            assignments.push({ siteId: s.id, lat: s.lat, lon: s.lon, evtId: c.id, tier: c.tier, color: tierColor });
-        });
     });
     return assignments;
 }
@@ -514,13 +484,6 @@ let _blinkAnimId = null;
 let _blinkStartTime = 0;
 
 // Draw blink effects directly onto the map canvas
-// Key radar sites that get event labels (keep it clean — labels only on major facilities)
-const LABEL_SITES = new Set([
-    'SSN-EGLIN','SSN-CLEAR','SSN-FENCE','SSN-HAYSTACK','SSN-COBRADANE',
-    'SSN-GEODSS-NM','SSN-GEODSS-HI','SSN-ALTAIR','SSN-THULE','SSN-CAVALIER',
-    'ALLIED-GRAVES','ALLIED-TIRA',
-]);
-
 function drawBlinkEffects(ctx, W, H, now) {
     if(Object.keys(_blinkTrackingMap).length === 0) return;
     const toXY = (lat,lon) => ({ x: (lon+180)/360*W, y: (90-lat)/180*H });
@@ -528,56 +491,42 @@ function drawBlinkEffects(ctx, W, H, now) {
 
     Object.values(_blinkTrackingMap).forEach(a => {
         const p = toXY(a.lat, a.lon);
-        const hex = a.color;
-        const rr = parseInt(hex.slice(1,3),16), gg = parseInt(hex.slice(3,5),16), bb = parseInt(hex.slice(5,7),16);
-
-        // 10x slower pulse — gentle breathing effect
-        const speed = a.tier === 'EMERGENCY' ? 0.2 : a.tier === 'RED' ? 0.14 : 0.1;
-
-        // Single expanding ring — slow and calm
+        // Yellow pulse — slow breathing (~8 seconds per cycle)
+        const speed = 0.12;
         const phase = (elapsed * speed) % 1.0;
-        const ringR = 8 + phase * 16;
-        const ringA = (1 - phase) * 0.45;
+        const ringR = 8 + phase * 14;
+        const ringA = (1 - phase) * 0.4;
         ctx.beginPath();
         ctx.arc(p.x, p.y, ringR, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(${rr},${gg},${bb},${ringA})`;
+        ctx.strokeStyle = `rgba(255,215,64,${ringA})`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Soft glow — gentle pulse
-        const pulseA = 0.08 + Math.sin(elapsed * speed * Math.PI * 2) * 0.08;
-        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 12);
-        grad.addColorStop(0, `rgba(${rr},${gg},${bb},${pulseA + 0.1})`);
-        grad.addColorStop(0.7, `rgba(${rr},${gg},${bb},${pulseA * 0.3})`);
-        grad.addColorStop(1, `rgba(${rr},${gg},${bb},0)`);
+        // Soft amber glow
+        const pulseA = 0.06 + Math.sin(elapsed * speed * Math.PI * 2) * 0.06;
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 10);
+        grad.addColorStop(0, `rgba(255,215,64,${pulseA + 0.08})`);
+        grad.addColorStop(1, `rgba(255,215,64,0)`);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
         ctx.fillStyle = grad;
         ctx.fill();
-
-        // Event label — only on key radar facilities
-        if(LABEL_SITES.has(a.siteId)) {
-            ctx.font = 'bold 7px Inter';
-            ctx.fillStyle = `rgba(${rr},${gg},${bb},0.5)`;
-            ctx.textAlign = 'left';
-            ctx.fillText(a.evtId, p.x + 10, p.y - 3);
-        }
     });
 
-    // Tracking count badge
+    // Badge
     const trackCount = Object.keys(_blinkTrackingMap).length;
-    ctx.font = 'bold 10px Inter';
-    const badgeText = `⚡ ${trackCount} SITES TRACKING`;
+    ctx.font = 'bold 9px Inter';
+    const badgeText = `⚡ ${trackCount} SLINGSHOT ACTIVE`;
     const tw = ctx.measureText(badgeText).width;
-    ctx.fillStyle = 'rgba(255,23,68,0.12)';
-    const bx = 4, by = 4, bw = tw + 20, bh = 20;
+    ctx.fillStyle = 'rgba(255,215,64,0.08)';
+    const bx = 4, by = 4, bw = tw + 16, bh = 18;
     ctx.fillRect(bx, by, bw, bh);
-    ctx.strokeStyle = 'rgba(255,23,68,0.25)';
+    ctx.strokeStyle = 'rgba(255,215,64,0.2)';
     ctx.lineWidth = 1;
     ctx.strokeRect(bx, by, bw, bh);
-    ctx.fillStyle = '#ff5252';
+    ctx.fillStyle = '#ffd740';
     ctx.textAlign = 'left';
-    ctx.fillText(badgeText, bx + 8, by + 14);
+    ctx.fillText(badgeText, bx + 6, by + 13);
 }
 
 // Animation loop — re-renders the map with blink effects at ~30fps
