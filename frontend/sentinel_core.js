@@ -53,6 +53,79 @@ const STATE = {
         { key:'densityErr', label:'Density Model Error', value:18, unit:'%', min:0, max:100, green:25, yellow:50, invert:true },
     ],
     weather: { f107:148, kp:3, dst:-22 },
+    // ── Escalation & Notification Roster ────────────
+    escalation: {
+        tiers: [
+            {
+                level: 'EMERGENCY',
+                criteria: 'Pc > 1e-2 OR miss < 0.5 km OR national security asset at risk',
+                responseTime: '< 15 min',
+                color: '#ff1744',
+                notify: [
+                    { role: 'Mission Director', name: 'Col. R. Hayes (USAF)', channel: 'Secure Voice + SIPRNet', priority: 'FLASH', duty: '24/7 on-call' },
+                    { role: 'Conjunction Assessment Lead', name: 'Dr. S. Patel', channel: 'SIPRNet + Ops Floor', priority: 'FLASH', duty: '24/7 rotation' },
+                    { role: 'Owner/Operator (if applicable)', name: 'Per SATCAT owner registry', channel: 'Space-Track O/O Portal', priority: 'IMMEDIATE', duty: 'On notification' },
+                    { role: 'USSPACECOM 18th SDS', name: 'CSpOC Watch Floor', channel: 'DSN / Classified Net', priority: 'FLASH', duty: '24/7' },
+                    { role: 'NASA CARA (if NASA asset)', name: 'CARA Watch', channel: 'Secure Email + Voice', priority: 'FLASH', duty: '24/7' },
+                    { role: 'Flight Dynamics (maneuver authority)', name: 'FDO Team Lead', channel: 'Ops Console + Voice Loop', priority: 'FLASH', duty: '24/7 rotation' },
+                    { role: 'SentinelForge CTO', name: 'K. David', channel: 'PagerDuty P1 + SMS', priority: 'FLASH', duty: '24/7 on-call' },
+                    { role: 'Edge Compute Lead', name: 'Systems Engineering', channel: 'Slack #ops-critical', priority: 'IMMEDIATE', duty: 'On-call rotation' },
+                ]
+            },
+            {
+                level: 'RED',
+                criteria: 'Pc > 1e-3 OR miss < 2 km OR high-value asset',
+                responseTime: '< 1 hour',
+                color: '#ff5252',
+                notify: [
+                    { role: 'Conjunction Assessment Lead', name: 'Dr. S. Patel', channel: 'SIPRNet + Ops Floor', priority: 'PRIORITY', duty: '24/7 rotation' },
+                    { role: 'Owner/Operator', name: 'Per SATCAT owner registry', channel: 'Space-Track O/O Portal', priority: 'PRIORITY', duty: 'On notification' },
+                    { role: 'Orbit Determination Analyst', name: 'OD Team', channel: 'Ops Console', priority: 'PRIORITY', duty: 'Shift rotation' },
+                    { role: 'Flight Dynamics', name: 'FDO Team', channel: 'Ops Console', priority: 'PRIORITY', duty: 'Shift rotation' },
+                    { role: 'SentinelForge Ops Manager', name: 'Ops Lead', channel: 'PagerDuty P2 + Slack', priority: 'PRIORITY', duty: 'On-call' },
+                    { role: 'Sensor Tasking Coordinator', name: 'Tasking Lead', channel: 'Ops Console', priority: 'ROUTINE', duty: 'Shift rotation' },
+                ]
+            },
+            {
+                level: 'YELLOW',
+                criteria: 'Pc > 1e-5 OR miss < 10 km OR UCT in critical regime',
+                responseTime: '< 4 hours',
+                color: '#ffab00',
+                notify: [
+                    { role: 'Conjunction Assessment Analyst', name: 'CA Team', channel: 'Ops Console + Email', priority: 'ROUTINE', duty: 'Day shift' },
+                    { role: 'Owner/Operator (optional)', name: 'Per screening threshold', channel: 'Space-Track automated CDM', priority: 'ROUTINE', duty: 'Automated' },
+                    { role: 'Catalog Maintenance', name: 'CatMaint Team', channel: 'Ops Console', priority: 'ROUTINE', duty: 'Day shift' },
+                    { role: 'SentinelForge Analytics', name: 'ML/Analytics Lead', channel: 'Slack #ops-watch', priority: 'ROUTINE', duty: 'Business hours' },
+                ]
+            },
+            {
+                level: 'INFO',
+                criteria: 'UCT promoted, site degraded, new launch, reentry predicted',
+                responseTime: '< 24 hours',
+                color: '#448aff',
+                notify: [
+                    { role: 'Catalog Maintenance', name: 'CatMaint Team', channel: 'Email digest', priority: 'DEFERRED', duty: 'Next business day' },
+                    { role: 'Sensor Network Ops', name: 'NetOps', channel: 'Automated ticket', priority: 'DEFERRED', duty: 'Business hours' },
+                    { role: 'SentinelForge Engineering', name: 'Eng Team', channel: 'Slack #ops-info', priority: 'DEFERRED', duty: 'Business hours' },
+                ]
+            },
+        ],
+        channels: [
+            { name: 'PagerDuty', type: 'alerting', endpoint: 'api.pagerduty.com/v2/enqueue', protocol: 'REST/HTTPS', coverage: '24/7' },
+            { name: 'Slack Ops', type: 'messaging', endpoint: '#ops-critical / #ops-watch / #ops-info', protocol: 'Webhook', coverage: '24/7 bot' },
+            { name: 'Space-Track O/O Portal', type: 'external', endpoint: 'space-track.org/expandedspacedata', protocol: 'CDM Push', coverage: 'Automated' },
+            { name: 'SIPRNet Terminal', type: 'classified', endpoint: 'CSpOC classified net', protocol: 'Secure Voice/Data', coverage: '24/7' },
+            { name: 'Email Distribution', type: 'notification', endpoint: 'ops@sentinelforge.io', protocol: 'SMTP/S-MIME', coverage: 'Automated + business hours' },
+            { name: 'SMS/Voice Escalation', type: 'backup', endpoint: 'Twilio failover', protocol: 'Voice/SMS', coverage: 'P1 only' },
+        ],
+        procedures: [
+            { trigger: 'EMERGENCY conjunction (Pc > 1e-2)', steps: '1. Auto-page Mission Director + FDO → 2. Immediate sensor tasking (priority override) → 3. Refine OD with fresh obs → 4. Maneuver decision gate (TCA - 6h) → 5. Execute burn or accept risk' },
+            { trigger: 'New UCT detected', steps: '1. Auto-assign to CatMaint → 2. Priority sensor tasking → 3. IOD with min 3 passes → 4. Cross-reference launch manifest → 5. Promote or discard' },
+            { trigger: 'Site goes offline', steps: '1. Auto-ticket to NetOps → 2. Redistribute tasking to backup sites → 3. If >2 sites down: page Ops Lead → 4. Assess impact on conjunction screening coverage' },
+            { trigger: 'Space weather storm (Kp > 7)', steps: '1. Auto-alert all ops staff → 2. Increase drag model uncertainty → 3. Suspend low-confidence conjunction assessments → 4. Increase observation cadence for LEO assets' },
+            { trigger: 'Edge node failure', steps: '1. Auto-failover to backup pipeline → 2. Page Edge Compute Lead → 3. If throughput < 5 fps: escalate to P1 → 4. Activate cloud-side burst processing' },
+        ],
+    },
 };
 
 // ── UTC Clock ───────────────────────────────────────
@@ -226,6 +299,30 @@ function renderInventory(tab) {
             const badge = c.tier==='EMERGENCY'?'badge-red':c.tier==='RED'?'badge-red':c.tier==='YELLOW'?'badge-yellow':'badge-green';
             return `<tr><td>${c.id}</td><td>${c.priName}</td><td>${c.secName}</td><td>${c.tca.slice(5,16)}</td><td>${c.miss} km</td><td>${c.pc.toExponential(1)}</td><td><span class="badge ${badge}">${c.tier}</span></td></tr>`;
         }).join('') + `</tbody></table>`;
+    } else if(tab === 'escalation') {
+        const esc = STATE.escalation;
+        el.innerHTML = esc.tiers.map(tier => {
+            return `<div style="margin-bottom:10px">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 8px;background:${tier.color}22;border-left:3px solid ${tier.color};border-radius:0 4px 4px 0;margin-bottom:4px;color:${tier.color}">
+                    ${tier.level} <span style="color:var(--text-secondary);font-weight:400;margin-left:8px">${tier.criteria}</span>
+                    <span style="float:right;color:var(--text-secondary)">Response: ${tier.responseTime}</span>
+                </div>
+                <table class="inv-table"><thead><tr><th>Role</th><th>Contact</th><th>Channel</th><th>Priority</th><th>Duty</th></tr></thead><tbody>` +
+                tier.notify.map(n => {
+                    const pBadge = n.priority==='FLASH'?'badge-red':n.priority==='IMMEDIATE'?'badge-red':n.priority==='PRIORITY'?'badge-yellow':'badge-blue';
+                    return `<tr><td style="color:var(--text-primary)">${n.role}</td><td>${n.name}</td><td style="font-size:9px">${n.channel}</td><td><span class="badge ${pBadge}">${n.priority}</span></td><td style="font-size:9px">${n.duty}</td></tr>`;
+                }).join('') +
+                `</tbody></table></div>`;
+        }).join('') +
+        `<div style="margin-top:6px;padding:4px 8px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text-secondary);background:var(--bg-glass);border-radius:4px;margin-bottom:3px">Notification Channels (${esc.channels.length})</div>
+        <table class="inv-table"><thead><tr><th>Channel</th><th>Type</th><th>Protocol</th><th>Coverage</th></tr></thead><tbody>` +
+        esc.channels.map(ch => `<tr><td style="color:var(--text-primary)">${ch.name}</td><td>${ch.type}</td><td>${ch.protocol}</td><td>${ch.coverage}</td></tr>`).join('') +
+        `</tbody></table>
+        <div style="margin-top:6px;padding:4px 8px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text-secondary);background:var(--bg-glass);border-radius:4px;margin-bottom:3px">Response Procedures (${esc.procedures.length})</div>` +
+        esc.procedures.map(p => `<div style="padding:4px 8px;margin-bottom:4px;font-size:10px;border-left:2px solid var(--text-secondary);background:rgba(255,255,255,0.02);border-radius:0 4px 4px 0">
+            <div style="color:var(--text-primary);font-weight:600;margin-bottom:2px">${p.trigger}</div>
+            <div style="color:var(--text-secondary)">${p.steps}</div>
+        </div>`).join('');
     }
 }
 
