@@ -1925,7 +1925,7 @@ setTimeout(() => {
             obs24.textContent = v.toLocaleString();
         }
         const catEl = document.getElementById('catalogCount');
-        if(catEl) {
+        if(catEl && !(window.CELESTRAK && window.CELESTRAK.fetched)) {
             let v = parseInt(catEl.textContent.replace(/,/g,''));
             v = Math.round(drift(v, 46238, 3, 46200, 46300));
             catEl.textContent = v.toLocaleString();
