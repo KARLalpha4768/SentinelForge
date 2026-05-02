@@ -1027,8 +1027,168 @@ function openTechnicianSheet(site) {
             <div><span style="color:#78909c">Badge #:</span> <input type="text" placeholder="ID" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8eaf6;padding:3px 6px;border-radius:3px;font-size:10px;width:80px"></div>
             <div><span style="color:#78909c">Status:</span> <select style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8eaf6;padding:3px 6px;border-radius:3px;font-size:10px"><option>Pending</option><option>In Progress</option><option>Complete</option><option>Deferred</option></select></div>
         </div>
-        <div style="margin-top:10px;text-align:center">
-            <a href="#" onclick="openSiteModal(_lastModalSite||${JSON.stringify(site).replace(/"/g,'&quot;')});return false" style="color:#00e5ff;font-size:9px;text-decoration:underline">← Back to Site Tech Catalog</a>
+        <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
+            <a href="#" onclick="openSiteModal(_lastModalSite);return false" style="color:#00e5ff;font-size:9px;text-decoration:underline">← Back to Site Tech Catalog</a>
+            <a href="#" onclick="openProgrammerSheet(_lastModalSite);return false" style="color:#b388ff;font-size:9px;font-weight:700;text-decoration:none;padding:3px 10px;border:1px solid rgba(179,136,255,0.3);border-radius:4px;background:rgba(179,136,255,0.08)">🖥 PROGRAMMER INTEGRATION SHEET →</a>
+        </div>
+    `;
+    _lastModalSite = site;
+    siteModal.style.display = 'flex';
+}
+
+// ── Programmer Integration Sheet ────────────────────
+function openProgrammerSheet(site) {
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    const siteModal = document.getElementById('siteModal');
+    if(!title || !body || !siteModal) return;
+
+    title.textContent = `🖥 PROGRAMMER INTEGRATION SHEET — ${site.id}`;
+    const progStack = getProgrammingStack(site);
+    const upgrades = getUpgradePath(site);
+    const seed = site.id.charCodeAt(0) + site.id.charCodeAt(site.id.length-1);
+
+    // Role matrix — what the programmer does vs what the tech does
+    const roleMatrix = [
+        { phase: 'Pre-Deployment', programmer: 'Build & test firmware/config images in CI/CD pipeline', technician: 'Verify parts inventory, stage equipment at site' },
+        { phase: 'Maintenance Window', programmer: 'Open remote SSH/VPN tunnel, monitor edge telemetry dashboard', technician: 'Power down subsystems, swap hardware per upgrade tasks' },
+        { phase: 'Firmware Flash', programmer: 'Push OTA image or guide JTAG flash sequence via comms', technician: 'Connect programmer cable, confirm flash progress LEDs' },
+        { phase: 'Config Deploy', programmer: 'Deploy site-specific config (sensor params, network, scheduler)', technician: 'Verify physical connections, antenna alignment, cable routing' },
+        { phase: 'Pipeline Validation', programmer: 'Run end-to-end detection pipeline test, verify data flow to cloud', technician: 'Confirm sensor power/thermal readings, mechanical clearances' },
+        { phase: 'Handoff', programmer: 'Clear maintenance flag, re-enable autonomous scheduling', technician: 'Sign off field service order, secure enclosure, depart' },
+    ];
+
+    // Software deployment workflow
+    const deploySteps = [
+        { step: 'Branch & Build', detail: `Create release branch in ${progStack.cicd}. Run full test suite against site-specific config.`, icon: '🔀' },
+        { step: 'Image Generation', detail: `Build Docker container (edge runtime) or firmware binary. Tag with site ID + version.`, icon: '📦' },
+        { step: 'Staging Test', detail: `Deploy to staging replica. Run synthetic detection pipeline with known calibration targets.`, icon: '🧪' },
+        { step: 'Pre-flight Check', detail: `Verify edge node reachability via ${progStack.observability}. Confirm disk space, GPU health, network connectivity.`, icon: '✅' },
+        { step: 'Coordinated Deploy', detail: `Schedule deploy during technician maintenance window. Push via ${progStack.cicd} or manual SCP.`, icon: '🚀' },
+        { step: 'Smoke Test', detail: `Trigger calibration sequence. Verify first-light detection. Confirm cloud-side data ingestion within 60s.`, icon: '🔍' },
+        { step: 'Rollback Gate', detail: `Monitor for 1 hour. If anomaly rate > threshold, execute automated rollback to previous config snapshot.`, icon: '🔄' },
+    ];
+
+    // Slingshot-aligned job responsibilities
+    const slingshotAlign = [
+        { duty: 'Edge Software Architecture', desc: 'Design and maintain the C++/Python detection pipeline running on edge GPU nodes at each ground station', relevance: 'HIGH' },
+        { duty: 'Sensor Integration', desc: 'Write drivers and data adapters for optical/radar sensors, handling TDM/OEM message formats per CCSDS standards', relevance: 'HIGH' },
+        { duty: 'Autonomous Scheduling', desc: `Configure and tune the ${progStack.scheduler} to optimize sensor tasking based on conjunction priority and weather`, relevance: 'HIGH' },
+        { duty: 'Observability & Alerting', desc: `Maintain ${progStack.observability} dashboards. Define alert thresholds for GPU temp, disk, detection rate, uplink health`, relevance: 'MEDIUM' },
+        { duty: 'CI/CD & OTA Updates', desc: `Manage ${progStack.cicd} pipelines. Build, test, and ship edge firmware updates to ${STATE.sites.length}+ sites globally`, relevance: 'HIGH' },
+        { duty: 'ML Model Deployment', desc: `Package trained ${progStack.ml} models for edge inference. Optimize with TensorRT/ONNX for real-time streak detection`, relevance: 'HIGH' },
+        { duty: 'Field Technician Support', desc: 'Provide real-time guidance during hardware upgrades via secure comms. Debug sensor integration issues remotely', relevance: 'MEDIUM' },
+        { duty: 'Data Pipeline Ops', desc: 'Ensure edge-to-cloud data flow: raw frames → detections → orbit determination → catalog correlation', relevance: 'HIGH' },
+    ];
+
+    // Communication protocol
+    const commProtocol = [
+        { channel: 'Primary', tool: 'Slack #site-ops', use: 'Real-time coordination during maintenance windows' },
+        { channel: 'Backup', tool: 'Satellite phone (Iridium)', use: 'Remote sites with no cellular (e.g., Gamsberg, Cerro Pachón)' },
+        { channel: 'Documentation', tool: 'Confluence + Jira', use: 'Service orders, runbooks, post-mortem reports' },
+        { channel: 'Remote Access', tool: `SSH/WireGuard VPN`, use: 'Edge node CLI access for diagnostics and config push' },
+        { channel: 'Monitoring', tool: progStack.observability, use: 'Live GPU/sensor/pipeline dashboards during upgrade' },
+    ];
+
+    body.innerHTML = `
+        <div style="background:rgba(179,136,255,0.06);border:1px solid rgba(179,136,255,0.15);border-radius:6px;padding:10px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                    <div style="font-size:14px;font-weight:700;color:#b388ff">🖥 SOFTWARE ENGINEER ↔ FIELD TECHNICIAN</div>
+                    <div style="font-size:10px;color:#b0bec5;margin-top:2px">${site.name} · ${site.network} Network · ${progStack.os}</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:9px;color:#78909c">Runtime</div>
+                    <div style="color:#76ff03;font-weight:700;font-size:10px;font-family:JetBrains Mono,mono">${progStack.runtime}</div>
+                </div>
+            </div>
+        </div>
+
+        <h3>🔄 Role Matrix — Who Does What</h3>
+        <table>
+            <tr><th style="width:120px">Phase</th><th style="color:#b388ff">🖥 Programmer (Remote)</th><th style="color:#ffd740">📋 Technician (On-Site)</th></tr>
+            ${roleMatrix.map(r => `<tr>
+                <td style="color:#78909c;font-weight:600;font-size:9px">${r.phase}</td>
+                <td style="font-size:9px">${r.programmer}</td>
+                <td style="font-size:9px">${r.technician}</td>
+            </tr>`).join('')}
+        </table>
+
+        <h3>🚀 Software Deployment Workflow</h3>
+        <div style="display:flex;flex-direction:column;gap:6px">
+            ${deploySteps.map((s, i) => `<div style="display:flex;gap:8px;align-items:flex-start;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:5px;padding:6px 8px">
+                <span style="font-size:14px;min-width:20px">${s.icon}</span>
+                <div>
+                    <div style="font-size:10px;font-weight:700;color:#e8eaf6">${i+1}. ${s.step}</div>
+                    <div style="font-size:9px;color:#90a4ae;margin-top:2px">${s.detail}</div>
+                </div>
+            </div>`).join('')}
+        </div>
+
+        <h3>🎯 Slingshot Aerospace — Role Alignment</h3>
+        <table>
+            <tr><th>Responsibility</th><th>Description</th><th>Relevance</th></tr>
+            ${slingshotAlign.map(s => {
+                const col = s.relevance === 'HIGH' ? '#76ff03' : '#ffd740';
+                return `<tr>
+                    <td style="color:#e8eaf6;font-weight:600;font-size:9px;white-space:nowrap">${s.duty}</td>
+                    <td style="font-size:9px;color:#b0bec5">${s.desc}</td>
+                    <td><span style="color:${col};font-size:8px;font-weight:700">${s.relevance}</span></td>
+                </tr>`;
+            }).join('')}
+        </table>
+
+        <h3>📡 Communication Protocol</h3>
+        <table>
+            <tr><th>Channel</th><th>Tool</th><th>Use Case</th></tr>
+            ${commProtocol.map(c => `<tr>
+                <td style="color:#78909c;font-size:9px">${c.channel}</td>
+                <td style="color:#e8eaf6;font-size:9px;font-family:JetBrains Mono,mono">${c.tool}</td>
+                <td style="font-size:9px;color:#b0bec5">${c.use}</td>
+            </tr>`).join('')}
+        </table>
+
+        <h3>💻 Site Software Stack</h3>
+        <table>
+            <tr><td style="color:#78909c;width:140px">Operating System</td><td style="font-family:JetBrains Mono,mono;font-size:10px">${progStack.os}</td></tr>
+            <tr><td style="color:#78909c">Runtime</td><td style="font-family:JetBrains Mono,mono;font-size:10px">${progStack.runtime}</td></tr>
+            <tr><td style="color:#78909c">ML Framework</td><td style="font-family:JetBrains Mono,mono;font-size:10px">${progStack.ml}</td></tr>
+            <tr><td style="color:#78909c">Scheduler</td><td style="font-family:JetBrains Mono,mono;font-size:10px">${progStack.scheduler}</td></tr>
+            <tr><td style="color:#78909c">Observability</td><td style="font-family:JetBrains Mono,mono;font-size:10px">${progStack.observability}</td></tr>
+            <tr><td style="color:#78909c">CI/CD</td><td style="font-family:JetBrains Mono,mono;font-size:10px">${progStack.cicd}</td></tr>
+        </table>
+
+        <h3>⚡ Remote Diagnostic Capabilities</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px">
+            <div style="background:rgba(118,255,3,0.05);border:1px solid rgba(118,255,3,0.1);border-radius:4px;padding:6px">
+                <div style="color:#76ff03;font-weight:700;margin-bottom:3px">✓ Can Do Remotely</div>
+                <div style="color:#b0bec5;line-height:1.6">
+                    • SSH into edge node<br>
+                    • Deploy firmware/config OTA<br>
+                    • Monitor GPU/CPU/disk/thermal<br>
+                    • Run detection pipeline tests<br>
+                    • View sensor telemetry stream<br>
+                    • Restart services (systemd)<br>
+                    • Pull diagnostic logs
+                </div>
+            </div>
+            <div style="background:rgba(255,171,0,0.05);border:1px solid rgba(255,171,0,0.1);border-radius:4px;padding:6px">
+                <div style="color:#ffab00;font-weight:700;margin-bottom:3px">✗ Requires On-Site Tech</div>
+                <div style="color:#b0bec5;line-height:1.6">
+                    • Swap GPU/SSD/NIC hardware<br>
+                    • Replace sensor/detector/camera<br>
+                    • Antenna alignment & cabling<br>
+                    • Physical enclosure inspection<br>
+                    • Power supply replacement<br>
+                    • JTAG flash (if OTA fails)<br>
+                    • Environmental seal verification
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
+            <a href="#" onclick="openTechnicianSheet(_lastModalSite);return false" style="color:#ffd740;font-size:9px;text-decoration:underline">← Back to Technician Sheet</a>
+            <a href="#" onclick="openSiteModal(_lastModalSite);return false" style="color:#00e5ff;font-size:9px;text-decoration:underline">← Back to Site Tech Catalog</a>
         </div>
     `;
     _lastModalSite = site;
