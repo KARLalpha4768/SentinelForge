@@ -283,35 +283,67 @@ function renderMap() {
     const rect = canvas.parentElement.getBoundingClientRect();
     canvas.width = rect.width; canvas.height = rect.height - 33;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#0a0c14'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    // Simple world outline
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
-    ctx.strokeRect(10,10,canvas.width-20,canvas.height-20);
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-    for(let i=1;i<6;i++) { const y=10+(canvas.height-20)*i/6; ctx.beginPath(); ctx.moveTo(10,y); ctx.lineTo(canvas.width-10,y); ctx.stroke(); }
-    for(let i=1;i<12;i++) { const x=10+(canvas.width-20)*i/12; ctx.beginPath(); ctx.moveTo(x,10); ctx.lineTo(x,canvas.height-20); ctx.stroke(); }
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = '#070a12'; ctx.fillRect(0,0,W,H);
+    const toXY = (lat,lon) => ({ x: 10+(lon+180)/360*(W-20), y: 10+(90-lat)/180*(H-20) });
+    // ── Simplified continent coastlines (Mercator lat/lon pairs) ──
+    const continents = [
+        // North America
+        [[-10,168],[56,170],[65,168],[72,157],[71,141],[60,140],[60,131],[72,128],[73,98],[69,82],[63,78],[61,70],[52,56],[47,53],[44,59],[40,67],[29,74],[25,76],[26,82],[30,89],[29,95],[26,98],[20,90],[15,84],[10,84],[8,77],[8,73],[10,62]],
+        // South America
+        [[10,62],[12,72],[7,77],[7,80],[0,80],[-5,76],[-5,65],[-8,63],[-15,60],[-23,58],[-33,52],[-40,57],[-44,64],[-52,69],[-56,68],[-54,64],[-46,68],[-42,60],[-35,55],[-23,53],[-15,48],[-5,48],[0,52],[5,60],[10,62]],
+        // Europe
+        [[36,-6],[38,-10],[43,-10],[44,-2],[47,-2],[49,2],[51,2],[54,9],[57,10],[60,5],[63,5],[68,14],[70,20],[71,28],[68,28],[60,30],[57,40],[48,40],[45,30],[42,28],[40,24],[37,22],[35,25],[36,12],[37,0],[36,-6]],
+        // Africa
+        [[36,-6],[37,10],[36,12],[35,25],[33,33],[30,33],[25,35],[20,38],[15,42],[10,43],[5,42],[4,10],[5,1],[-2,9],[-5,12],[-12,14],[-18,12],[-22,15],[-26,33],[-34,26],[-35,18],[-30,17],[-20,13],[-15,12],[-12,14],[-8,13],[-5,12],[-2,9],[5,1],[5,-4],[10,-14],[15,-17],[25,-15],[30,-10],[33,-9],[36,-6]],
+        // Asia
+        [[42,28],[45,30],[48,40],[40,50],[37,52],[25,56],[25,62],[22,70],[10,76],[8,77],[5,80],[0,104],[1,104],[8,98],[8,106],[12,109],[22,108],[23,114],[30,122],[34,129],[38,127],[40,130],[43,132],[46,143],[52,141],[55,135],[53,130],[48,135],[43,143],[46,150],[50,155],[55,163],[60,163],[64,175],[67,180],[72,180],[72,128],[73,98],[69,82],[63,78],[60,70],[55,60],[50,55],[42,44],[42,28]],
+        // Australia
+        [[-12,131],[-10,142],[-17,146],[-24,152],[-28,153],[-35,151],[-38,146],[-39,144],[-35,137],[-32,133],[-32,127],[-22,114],[-15,124],[-12,131]],
+    ];
+    // Draw ocean grid
+    ctx.strokeStyle = 'rgba(30,60,100,0.15)'; ctx.lineWidth = 0.5;
+    for(let lat=-60;lat<=80;lat+=30) { const p=toXY(lat,-180),p2=toXY(lat,180); ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); }
+    for(let lon=-180;lon<=180;lon+=30) { const p=toXY(90,lon),p2=toXY(-90,lon); ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); }
     // Equator
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.setLineDash([4,4]);
-    const eqY = 10+(canvas.height-20)*0.5; ctx.beginPath(); ctx.moveTo(10,eqY); ctx.lineTo(canvas.width-10,eqY); ctx.stroke();
-    ctx.setLineDash([]);
-    // Plot all sites color-coded by network
+    ctx.strokeStyle = 'rgba(80,150,220,0.15)'; ctx.setLineDash([4,4]);
+    const eq = toXY(0,-180), eq2 = toXY(0,180);
+    ctx.beginPath(); ctx.moveTo(eq.x,eq.y); ctx.lineTo(eq2.x,eq2.y); ctx.stroke(); ctx.setLineDash([]);
+    // Draw filled continents
+    continents.forEach(pts => {
+        ctx.beginPath();
+        pts.forEach((p,i) => { const xy = toXY(p[0],p[1]); i===0 ? ctx.moveTo(xy.x,xy.y) : ctx.lineTo(xy.x,xy.y); });
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(30,45,60,0.45)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(100,160,220,0.2)'; ctx.lineWidth = 0.8;
+        ctx.stroke();
+    });
+    // Geographic labels
+    ctx.font = '8px Inter'; ctx.fillStyle = 'rgba(120,144,156,0.35)';
+    const labels = [['N. America',40,-105],['S. America',-15,-60],['Europe',50,15],['Africa',5,20],['Asia',45,80],['Australia',-25,135],['Pacific',0,-150],['Atlantic',20,-40],['Indian',-20,75]];
+    labels.forEach(([t,lat,lon]) => { const p=toXY(lat,lon); ctx.fillText(t,p.x-15,p.y); });
+    // Plot sites
     const netColors = {
         'USSF-SSN':'#ff1744','LeoLabs':'#00e5ff','Slingshot':'#ffd740',
         'ExoAnalytic':'#76ff03','ESA-SST':'#448aff','Contributing':'#e040fb',
     };
-    const toXY = (lat,lon) => ({ x: 10+(lon+180)/360*(canvas.width-20), y: 10+(90-lat)/180*(canvas.height-20) });
     STATE.sites.forEach(s => {
         const p = toXY(s.lat, s.lon);
         const col = netColors[s.network] || (s.status==='active' ? '#00e676' : s.status==='degraded' ? '#ffab00' : '#ff1744');
-        const r = s.type === 'radar' ? 3 : 2;
+        const r = s.type === 'radar' ? 3.5 : 2.5;
+        // Glow
+        ctx.beginPath(); ctx.arc(p.x,p.y,r+2,0,Math.PI*2);
+        ctx.fillStyle = (s.status==='offline' ? '#555' : col).replace(')',',0.15)').replace('rgb','rgba');
+        ctx.globalAlpha = s.status==='offline' ? 0.1 : 0.3; ctx.fill();
+        // Dot
         ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
         ctx.fillStyle = s.status==='offline' ? '#555' : col;
-        ctx.globalAlpha = s.status==='offline' ? 0.3 : 0.8;
+        ctx.globalAlpha = s.status==='offline' ? 0.3 : 0.9;
         ctx.fill(); ctx.globalAlpha = 1;
     });
     // Legend
-    ctx.font = '9px Inter'; let lx = 14, ly = canvas.height - 8;
+    ctx.font = '9px Inter'; let lx = 14, ly = H - 8;
     Object.entries(netColors).forEach(([name, col]) => {
         ctx.fillStyle = col; ctx.fillRect(lx, ly-6, 8, 8);
         ctx.fillStyle = '#b0bec5'; ctx.fillText(name, lx+11, ly+1);
