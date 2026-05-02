@@ -429,10 +429,24 @@ if(geoViewBtn && typeof viewer !== 'undefined') {
     });
 }
 
-// ── #10: Owner/Operator Popup on Click ──────────────
+// ── #10: Owner/Operator Popup on Click + Conjunction Detail Modal ──
 if(typeof viewer !== 'undefined') {
+    // Tag conjunction entities with their event ID for click detection
+    if(typeof STATE !== 'undefined' && globeLayers.conj) {
+        STATE.conjunctions.forEach((c, idx) => {
+            if(globeLayers.conj[idx]) globeLayers.conj[idx]._conjId = c.id;
+        });
+    }
+
     viewer.selectedEntityChanged.addEventListener(entity => {
         if(!entity) return;
+
+        // ── CONJUNCTION DETAIL MODAL ──
+        if(entity._conjId) {
+            const c = STATE.conjunctions.find(x => x.id === entity._conjId);
+            if(c) { openConjunctionDetail(c); return; }
+        }
+
         // If entity has a description that includes NORAD, look up owner
         const desc = entity.description?.getValue(Cesium.JulianDate.now()) || '';
         const noradMatch = desc.match(/NORAD:\s*(\d+)/);
@@ -446,6 +460,164 @@ if(typeof viewer !== 'undefined') {
             }
         }
     });
+}
+
+// ── Conjunction Detail Modal ────────────────────────
+function openConjunctionDetail(c) {
+    // Remove existing modal if any
+    const existing = document.getElementById('conjDetailModal');
+    if(existing) existing.remove();
+
+    const tierColors = { EMERGENCY:'#ff1744', RED:'#ff5252', YELLOW:'#ffab00', GREEN:'#00e676' };
+    const tierBg = { EMERGENCY:'rgba(255,23,68,0.12)', RED:'rgba(255,82,82,0.08)', YELLOW:'rgba(255,171,0,0.06)', GREEN:'rgba(0,230,118,0.06)' };
+    const tc = tierColors[c.tier] || '#78909c';
+
+    // Find matching escalation tier
+    const tierMap = { EMERGENCY:'EMERGENCY', RED:'RED', YELLOW:'YELLOW', GREEN:'INFO' };
+    const escTier = STATE.escalation.tiers.find(t => t.level === (tierMap[c.tier] || 'INFO'));
+
+    // Build the modal
+    const modal = document.createElement('div');
+    modal.id = 'conjDetailModal';
+    modal.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.85);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease`;
+    modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+
+    const pcVal = typeof c.pc === 'number' ? c.pc.toExponential(2) : c.pc;
+    const d = c.debris || {};
+    const p = c.protocol || {};
+    const pri = c.priOrbit || {};
+    const sec = c.secOrbit || {};
+
+    modal.innerHTML = `
+    <div style="background:#0d1117;border:1px solid ${tc}44;border-radius:16px;width:920px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.6),0 0 40px ${tc}22;padding:0" onclick="event.stopPropagation()">
+        <!-- HEADER -->
+        <div style="padding:20px 28px;background:${tierBg[c.tier]};border-bottom:1px solid ${tc}33;display:flex;align-items:center;gap:16px">
+            <div style="width:48px;height:48px;border-radius:12px;background:${tc}22;border:2px solid ${tc};display:flex;align-items:center;justify-content:center;font-size:20px">${c.tier==='EMERGENCY'?'🚨':c.tier==='RED'?'⚠️':'⚡'}</div>
+            <div style="flex:1">
+                <div style="font-size:18px;font-weight:800;color:${tc};letter-spacing:.5px">${c.id} — ${c.tier}</div>
+                <div style="font-size:13px;color:#b0bec5;margin-top:2px">${c.priName} vs ${c.secName}</div>
+            </div>
+            <div style="text-align:right">
+                <div style="font-size:10px;color:#546e7a;text-transform:uppercase">Collision Probability</div>
+                <div style="font-size:28px;font-weight:900;color:${tc};font-family:'JetBrains Mono',monospace">${pcVal}</div>
+            </div>
+            <button onclick="document.getElementById('conjDetailModal').remove()" style="background:none;border:1px solid rgba(255,255,255,0.15);color:#b0bec5;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+
+        <!-- KEY METRICS BAR -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:rgba(255,255,255,0.04)">
+            <div style="padding:12px;text-align:center;background:#0d1117"><div style="font-size:8px;color:#546e7a;text-transform:uppercase;letter-spacing:.5px">Miss Distance</div><div style="font-size:18px;font-weight:700;color:#ff8a80;font-family:'JetBrains Mono'">${c.miss} km</div></div>
+            <div style="padding:12px;text-align:center;background:#0d1117"><div style="font-size:8px;color:#546e7a;text-transform:uppercase;letter-spacing:.5px">Rel. Velocity</div><div style="font-size:18px;font-weight:700;color:#ffab40;font-family:'JetBrains Mono'">${c.vel || d.relVel || '—'} km/s</div></div>
+            <div style="padding:12px;text-align:center;background:#0d1117"><div style="font-size:8px;color:#546e7a;text-transform:uppercase;letter-spacing:.5px">TCA</div><div style="font-size:14px;font-weight:700;color:#e8eaf6;font-family:'JetBrains Mono'">${c.tca.replace('T',' ').replace('Z','')}</div></div>
+            <div style="padding:12px;text-align:center;background:#0d1117"><div style="font-size:8px;color:#546e7a;text-transform:uppercase;letter-spacing:.5px">Impact Energy</div><div style="font-size:14px;font-weight:700;color:#ff5252;font-family:'JetBrains Mono'">${d.impactEnergy || '—'}</div></div>
+            <div style="padding:12px;text-align:center;background:#0d1117"><div style="font-size:8px;color:#546e7a;text-transform:uppercase;letter-spacing:.5px">Geometry</div><div style="font-size:11px;font-weight:600;color:#b0bec5">${d.approachGeometry || '—'}</div></div>
+        </div>
+
+        <div style="padding:20px 28px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+            <!-- PRIMARY OBJECT -->
+            <div style="background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.12);border-radius:10px;padding:14px">
+                <div style="font-size:10px;font-weight:700;color:#00e5ff;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🛰️ Primary — ${c.priName}</div>
+                <div style="font-size:10px;color:#b0bec5;line-height:1.8">
+                    NORAD: <b style="color:#e8eaf6">${c.pri}</b><br>
+                    Orbit: <b>${pri.regime || '—'} ${pri.alt || '—'}km, ${pri.inc || '—'}° inc</b><br>
+                    Period: <b>${pri.period || '—'}</b> | Ecc: <b>${pri.ecc || '—'}</b><br>
+                    Owner: <b style="color:#76ff03">${pri.owner || '—'}</b><br>
+                    Purpose: <b>${pri.purpose || '—'}</b><br>
+                    Mass: <b>${pri.mass ? pri.mass.toLocaleString()+' kg' : '—'}</b><br>
+                    Maneuver: <b style="color:${pri.maneuverCapable?'#00e676':'#ff1744'}">${pri.maneuverCapable ? '✓ CAPABLE' : '✗ NO'}</b>${pri.fuelKg ? ' ('+pri.fuelKg+' kg fuel)' : ''}
+                </div>
+            </div>
+            <!-- SECONDARY OBJECT -->
+            <div style="background:rgba(255,23,68,0.04);border:1px solid rgba(255,23,68,0.12);border-radius:10px;padding:14px">
+                <div style="font-size:10px;font-weight:700;color:#ff8a80;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">💀 Secondary — ${c.secName}</div>
+                <div style="font-size:10px;color:#b0bec5;line-height:1.8">
+                    NORAD: <b style="color:#e8eaf6">${c.sec}</b><br>
+                    Orbit: <b>${sec.regime || '—'} ${sec.alt || '—'}km, ${sec.inc || '—'}° inc</b><br>
+                    Period: <b>${sec.period || '—'}</b> | Ecc: <b>${sec.ecc || '—'}</b><br>
+                    Owner: <b style="color:#ff5252">${sec.owner || '—'}</b><br>
+                    Maneuver: <b style="color:#ff1744">✗ DEBRIS — NON-MANEUVERABLE</b>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEBRIS INTELLIGENCE -->
+        ${d.origin ? `
+        <div style="padding:0 28px 16px">
+            <div style="background:rgba(255,82,82,0.04);border:1px solid rgba(255,82,82,0.12);border-radius:10px;padding:14px">
+                <div style="font-size:10px;font-weight:700;color:#ff5252;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🔴 Debris Intelligence</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:10px;color:#b0bec5;line-height:1.7">
+                    <div>
+                        Origin Event: <b style="color:#ff8a80">${d.origin}</b><br>
+                        Date: <b>${d.originDate}</b> | Nation: <b style="color:#ff5252">${d.nation}</b><br>
+                        Parent NORAD: <b>${d.parentNorad}</b><br>
+                        Total Fragments: <b style="color:#ff1744">${d.totalFragments?.toLocaleString()}</b><br>
+                        Tracked: <b>${d.trackedFragments?.toLocaleString()}</b> | Size: <b>${d.fragSize}</b>
+                    </div>
+                    <div>
+                        Threat Type: <b style="color:#ff5252">${d.threatType}</b><br>
+                        Est. Mass: <b>${d.estimatedMass}</b><br>
+                        Material: <b>${d.materialType}</b><br>
+                        Lethality: <b style="color:#ff1744">${d.kineticLethalityThreshold}</b>
+                    </div>
+                </div>
+                <div style="margin-top:8px;padding:8px;background:rgba(255,23,68,0.08);border-radius:6px;font-size:10px">
+                    <b style="color:#ff1744">⚠ DANGER ASSESSMENT:</b> <span style="color:#ffcdd2">${d.dangerLevel}</span>
+                </div>
+                <div style="margin-top:6px;padding:8px;background:rgba(255,152,0,0.08);border-radius:6px;font-size:10px">
+                    <b style="color:#ff9100">🔗 SECONDARY DEBRIS RISK:</b> <span style="color:#ffe0b2">${d.secondaryDebrisRisk}</span>
+                </div>
+            </div>
+        </div>` : ''}
+
+        <!-- RESPONSE PROTOCOL -->
+        ${p.actions ? `
+        <div style="padding:0 28px 16px">
+            <div style="background:rgba(124,77,255,0.04);border:1px solid rgba(124,77,255,0.12);border-radius:10px;padding:14px">
+                <div style="font-size:10px;font-weight:700;color:#b388ff;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">📋 Response Protocol — ${c.tier}</div>
+                <div style="font-size:10px;color:#b0bec5;line-height:1.6">
+                    ${p.actions.map((a, i) => `<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="color:#7c4dff;font-weight:700;margin-right:6px">${i+1}.</span>${a}</div>`).join('')}
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+                    <div style="padding:8px;background:rgba(124,77,255,0.08);border-radius:6px;font-size:10px">
+                        <b style="color:#7c4dff">⏱ DECISION GATE:</b><br><span style="color:#e8eaf6;font-weight:600">${p.decisionGate}</span>
+                    </div>
+                    <div style="padding:8px;background:rgba(124,77,255,0.08);border-radius:6px;font-size:10px">
+                        <b style="color:#7c4dff">🔧 MANEUVER WINDOW:</b><br><span style="color:#e8eaf6;font-weight:600">${p.maneuverWindow}</span>
+                    </div>
+                </div>
+                <div style="margin-top:8px;padding:8px;background:${tierBg[c.tier]};border:1px solid ${tc}33;border-radius:6px;font-size:10px">
+                    <b style="color:${tc}">🎯 RISK IF NO ACTION:</b> <span style="color:#ffcdd2">${p.riskIfNoAction}</span>
+                </div>
+            </div>
+        </div>` : ''}
+
+        <!-- NOTIFICATION ROSTER -->
+        ${escTier ? `
+        <div style="padding:0 28px 20px">
+            <div style="background:rgba(255,215,64,0.04);border:1px solid rgba(255,215,64,0.12);border-radius:10px;padding:14px">
+                <div style="font-size:10px;font-weight:700;color:#ffd740;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">📞 Notification Roster — ${escTier.level}</div>
+                <div style="font-size:9px;color:#78909c;margin-bottom:8px">Response time: <b style="color:#ffd740">${escTier.responseTime}</b> | Criteria: ${escTier.criteria}</div>
+                <table style="width:100%;border-collapse:collapse;font-size:10px">
+                    <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
+                        <th style="text-align:left;padding:4px 6px;color:#78909c;font-weight:600">Role</th>
+                        <th style="text-align:left;padding:4px 6px;color:#78909c;font-weight:600">Name</th>
+                        <th style="text-align:left;padding:4px 6px;color:#78909c;font-weight:600">Channel</th>
+                        <th style="text-align:left;padding:4px 6px;color:#78909c;font-weight:600">Priority</th>
+                    </tr></thead>
+                    <tbody>
+                        ${escTier.notify.map(n => `<tr style="border-bottom:1px solid rgba(255,255,255,0.03)">
+                            <td style="padding:5px 6px;color:#e8eaf6;font-weight:600">${n.role}</td>
+                            <td style="padding:5px 6px;color:#b0bec5">${n.name}</td>
+                            <td style="padding:5px 6px;color:#76ff03;font-size:9px">${n.channel}</td>
+                            <td style="padding:5px 6px"><span style="font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:${n.priority==='FLASH'?'rgba(255,23,68,0.2)':n.priority==='IMMEDIATE'?'rgba(255,152,0,0.15)':'rgba(255,255,255,0.05)'};color:${n.priority==='FLASH'?'#ff1744':n.priority==='IMMEDIATE'?'#ff9100':'#78909c'}">${n.priority}</span></td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>` : ''}
+    </div>`;
+
+    document.body.appendChild(modal);
 }
 
 // ── #12: Time Scrubber ──────────────────────────────

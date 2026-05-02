@@ -10,9 +10,39 @@ const STATE = {
         { id:'UCT-0094', state:'uct', passes:2, sma:6950, inc:72.0, material:'MLI', rcs:0.3, first:'2026-05-01T16:55Z' },
     ],
     conjunctions: [
-        { id:'EVT-2041', pri:25544, priName:'ISS', sec:44832, secName:'COSMOS DEB', tca:'2026-05-02T14:22Z', miss:0.42, pc:3.2e-3, vel:14.1, tier:'RED' },
-        { id:'EVT-2042', pri:48274, priName:'STARLINK-3391', sec:99201, secName:'CZ-3B DEB', tca:'2026-05-03T08:55Z', miss:1.8, pc:8.1e-5, tier:'YELLOW' },
-        { id:'EVT-2043', pri:43013, priName:'NOAA-20', sec:27386, secName:'FENGYUN DEB', tca:'2026-05-02T22:10Z', miss:0.18, pc:0.041, vel:13.8, tier:'EMERGENCY' },
+        { id:'EVT-2041', pri:25544, priName:'ISS (ZARYA)', sec:44832, secName:'COSMOS 1408 DEB',
+          tca:'2026-05-02T14:22Z', miss:0.42, pc:3.2e-3, vel:14.1, tier:'RED',
+          priOrbit:{regime:'LEO',alt:420,inc:51.6,ecc:0.0001,period:'92.8 min',owner:'NASA/Roscosmos',purpose:'Crewed station — 7 crew aboard',mass:420000,maneuverCapable:true,fuelKg:890},
+          secOrbit:{regime:'LEO',alt:470,inc:74.5,ecc:0.003,period:'93.6 min',owner:'(defunct debris)',purpose:'N/A — debris fragment'},
+          debris:{origin:'Cosmos 1408 ASAT Test',originDate:'2021-11-15',nation:'Russia',parentNorad:39634,totalFragments:1632,trackedFragments:587,fragSize:'~8cm characteristic length',threatType:'ASAT Debris',dangerLevel:'HIGH — hypervelocity impact would be catastrophic to crewed station',estimatedMass:'0.2-0.8 kg',
+            materialType:'Aluminum alloy hull fragment',relVel:'14.1 km/s',approachGeometry:'Head-on (nearly anti-parallel orbits)',impactEnergy:'~46 MJ (equivalent to 11 kg TNT)',kineticLethalityThreshold:'EXCEEDS — any impact is mission-ending',
+            secondaryDebrisRisk:'Catastrophic — would generate 1000+ new fragments in ISS altitude band'},
+          protocol:{actions:['Request emergency OD update from 18th SDS','Task all available sensors for priority tracking','Convene Conjunction Assessment emergency call','Prepare ISS DAM (Debris Avoidance Maneuver)','Notify NASA CARA + Roscosmos Flight Control','Decision gate: TCA-6h — GO/NO-GO for maneuver','If NO-GO: shelter crew in Soyuz/Dragon lifeboats'],
+            decisionGate:'TCA - 6h (08:22Z today)',maneuverWindow:'TCA-8h to TCA-4h',
+            riskIfNoAction:'3.2e-3 probability of catastrophic collision with crewed station. UNACCEPTABLE per NASA CARA threshold (1e-4).'}
+        },
+        { id:'EVT-2042', pri:48274, priName:'STARLINK-3391', sec:99201, secName:'CZ-3B R/B DEB',
+          tca:'2026-05-03T08:55Z', miss:1.8, pc:8.1e-5, tier:'YELLOW',
+          priOrbit:{regime:'LEO',alt:550,inc:53.0,ecc:0.0001,period:'95.6 min',owner:'SpaceX',purpose:'Broadband constellation',mass:260,maneuverCapable:true,fuelKg:0.8},
+          secOrbit:{regime:'LEO',alt:580,inc:55.0,ecc:0.012,period:'96.1 min',owner:'(defunct debris)',purpose:'N/A — rocket body fragment'},
+          debris:{origin:'CZ-3B breakup event',originDate:'2022-03-18',nation:'China',parentNorad:28056,totalFragments:42,trackedFragments:38,fragSize:'~45cm characteristic length',threatType:'Rocket Body Fragment',dangerLevel:'MODERATE — would destroy Starlink satellite, no crew risk',estimatedMass:'12-35 kg',
+            materialType:'Aluminum/steel booster stage fragment',relVel:'11.8 km/s',approachGeometry:'Crossing (oblique intersection)',impactEnergy:'~830 MJ',kineticLethalityThreshold:'EXCEEDS',
+            secondaryDebrisRisk:'Moderate — would generate ~50-100 new fragments at 550km (Starlink shell altitude, high-risk zone)'},
+          protocol:{actions:['Monitor — below SpaceX autonomous maneuver threshold (1e-4)','Request updated ephemeris from Space-Track','Notify SpaceX via automated CDM push','SpaceX autonomous collision avoidance may trigger at TCA-8h','No SentinelForge action required unless Pc rises above 1e-4'],
+            decisionGate:'TCA - 8h (SpaceX autonomous)',maneuverWindow:'TCA-10h to TCA-2h (SpaceX handles internally)',
+            riskIfNoAction:'8.1e-5 — below action threshold but monitoring. SpaceX satellites maneuver autonomously.'}
+        },
+        { id:'EVT-2043', pri:43013, priName:'NOAA-20 (JPSS-1)', sec:27386, secName:'FENGYUN 1C DEB',
+          tca:'2026-05-02T22:10Z', miss:0.18, pc:0.041, vel:13.8, tier:'EMERGENCY',
+          priOrbit:{regime:'LEO',alt:824,inc:98.7,ecc:0.0001,period:'101.4 min',owner:'NOAA/NASA',purpose:'Critical weather satellite — primary US polar weather imagery',mass:2294,maneuverCapable:true,fuelKg:42.1},
+          secOrbit:{regime:'LEO',alt:840,inc:99.0,ecc:0.005,period:'101.6 min',owner:'(defunct debris)',purpose:'N/A — debris fragment'},
+          debris:{origin:'Fengyun 1C ASAT Test',originDate:'2007-01-11',nation:'China',parentNorad:25730,totalFragments:3528,trackedFragments:2764,fragSize:'~12cm characteristic length',threatType:'ASAT Debris',dangerLevel:'CRITICAL — loss of NOAA-20 would degrade US weather forecasting by 30-40% until JPSS-2 achieves operational status',estimatedMass:'0.5-2.0 kg',
+            materialType:'Aluminum hull + solar panel fragment',relVel:'13.8 km/s',approachGeometry:'Near head-on (retrograde orbits)',impactEnergy:'~190 MJ (equivalent to 45 kg TNT)',kineticLethalityThreshold:'EXCEEDS — any impact is mission-ending',
+            secondaryDebrisRisk:'Severe — 824km is above natural decay altitude. Fragments would persist for 50-200 years, contaminating the critical SSO weather satellite corridor.'},
+          protocol:{actions:['FLASH notification to NOAA OSPO + NASA Goddard Flight Dynamics','Request emergency special perturbations from 18th SDS','Task USSF-SSN priority radar tracking (Eglin/Cavalier)','Task all SentinelForge optical sites for secondary obs','Convene multi-agency conjunction assessment call (NOAA + NASA CARA + USSF)','Compute maneuver options: in-track ΔV to achieve miss >10km','Decision gate: TCA-6h — GO/NO-GO for maneuver','Post-maneuver: verify no secondary conjunctions from new orbit','Brief NWS/NOAA leadership on weather forecast impact if loss occurs'],
+            decisionGate:'TCA - 6h (16:10Z today)',maneuverWindow:'TCA-6h to TCA-3h',
+            riskIfNoAction:'4.1e-2 probability of losing primary US polar weather satellite. 40× above NASA CARA emergency threshold. THIS IS A NATIONAL EMERGENCY.'}
+        },
     ],
     sites: [], // Loaded from site_registry.json
     siteNetworks: {},
@@ -43,14 +73,22 @@ const STATE = {
         { id:'EDGE-NAM', name:'Edge: NAM-01 Orin', type:'edge', protocol:'gRPC', freq:'Continuous', latency:'110ms', throughput:'8.2 fps', status:'degraded', desc:'Jetson AGX Orin, reduced throughput due to seeing conditions' },
     ],
     gauges: [
-        { key:'detection', label:'Detection Rate', value:87.2, unit:'%', min:0, max:100, green:90, yellow:80 },
-        { key:'freshness', label:'Catalog Freshness', value:6.4, unit:'hrs', min:0, max:48, green:8, yellow:24, invert:true },
-        { key:'nees', label:'NEES (Covariance)', value:3.02, unit:'', min:0, max:10, green:4, yellow:6 },
-        { key:'throughput', label:'Edge Throughput', value:12.4, unit:'fps', min:0, max:30, green:10, yellow:5, invert:true },
-        { key:'conjActive', label:'Active Conjunctions', value:3, unit:'', min:0, max:50, green:5, yellow:15 },
-        { key:'gpu', label:'GPU Utilization', value:62, unit:'%', min:0, max:100, green:80, yellow:95 },
-        { key:'kafkaLag', label:'Kafka Lag', value:4, unit:'msgs', min:0, max:1000, green:10, yellow:100, invert:true },
-        { key:'densityErr', label:'Density Model Error', value:18, unit:'%', min:0, max:100, green:25, yellow:50, invert:true },
+        { key:'detection', label:'Detection Rate', value:87.2, unit:'%', min:0, max:100, green:90, yellow:80,
+          scope:'FLEET', desc:'Fraction of predicted passes where the fleet detected the object', detail:'Fleet-wide — all 172 sites combined. Target: >90% to maintain catalog custody.' },
+        { key:'freshness', label:'Catalog Freshness', value:6.4, unit:'hrs', min:0, max:48, green:8, yellow:24, invert:true,
+          scope:'CATALOG', desc:'Median age of the most recent observation per cataloged object', detail:'Catalog-wide median TLE age across 46K objects. <8h = healthy, >24h = stale.' },
+        { key:'nees', label:'NEES (Covariance)', value:3.02, unit:'', min:0, max:10, green:4, yellow:6,
+          scope:'FILTER', desc:'Normalized Estimation Error Squared — is the filter\'s covariance realistic?', detail:'Values near dim(state)=3 are ideal. >6 = overconfident filter, all Pc values untrustworthy.' },
+        { key:'throughput', label:'Edge Throughput', value:12.4, unit:'fps', min:0, max:30, green:10, yellow:5, invert:true,
+          scope:'FLEET', desc:'Mean frames/sec processed across all Jetson Orin edge nodes', detail:'Fleet average across 3 edge nodes (CHL/AUS/NAM). Per-site fps shown in Ground Network.' },
+        { key:'conjActive', label:'Active Conjunctions', value:3, unit:'', min:0, max:50, green:5, yellow:15,
+          scope:'OPS', desc:'Events within screening volume (miss <5km, TCA <72h) requiring monitoring', detail:'Cross-catalog conjunction count. Each event may involve objects from different sites.' },
+        { key:'gpu', label:'GPU Utilization', value:62, unit:'%', min:0, max:100, green:80, yellow:95,
+          scope:'CLOUD', desc:'Mean GPU load across the Kubernetes inference cluster (not edge nodes)', detail:'Cloud-side GPU cluster running PINN, FNO, and DA engines. Edge GPU is per-site.' },
+        { key:'kafkaLag', label:'Kafka Lag', value:4, unit:'msgs', min:0, max:1000, green:10, yellow:100, invert:true,
+          scope:'CLOUD', desc:'Unconsumed messages in the edge→cloud Kafka pipeline', detail:'Messages awaiting ingestion from ALL edge nodes. >100 = cloud pipeline falling behind.' },
+        { key:'densityErr', label:'Density Model Error', value:18, unit:'%', min:0, max:100, green:25, yellow:50, invert:true,
+          scope:'SCIENCE', desc:'RMS density prediction error from the ML-corrected NRLMSISE-00 model', detail:'Global atmospheric density accuracy (Module G). Affects drag and reentry predictions.' },
     ],
     weather: { f107:148, kp:3, dst:-22 },
     // ── Escalation & Notification Roster ────────────
@@ -255,16 +293,22 @@ function createGaugeSVG(g) {
 
 function renderGauges() {
     const panel = document.getElementById('gaugePanel');
-    panel.innerHTML = '<div class="card-header">System Gauges</div>' + STATE.gauges.map(g => {
+    const scopeColors = { FLEET:'#00e5ff', CATALOG:'#76ff03', FILTER:'#e040fb', CLOUD:'#ffd740', OPS:'#ff9100', SCIENCE:'#448aff' };
+    panel.innerHTML = '<div class="card-header">System Gauges <span style="font-size:8px;font-weight:400;color:#546e7a;letter-spacing:0">&mdash; Global Pipeline Health</span></div>' + STATE.gauges.map(g => {
         const svg = createGaugeSVG(g);
         let color;
         if(g.invert) { color = g.value <= g.green ? '#00e676' : g.value <= g.yellow ? '#ffab00' : '#ff1744'; }
         else { color = g.value >= g.green ? '#00e676' : g.value >= g.yellow ? '#ffab00' : '#ff1744'; }
-        return `<div class="gauge-card">${svg}<div class="gauge-info">
-            <div class="gauge-label">${g.label}</div>
-            <div class="gauge-value" style="color:${color}">${g.value}${g.unit ? ' '+g.unit : ''}</div>
-            <div class="gauge-trend"><span class="up">▲ nominal</span></div>
-        </div></div>`;
+        const scopeCol = scopeColors[g.scope] || '#78909c';
+        return `<div class="gauge-card" title="${g.detail || ''}">
+            ${svg}
+            <div class="gauge-info">
+                <div class="gauge-label">${g.label} <span style="font-size:7px;font-weight:700;color:${scopeCol};background:${scopeCol}18;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle">${g.scope}</span></div>
+                <div class="gauge-value" style="color:${color}">${g.value}${g.unit ? ' '+g.unit : ''}</div>
+                <div class="gauge-trend"><span class="up">▲ nominal</span></div>
+                ${g.desc ? `<div style="font-size:7px;color:#546e7a;line-height:1.3;margin-top:1px;max-width:180px">${g.desc}</div>` : ''}
+            </div>
+        </div>`;
     }).join('');
 }
 
@@ -418,6 +462,101 @@ function findSiteAtPoint(mx, my) {
     return null;
 }
 
+// ── Per-Site Unique Equipment Registry ──────────────
+// Maps sensor names / networks to unique, site-specific equipment and specs
+const SENSOR_SPECS = {
+    'AN/FPS-85':  {aperture:'Phased Array (planar, 72×72m face)',band:'UHF 442 MHz',range:'40,000 km',trackRate:'200 obj/min',power:'800 kW peak',generation:'Gen 2 (1969, upgraded 2003)',uniqueNote:'Only space surveillance radar purpose-built for tracking — the "backbone" of USSF deep-space surveillance'},
+    'UEWR':       {aperture:'Solid-State Phased Array (25m face)',band:'UHF 420-450 MHz',range:'5,500 km',trackRate:'120 obj/min',power:'22 MW peak',generation:'Gen 3 (2000s Upgraded Early Warning)',uniqueNote:'Dual-mission: missile warning + space surveillance, AN/FPS-132 derivative'},
+    'AN/FPS-108': {aperture:'Mechanically Steered Phased Array',band:'L-band 1.175-1.375 GHz',range:'4,000 km',trackRate:'90 obj/min',power:'3 MW peak',generation:'Gen 2 (Cobra Dane, 1977)',uniqueNote:'Largest single-face phased array in the world, primarily treaty monitoring + SSA'},
+    'Space Fence': {aperture:'Distributed S-band (ground-based fence)',band:'S-band 2.8 GHz',range:'1,500 km LEO',trackRate:'1,500 obj/pass',power:'6 MW distributed',generation:'Gen 4 (2020 IOC)',uniqueNote:'Next-gen cataloging — detects objects as small as 5cm. First S-band space surveillance system'},
+    'PARCS':      {aperture:'Single-face Phased Array (26m)',band:'UHF 430 MHz',range:'3,700 km',trackRate:'80 obj/min',power:'500 kW peak',generation:'Gen 1 (1975, Safeguard heritage)',uniqueNote:'Perimeter Acquisition Radar Characterization System — northward-facing for polar orbits'},
+    'PAVE PAWS':  {aperture:'Dual-face Phased Array',band:'UHF 420-450 MHz',range:'5,500 km',trackRate:'100 obj/min',power:'600 kW peak',generation:'Gen 2 (1980)',uniqueNote:'SLBM early warning + space surveillance, two 72° coverage faces'},
+    'GEODSS':     {aperture:'1.0m Cassegrain + 0.38m aux',band:'Visible (450-850nm)',range:'GEO (36,000 km)',trackRate:'10 obj/hr',power:'2.5 kW telescope',generation:'Gen 2 (1982, CMOS upgrade 2018)',uniqueNote:'Ground-based Electro-Optical Deep Space Surveillance — the deep-space "eyes" of the USSF'},
+    'AMOS 3.6m':  {aperture:'3.67m Cassegrain (AEOS)',band:'Visible + Adaptive Optics',range:'GEO + HEO',trackRate:'5 obj/hr',power:'8 kW',generation:'Gen 3 (2002)',uniqueNote:'Advanced Electro-Optical System — highest-resolution ground-based space imaging in DoD. Can resolve satellite shape at GEO'},
+    'SST 3.5m':   {aperture:'3.5m DARPA Space Surv Telescope',band:'Visible (wide-field)',range:'GEO 42,000 km',trackRate:'100+ obj/night (survey)',power:'5 kW',generation:'Gen 4 (transferred to AU 2022)',uniqueNote:'Widest field-of-view for GEO surveillance — now operated jointly with Royal Australian Air Force at Harold E. Holt NCS'},
+    'MCAT 1.3m':  {aperture:'1.3m Ritchey-Chrétien',band:'Visible + NIR',range:'GEO',trackRate:'15 obj/hr',power:'3 kW',generation:'Gen 3 (2015)',uniqueNote:'Meter-Class Autonomous Telescope — dedicated GEO survey from southern hemisphere'},
+    'HUSIR':      {aperture:'37m Cassegrain (Haystack UWB)',band:'W-band 96 GHz',range:'1,000 km LEO',trackRate:'20 obj/hr',power:'400 kW peak',generation:'Gen 3 (2014 upgrade)',uniqueNote:'Haystack Ultrawideband Satellite Imaging Radar — millimeter-wave imaging resolves 10cm features on LEO objects'},
+    'Millstone L-band':{aperture:'26m Cassegrain',band:'L-band 1.295 GHz',range:'20,000 km',trackRate:'40 obj/hr',power:'3 MW peak',generation:'Gen 2 (1957, upgraded)',uniqueNote:'Lincoln Labs heritage radar — operational since Sputnik era, deep-space metric tracking'},
+    'ARPA LR Track':{aperture:'Parabolic Reflector',band:'UHF/VHF',range:'40,000 km',trackRate:'30 obj/hr',power:'6 MW peak',generation:'Gen 2 (1970)',uniqueNote:'ALTAIR radar — longest-range deep-space tracking radar in the Pacific'},
+    'ALCOR C-band':{aperture:'12m Dish',band:'C-band 5.6 GHz',range:'2,000 km',trackRate:'50 obj/hr',power:'2 MW peak',generation:'Gen 2 (1970)',uniqueNote:'Narrow-beam imaging radar — wideband RCS measurement for satellite characterization'},
+    'AN/FPS-16':  {aperture:'3.6m Parabolic',band:'C-band 5.5 GHz',range:'500 km',trackRate:'1 obj (tracking)',power:'1 MW peak',generation:'Gen 1 (1960s)',uniqueNote:'Precision tracking radar — primarily range safety, repurposed for SSA support'},
+    'AN/FPS-132': {aperture:'Solid-State Phased Array',band:'UHF 420-450 MHz',range:'5,500 km',trackRate:'120 obj/min',power:'22 MW peak',generation:'Gen 3 (BMEWS upgrade)',uniqueNote:'Upgraded BMEWS — solid-state transmit/receive modules replaced legacy klystrons'},
+    'AN/FPS-133': {aperture:'Phased Array (two faces)',band:'UHF 420-450 MHz',range:'4,600 km',trackRate:'100 obj/min',power:'500 kW peak',generation:'Gen 2 (PAVE PAWS variant)',uniqueNote:'West Coast SLBM warning + SSA, 240° azimuth coverage from two faces'},
+    'DARC':       {aperture:'S-band Phased Array (dual-face)',band:'S-band 3.3 GHz',range:'3,000 km',trackRate:'200 obj/min',power:'4 MW peak',generation:'Gen 4 (2023 IOC)',uniqueNote:'Deep-space Advanced Radar Capability — newest USSF radar, globally distributed for 24/7 GEO coverage'},
+    'Starfire OD': {aperture:'3.5m (Starfire Optical Range)',band:'Vis + Adaptive Optics + Laser',range:'GEO',trackRate:'5 obj/hr',power:'6 kW + laser guide star',generation:'Gen 3 (2000s)',uniqueNote:'Air Force Research Lab — pioneered AO for space surveillance, 3.5m sodium-guide-star system'},
+    'Raven-class': {aperture:'0.4m COTS Cassegrain',band:'Visible',range:'GEO',trackRate:'20 obj/night',power:'0.5 kW',generation:'Gen 3 (2005+)',uniqueNote:'Small-aperture, globally deployed GEO surveillance network — 12+ sites worldwide'},
+    'Purdy 1.0m': {aperture:'1.0m Dall-Kirkham',band:'Visible + NIR',range:'GEO',trackRate:'10 obj/hr',power:'2 kW',generation:'Gen 3 (2018)',uniqueNote:'Automated metric tracking — supports GEODSS overflow and southern hemisphere coverage'},
+    'Ground Cal':  {aperture:'Calibration Reference',band:'Multi-band',range:'Varies',trackRate:'N/A',power:'1 kW',generation:'Gen 3',uniqueNote:'Ground calibration facility for on-orbit sensor characterization'},
+    'GRAVES Bistatic':{aperture:'Tx: 4×8 dipole array, Rx: 100m baseline',band:'VHF 143.05 MHz',range:'1,500 km LEO',trackRate:'100 obj/day',power:'10 kW CW',generation:'Gen 3 (2005)',uniqueNote:'Only European operational space surveillance radar — continuous-wave bistatic fence design'},
+    'TIRA L/Ku':  {aperture:'34m Cassegrain',band:'L (1.33 GHz) + Ku (16.7 GHz)',range:'2,000 km',trackRate:'20 obj/hr',power:'1 MW L + 15 kW Ku',generation:'Gen 3 (1990s)',uniqueNote:'Tracking and Imaging Radar — highest-resolution radar imagery in Europe, resolves 10cm features'},
+    'EISCAT UHF': {aperture:'32m Cassegrain',band:'UHF 931 MHz',range:'1,500 km',trackRate:'30 obj/hr',power:'2 MW peak',generation:'Gen 2 (1981)',uniqueNote:'Ionospheric research radar repurposed for space debris measurement campaigns'},
+    'Phased Array S-band':{aperture:'Phased Array (256/512 elements)',band:'S-band 2.4 GHz',range:'1,200 km LEO',trackRate:'800 obj/pass',power:'200 kW peak',generation:'Gen 4 (LeoLabs proprietary)',uniqueNote:'Commercial SSA radar — optimized for LEO catalog completeness to 2cm'},
+    'Numerica 0.5m':{aperture:'0.5m f/4 Newtonian',band:'Visible',range:'GEO 42,000 km',trackRate:'30 obj/night',power:'0.8 kW',generation:'Gen 3 (Numerica/Slingshot)',uniqueNote:'Commercial optical surveillance — Slingshot acquisition, automated scheduling, near-real-time reporting'},
+    'SBIG FW8G-STX':{aperture:'Filter Wheel',band:'BVRI+Clear',range:'N/A',trackRate:'N/A',power:'15W',generation:'Gen 2',uniqueNote:'Standard photometric filter set'},
+    'TAROT 25cm':  {aperture:'0.25m f/3.4 astrograph',band:'Visible (unfiltered)',range:'LEO + MEO',trackRate:'60 obj/night',power:'0.3 kW',generation:'Gen 2 (1999)',uniqueNote:'Télescope à Action Rapide — designed for GRB followup, repurposed for debris survey'},
+    'AIUB 1m':     {aperture:'1.0m Ritchey-Chrétien (ZIMLAT)',band:'Visible + Laser ranging',range:'GEO + HEO',trackRate:'15 obj/night',power:'2 kW + laser',generation:'Gen 3 (2008)',uniqueNote:'Astronomical Institute of University of Bern — combined SLR + passive optical, precision orbit determination'},
+    'OGS 1m':      {aperture:'1.0m Zeiss (ESA Optical Ground Station)',band:'Visible + Laser comms',range:'GEO',trackRate:'10 obj/night',power:'3 kW',generation:'Gen 2 (1995)',uniqueNote:'ESA dual-purpose: SSA survey + optical comms technology demonstration (quantum key distribution)'},
+    'DLR 0.5m':    {aperture:'0.5m Cassegrain',band:'Visible',range:'GEO',trackRate:'20 obj/night',power:'0.8 kW',generation:'Gen 2 (2012)',uniqueNote:'German Aerospace Center survey telescope — automated scheduling for DLR/ESA SSA programme'},
+};
+
+// Per-site upgrade recommendation engine
+function getUpgradePath(site) {
+    const sensor = site.sensor || '';
+    const gen = SENSOR_SPECS[sensor]?.generation || '';
+    const genNum = parseInt(gen.match(/Gen (\d)/)?.[1]) || 2;
+    const upgrades = [];
+    // Hardware upgrades based on generation
+    if(genNum <= 2) {
+        upgrades.push({item:'Receiver → GaN T/R modules',priority:'HIGH',eta:'2026-Q4',cost:'$2.4M',reason:'Legacy klystron/vacuum-tube → solid-state, +40% sensitivity'});
+        upgrades.push({item:'Signal processor → FPGA RFSoC',priority:'HIGH',eta:'2026-Q3',cost:'$180K',reason:'Replace 2010-era DSP boards with Xilinx ZCU216'});
+    }
+    if(genNum <= 3 && site.type === 'optical') {
+        upgrades.push({item:'Detector → QHY600M CMOS',priority:'MEDIUM',eta:'2026-Q2',cost:'$28K',reason:'Replace CCD with CMOS — 3× faster readout, lower noise floor'});
+        upgrades.push({item:'Mount firmware → v4.1 (predictive slew)',priority:'LOW',eta:'2026-Q1',cost:'$0',reason:'Software update — reduces target acquisition time by 15%'});
+    }
+    if(site.gpu < 50 && site.type === 'optical') {
+        upgrades.push({item:'Edge GPU → Orin AGX 64GB',priority:'HIGH',eta:'2026-Q2',cost:'$2.2K',reason:'Current GPU below PINN inference threshold — streak detection running CPU-fallback'});
+    }
+    // Network upgrades
+    const hasStarlink = site.network === 'SentinelForge' || site.network === 'ExoAnalytic';
+    if(!hasStarlink && site.network !== 'USSF-SSN') {
+        upgrades.push({item:'Uplink → Starlink Business',priority:'MEDIUM',eta:'2026-Q3',cost:'$500/mo',reason:'Replace DSL/cellular with 100+ Mbps LEO sat backhaul for real-time TDM delivery'});
+    }
+    if(upgrades.length === 0) {
+        upgrades.push({item:'All systems at Gen 4+',priority:'NONE',eta:'—',cost:'—',reason:'No upgrades recommended — site meets SentinelForge v3.x baseline requirements'});
+    }
+    return upgrades;
+}
+
+// Per-site satellite data network hookup
+function getSatDataNetwork(site) {
+    const nets = {
+        'USSF-SSN':  {uplink:'SATCOM (WGS/AEHF) + terrestrial fiber',bandwidth:'10 Gbps fiber / 250 Mbps SATCOM',protocol:'CCSDS TDM v2.0 + SP ephemeris',cloud:'CSpOC JMS (Joint Mission System)',classification:'SECRET/NOFORN',latency:'<200ms (fiber) / 400ms (SATCOM)',dataFormat:'CCSDS TDM + custom JMS schema',note:'Primary DoD SSA pipeline — all data classified and routed through CSpOC'},
+        'LeoLabs':   {uplink:'Starlink Business + regional fiber',bandwidth:'100 Mbps (Starlink) / 1 Gbps (fiber)',protocol:'Proprietary LeoLabs API (REST/gRPC)',cloud:'LeoLabs Cloud (AWS GovCloud)',classification:'UNCLASSIFIED / CUI',latency:'<150ms',dataFormat:'JSON catalog + TDM export',note:'Commercial SSA — near-real-time catalog updates, API access for O/O customers'},
+        'Slingshot': {uplink:'Starlink + terrestrial',bandwidth:'100 Mbps',protocol:'Slingshot Beacon API + CCSDS TDM',cloud:'Slingshot Cloud (Azure)',classification:'UNCLASSIFIED',latency:'<200ms',dataFormat:'Beacon format + TDM/OEM export',note:'Commercial SSA platform — Numerica-heritage orbit determination pipeline'},
+        'ExoAnalytic':{uplink:'Starlink + VSAT Ku-band',bandwidth:'50 Mbps (VSAT) / 100 Mbps (Starlink)',protocol:'ExoAnalytic REST API v3',cloud:'ExoAnalytic Cloud (GCP)',classification:'UNCLASSIFIED',latency:'<300ms',dataFormat:'Proprietary + TDM/OEM export',note:'Commercial GEO surveillance — AI-driven object characterization + activity detection'},
+        'ESA-SST':   {uplink:'ESTRACK DSN + terrestrial',bandwidth:'2 Gbps (ESTRACK fiber)',protocol:'CCSDS TDM + ESA SST data format',cloud:'ESA SSA Programme (ESOC Darmstadt)',classification:'EU RESTRICTED',latency:'<250ms',dataFormat:'CCSDS TDM + ESA DISCOSweb',note:'European SST programme — multi-national sensor network coordinated via EU SST Consortium'},
+    };
+    // Fallback for allied/contributing sites
+    const fallback = {uplink:'Terrestrial broadband',bandwidth:'50-200 Mbps',protocol:'CCSDS TDM (Space-Track push)',cloud:'Space-Track.org + national SSA center',classification:'UNCLASSIFIED',latency:'<500ms',dataFormat:'CCSDS TDM / GP catalog',note:'Contributing sensor — data shared via bilateral SSA sharing agreement'};
+    return nets[site.network] || fallback;
+}
+
+// Programming stack per site
+function getProgrammingStack(site) {
+    if(site.network === 'USSF-SSN') {
+        return {os:'RHEL 8.x (STIG-hardened)',runtime:'C++17/CUDA 12.x',ml:'N/A (classified pipeline)',scheduler:'JMS Tasker v4.2',observability:'Splunk + Nagios',cicd:'Air-gapped GitLab CI'};
+    }
+    if(site.network === 'LeoLabs') {
+        return {os:'Ubuntu 22.04 LTS',runtime:'Python 3.11 + Rust',ml:'PyTorch 2.3 + TensorRT',scheduler:'LeoLabs Scheduler v6',observability:'Datadog + Grafana',cicd:'GitHub Actions → AWS CodeDeploy'};
+    }
+    if(site.network === 'Slingshot' || site.network === 'ExoAnalytic') {
+        return {os:'Ubuntu 22.04 LTS',runtime:'Python 3.11 + C++17',ml:'PyTorch 2.3 + ONNX Runtime',scheduler:'Slingshot Beacon Scheduler',observability:'Prometheus + Grafana',cicd:'Azure DevOps Pipelines'};
+    }
+    // Default (SentinelForge / Contributing)
+    return {os:'Ubuntu 22.04 LTS (SentinelForge Edge Image)',runtime:'Python 3.11 + CUDA 12.4 + C++17',ml:'PyTorch 2.3 + TensorRT 10 + ONNX',scheduler:'sf_tasker v1.4 (Kafka-driven)',observability:'Prometheus + Grafana + PagerDuty',cicd:'GitHub Actions → Docker → Edge OTA'};
+}
+
 if(mapCanvas) {
     mapCanvas.addEventListener('mousemove', (e) => {
         const rect = mapCanvas.getBoundingClientRect();
@@ -427,17 +566,86 @@ if(mapCanvas) {
         if(site) {
             const statusColor = site.status==='active'?'#00e676':site.status==='degraded'?'#ffab00':'#ff1744';
             const statusIcon = site.status==='active'?'🟢':site.status==='degraded'?'🟡':'🔴';
+            const netColor = {'USSF-SSN':'#ff1744','LeoLabs':'#00e5ff','Slingshot':'#ffd740','ExoAnalytic':'#76ff03','ESA-SST':'#448aff'}[site.network] || '#e040fb';
+            const spec = SENSOR_SPECS[site.sensor] || {};
+            const upgrades = getUpgradePath(site);
+            const satNet = getSatDataNetwork(site);
+            const progStack = getProgrammingStack(site);
+
+            // Position tooltip — keep within map bounds
+            let ttLeft = e.clientX - rect.left + 16;
+            let ttTop = e.clientY - rect.top - 10;
+            if(ttLeft + 430 > rect.width) ttLeft = e.clientX - rect.left - 440;
+            if(ttTop + 300 > rect.height) ttTop = rect.height - 320;
+            if(ttTop < 0) ttTop = 4;
+
             mapTooltip.style.display = 'block';
-            mapTooltip.style.left = (e.clientX - rect.left + 14) + 'px';
-            mapTooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+            mapTooltip.style.left = ttLeft + 'px';
+            mapTooltip.style.top = ttTop + 'px';
             mapTooltip.innerHTML = `
-                <div class="tt-name">${statusIcon} ${site.name}</div>
-                <div class="tt-loc">${site.lat.toFixed(1)}°${site.lat>=0?'N':'S'}, ${Math.abs(site.lon).toFixed(1)}°${site.lon>=0?'E':'W'} · ${site.network}</div>
+                <div class="tt-name">${statusIcon} ${site.name} <span class="tt-badge" style="background:${netColor}22;color:${netColor};border:1px solid ${netColor}44;margin-left:6px">${site.network}</span></div>
+                <div class="tt-loc">${site.id} · ${site.lat.toFixed(2)}°${site.lat>=0?'N':'S'}, ${Math.abs(site.lon).toFixed(2)}°${site.lon>=0?'E':'W'} · <span style="color:${statusColor};font-weight:700">${site.status.toUpperCase()}</span></div>
                 <div class="tt-stat">
-                    <span style="color:${statusColor};font-weight:600">${site.status.toUpperCase()}</span> · ${site.type} · ${site.sensor}<br>
-                    GPU: <b>${site.gpu}%</b> · Detections 24h: <b>${site.detections_24h}</b> · Queue: <b>${site.queue}</b>${site.seeing ? ` · Seeing: <b>${site.seeing}"</b>` : ''}
+                    <span style="color:${statusColor};font-weight:600">${site.type.toUpperCase()}</span> · <b>${site.sensor}</b>
+                    ${site.seeing ? ` · Seeing: <b>${site.seeing}"</b>` : ''}
+                    · Det/24h: <b style="color:#e8eaf6">${site.detections_24h.toLocaleString()}</b>
+                    · Queue: <b>${site.queue}</b>
+                    ${site.gpu ? ` · GPU: <b>${site.gpu}%</b>` : ''}
                 </div>
-                <div style="margin-top:4px;color:#78909c;font-size:9px">Click for full tech catalog →</div>`;
+
+                <!-- UNIQUE EQUIPMENT -->
+                ${spec.aperture ? `<div class="tt-section">
+                    <div class="tt-label" style="color:#00e5ff">🔭 Sensor Equipment — ${spec.generation || 'Unknown Gen'}</div>
+                    <div class="tt-grid">
+                        <div>Aperture: <b>${spec.aperture}</b></div>
+                        <div>Band: <b>${spec.band}</b></div>
+                        <div>Range: <b>${spec.range}</b></div>
+                        <div>Track Rate: <b>${spec.trackRate}</b></div>
+                        <div>Power: <b>${spec.power}</b></div>
+                    </div>
+                    <div style="margin-top:3px;font-size:8px;color:#78909c;font-style:italic">${spec.uniqueNote || ''}</div>
+                </div>` : ''}
+
+                <!-- SAT DATA NETWORK -->
+                <div class="tt-section">
+                    <div class="tt-label" style="color:#7c4dff">📡 Sat-Data Network Hookup</div>
+                    <div class="tt-grid">
+                        <div>Uplink: <b>${satNet.uplink}</b></div>
+                        <div>Bandwidth: <b>${satNet.bandwidth}</b></div>
+                        <div>Protocol: <b>${satNet.protocol}</b></div>
+                        <div>Latency: <b style="color:#76ff03">${satNet.latency}</b></div>
+                        <div>Cloud: <b>${satNet.cloud}</b></div>
+                        <div>Class: <span class="tt-badge" style="background:${satNet.classification.includes('SECRET')?'rgba(255,23,68,0.15)':'rgba(0,229,255,0.1)'};color:${satNet.classification.includes('SECRET')?'#ff1744':'#00e5ff'}">${satNet.classification}</span></div>
+                    </div>
+                </div>
+
+                <!-- PROGRAMMING STACK -->
+                <div class="tt-section">
+                    <div class="tt-label" style="color:#76ff03">💻 Programming Stack</div>
+                    <div class="tt-grid">
+                        <div>OS: <b>${progStack.os}</b></div>
+                        <div>Runtime: <b>${progStack.runtime}</b></div>
+                        <div>ML/AI: <b>${progStack.ml}</b></div>
+                        <div>Scheduler: <b>${progStack.scheduler}</b></div>
+                        <div>Obs: <b>${progStack.observability}</b></div>
+                        <div>CI/CD: <b>${progStack.cicd}</b></div>
+                    </div>
+                </div>
+
+                <!-- UPGRADE PATH -->
+                <div class="tt-section">
+                    <div class="tt-label" style="color:#ffd740">⬆ Upgrade Path</div>
+                    ${upgrades.map(u => {
+                        const pCol = u.priority==='HIGH'?'#ff1744':u.priority==='MEDIUM'?'#ffab00':u.priority==='LOW'?'#76ff03':'#546e7a';
+                        return `<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:2px;font-size:9px">
+                            <span class="tt-badge" style="background:${pCol}22;color:${pCol};min-width:36px;text-align:center">${u.priority}</span>
+                            <div><b>${u.item}</b><br><span style="color:#78909c;font-size:8px">${u.reason}</span></div>
+                            <div style="margin-left:auto;text-align:right;white-space:nowrap;color:#546e7a;font-size:8px">${u.eta}<br>${u.cost}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+
+                <div style="margin-top:6px;color:#546e7a;font-size:8px;text-align:center">Click for full tech catalog & detection inventory →</div>`;
             mapCanvas.style.cursor = 'pointer';
         } else {
             mapTooltip.style.display = 'none';
@@ -762,10 +970,11 @@ function renderInventory(tab) {
         `</tbody></table>`;
     } else if(tab === 'conj') {
         el.innerHTML = `<table class="inv-table"><thead><tr><th>ID</th><th>Primary</th><th>Secondary</th><th>TCA</th><th>Miss</th><th>Pc</th><th>Tier</th></tr></thead><tbody>` +
-        STATE.conjunctions.map(c => {
+        STATE.conjunctions.map((c, idx) => {
             const badge = c.tier==='EMERGENCY'?'badge-red':c.tier==='RED'?'badge-red':c.tier==='YELLOW'?'badge-yellow':'badge-green';
-            return `<tr><td>${c.id}</td><td>${c.priName}</td><td>${c.secName}</td><td>${c.tca.slice(5,16)}</td><td>${c.miss} km</td><td>${c.pc.toExponential(1)}</td><td><span class="badge ${badge}">${c.tier}</span></td></tr>`;
-        }).join('') + `</tbody></table>`;
+            return `<tr style="cursor:pointer" onclick="if(typeof openConjunctionDetail==='function'){openConjunctionDetail(STATE.conjunctions[${idx}])}" onmouseover="this.style.background='rgba(124,77,255,0.08)'" onmouseout="this.style.background=''"><td style="color:var(--text-primary);font-weight:600">${c.id}</td><td>${c.priName}</td><td>${c.secName}</td><td>${c.tca.slice(5,16)}</td><td>${c.miss} km</td><td style="font-family:'JetBrains Mono';color:${c.tier==='EMERGENCY'?'#ff1744':c.tier==='RED'?'#ff5252':'#ffab00'}">${c.pc.toExponential(1)}</td><td><span class="badge ${badge}">${c.tier}</span></td></tr>`;
+        }).join('') + `</tbody></table>
+        <div style="font-size:9px;color:#546e7a;padding:4px 8px;margin-top:4px">💡 Click any row for full debris intelligence, response protocol, and notification roster</div>`;
     } else if(tab === 'escalation') {
         const esc = STATE.escalation;
         el.innerHTML = esc.tiers.map(tier => {
