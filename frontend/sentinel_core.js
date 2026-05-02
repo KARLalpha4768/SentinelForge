@@ -126,6 +126,81 @@ const STATE = {
             { trigger: 'Edge node failure', steps: '1. Auto-failover to backup pipeline → 2. Page Edge Compute Lead → 3. If throughput < 5 fps: escalate to P1 → 4. Activate cloud-side burst processing' },
         ],
     },
+    // ── Pc Timeline (conjunction probability evolution) ──
+    pcTimeline: {
+        'EVT-2041': { priName:'ISS', secName:'COSMOS DEB', tca:'2026-05-02T14:22Z', series: [
+            {t:-72,pc:1.2e-6},{t:-60,pc:4.8e-6},{t:-48,pc:2.1e-5},{t:-36,pc:8.4e-4},{t:-24,pc:1.8e-3},{t:-18,pc:2.5e-3},{t:-12,pc:3.0e-3},{t:-6,pc:3.2e-3},{t:-3,pc:3.1e-3},{t:0,pc:3.2e-3}
+        ]},
+        'EVT-2042': { priName:'STARLINK-3391', secName:'CZ-3B DEB', tca:'2026-05-03T08:55Z', series: [
+            {t:-72,pc:2.0e-7},{t:-60,pc:5.1e-7},{t:-48,pc:1.8e-6},{t:-36,pc:9.2e-6},{t:-24,pc:3.8e-5},{t:-12,pc:6.4e-5},{t:-6,pc:7.9e-5},{t:0,pc:8.1e-5}
+        ]},
+        'EVT-2043': { priName:'NOAA-20', secName:'FENGYUN DEB', tca:'2026-05-02T22:10Z', series: [
+            {t:-48,pc:5.0e-5},{t:-36,pc:3.2e-4},{t:-24,pc:2.8e-3},{t:-18,pc:8.1e-3},{t:-12,pc:1.9e-2},{t:-6,pc:3.5e-2},{t:-3,pc:4.0e-2},{t:0,pc:4.1e-2}
+        ]},
+    },
+    // ── Maneuver Decision Data ──────────────────────────
+    maneuvers: [
+        { conjId:'EVT-2043', asset:'NOAA-20', fuelKg:42.1, fuelPct:68, dv_options: [
+            { name:'In-track +1m/s', dv:1.0, fuelCost:0.8, newPc:1.2e-6, newMiss:12.4, window:'TCA-6h to TCA-3h', risk:'LOW' },
+            { name:'In-track +0.5m/s', dv:0.5, fuelCost:0.4, newPc:3.8e-4, newMiss:4.1, window:'TCA-4h to TCA-2h', risk:'MEDIUM' },
+            { name:'Accept risk (no burn)', dv:0, fuelCost:0, newPc:4.1e-2, newMiss:0.18, window:'N/A', risk:'HIGH' },
+        ]},
+        { conjId:'EVT-2041', asset:'ISS', fuelKg:890, fuelPct:72, dv_options: [
+            { name:'Debris Avoidance +0.3m/s', dv:0.3, fuelCost:12.5, newPc:8.0e-8, newMiss:28.0, window:'TCA-8h to TCA-4h', risk:'LOW' },
+            { name:'Accept risk', dv:0, fuelCost:0, newPc:3.2e-3, newMiss:0.42, window:'N/A', risk:'HIGH' },
+        ]},
+    ],
+    // ── Launch Timeline ─────────────────────────────────
+    launches: [
+        { date:'2026-05-02T09:15Z', vehicle:'Falcon 9', payload:'Starlink Group 12-8 (23 sats)', site:'CCSFS LC-40', orbit:'LEO 550km 53°', owner:'SpaceX', status:'GO' },
+        { date:'2026-05-02T18:30Z', vehicle:'Soyuz-2.1b', payload:'GLONASS-K2 No.8', site:'Plesetsk', orbit:'MEO 19,100km 64.8°', owner:'Roscosmos', status:'GO' },
+        { date:'2026-05-03T03:00Z', vehicle:'CZ-5B', payload:'Wentian-2 Lab Module', site:'Wenchang', orbit:'LEO 390km 41.5°', owner:'CNSA', status:'GO' },
+        { date:'2026-05-04T14:45Z', vehicle:'Falcon 9', payload:'Transporter-14 (rideshare)', site:'Vandenberg SLC-4E', orbit:'SSO 525km 97.5°', owner:'SpaceX', status:'GO' },
+        { date:'2026-05-05T22:00Z', vehicle:'H3-24L', payload:'IGS Radar-8', site:'Tanegashima', orbit:'SSO 500km', owner:'JAXA', status:'TBD' },
+        { date:'2026-05-07T11:30Z', vehicle:'Ariane 6', payload:'Syracuse 4C (mil-sat)', site:'Kourou ELA-4', orbit:'GTO→GEO', owner:'ArianeGroup', status:'GO' },
+        { date:'2026-05-09T06:00Z', vehicle:'PSLV-C62', payload:'EOS-08 (Earth obs)', site:'Sriharikota', orbit:'LEO 475km 97.4°', owner:'ISRO', status:'GO' },
+    ],
+    // ── Reentry Predictions ─────────────────────────────
+    reentries: [
+        { norad:54321, name:'CZ-5B R/B (2026-028B)', mass:22500, type:'Rocket Body', predictedDate:'2026-05-03', uncertainty:'±18h', risk:'HIGH', footprint:'28.5°N-28.5°S', note:'Uncontrolled reentry of heavy core stage' },
+        { norad:51234, name:'COSMOS 2551 DEB', mass:120, type:'Debris', predictedDate:'2026-05-04', uncertainty:'±6h', risk:'LOW', footprint:'52°N-52°S', note:'Small fragment, full burnup expected' },
+        { norad:48901, name:'Starlink-2841', mass:260, type:'Payload', predictedDate:'2026-05-06', uncertainty:'±12h', risk:'LOW', footprint:'53°N-53°S', note:'Controlled deorbit via ion thruster' },
+        { norad:39012, name:'Iridium 47 (defunct)', mass:689, type:'Payload', predictedDate:'2026-05-10', uncertainty:'±48h', risk:'MEDIUM', footprint:'86°N-86°S', note:'Polar orbit, near-global ground track' },
+    ],
+    // ── Debris Cloud Events ─────────────────────────────
+    debrisEvents: [
+        { name:'FY-1C ASAT (2007)', date:'2007-01-11', type:'ASAT Test', nation:'China', alt:865, inc:98.8, fragments:3528, tracked:2764, decayed:764, color:'#ff1744', parent:'FENGYUN 1C' },
+        { name:'Cosmos-Iridium (2009)', date:'2009-02-10', type:'Collision', nation:'Russia/USA', alt:790, inc:74, fragments:2296, tracked:1668, decayed:628, color:'#ff9100', parent:'COSMOS 2251 / IRIDIUM 33' },
+        { name:'Cosmos 1408 ASAT (2021)', date:'2021-11-15', type:'ASAT Test', nation:'Russia', alt:480, inc:82.6, fragments:1500, tracked:623, decayed:877, color:'#e040fb', parent:'COSMOS 1408' },
+        { name:'USA-193 Shootdown (2008)', date:'2008-02-21', type:'ASAT Intercept', nation:'USA', alt:247, inc:58.5, fragments:174, tracked:0, decayed:174, color:'#448aff', parent:'USA 193' },
+        { name:'India Shakti (2019)', date:'2019-03-27', type:'ASAT Test', nation:'India', alt:283, inc:96.6, fragments:84, tracked:12, decayed:72, color:'#76ff03', parent:'MICROSAT-R' },
+        { name:'Fengyun 4A Breakup (2025)', date:'2025-08-14', type:'Unknown Breakup', nation:'China', alt:720, inc:98.2, fragments:412, tracked:389, decayed:23, color:'#ffd740', parent:'FENGYUN 4A' },
+    ],
+    // ── Owner/Operator Registry ─────────────────────────
+    owners: {
+        25544: { name:'ISS', owner:'NASA/Roscosmos/JAXA/ESA/CSA', country:'International', purpose:'Human spaceflight', launched:'1998-11-20', mass:420000 },
+        43013: { name:'NOAA-20', owner:'NOAA/NASA', country:'USA', purpose:'Weather imaging (JPSS-1)', launched:'2017-11-18', mass:2300 },
+        48274: { name:'Starlink-3391', owner:'SpaceX', country:'USA', purpose:'Broadband internet constellation', launched:'2023-03-24', mass:295 },
+        44832: { name:'COSMOS 2251 DEB', owner:'Russian Federation (defunct)', country:'Russia', purpose:'Communications (destroyed in collision)', launched:'1993-06-16', mass:'N/A (debris)' },
+        27386: { name:'FENGYUN 1C DEB', owner:'PRC/CMA', country:'China', purpose:'Weather (destroyed in ASAT test)', launched:'1999-05-10', mass:'N/A (debris)' },
+    },
+    // ── Historical Trends ───────────────────────────────
+    trends: {
+        catalogGrowth: [
+            {date:'2020-01',count:22300},{date:'2020-07',count:23100},{date:'2021-01',count:25400},{date:'2021-07',count:27800},
+            {date:'2022-01',count:30500},{date:'2022-07',count:33200},{date:'2023-01',count:35800},{date:'2023-07',count:38100},
+            {date:'2024-01',count:40200},{date:'2024-07',count:42100},{date:'2025-01',count:43800},{date:'2025-07',count:45100},{date:'2026-01',count:46238},
+        ],
+        conjFrequency: [
+            {date:'2025-W44',red:2,yellow:18,info:142},{date:'2025-W45',red:3,yellow:22,info:156},{date:'2025-W46',red:1,yellow:15,info:131},
+            {date:'2025-W47',red:4,yellow:28,info:189},{date:'2025-W48',red:2,yellow:19,info:148},{date:'2026-W01',red:3,yellow:25,info:167},
+            {date:'2026-W02',red:5,yellow:31,info:201},{date:'2026-W03',red:2,yellow:17,info:139},{date:'2026-W04',red:3,yellow:24,info:178},
+        ],
+        detectionRate: [
+            {date:'2026-04-25',rate:89.1},{date:'2026-04-26',rate:87.8},{date:'2026-04-27',rate:91.2},{date:'2026-04-28',rate:88.4},
+            {date:'2026-04-29',rate:86.9},{date:'2026-04-30',rate:87.2},{date:'2026-05-01',rate:87.2},
+        ],
+    },
 };
 
 // ── UTC Clock ───────────────────────────────────────
@@ -323,6 +398,174 @@ function renderInventory(tab) {
             <div style="color:var(--text-primary);font-weight:600;margin-bottom:2px">${p.trigger}</div>
             <div style="color:var(--text-secondary)">${p.steps}</div>
         </div>`).join('');
+    } else if(tab === 'pcTimeline') {
+        // ── #1: Pc Timeline Chart ──────────────────────
+        el.innerHTML = `<div style="padding:4px 8px;font-size:11px;color:var(--text-secondary);margin-bottom:4px">Probability of Collision evolution vs hours-to-TCA</div><canvas id="pcChart" style="width:100%;height:180px"></canvas>` +
+        Object.entries(STATE.pcTimeline).map(([id,evt]) => {
+            const conj = STATE.conjunctions.find(c=>c.id===id);
+            const tier = conj?.tier||'YELLOW';
+            const badge = tier==='EMERGENCY'?'badge-red':tier==='RED'?'badge-red':'badge-yellow';
+            const owner = STATE.owners[conj?.pri];
+            return `<div style="padding:4px 8px;margin:4px 0;background:var(--bg-glass);border-radius:4px;border-left:3px solid ${tier==='EMERGENCY'?'#ff1744':'#ffab00'}">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="color:var(--text-primary);font-weight:600;font-size:11px">${id}: ${evt.priName} vs ${evt.secName}</span>
+                    <span class="badge ${badge}">${tier}</span>
+                </div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:2px">TCA: ${evt.tca} | Current Pc: ${evt.series[evt.series.length-1].pc.toExponential(1)} | Trend: ${evt.series[evt.series.length-1].pc > evt.series[evt.series.length-2]?.pc ? '↑ RISING' : '→ STABLE'}</div>
+                ${owner ? `<div style="font-size:9px;color:var(--text-secondary);margin-top:1px">Owner: ${owner.owner} (${owner.country}) — ${owner.purpose}</div>` : ''}
+            </div>`;
+        }).join('');
+        // Draw Pc chart
+        setTimeout(() => {
+            const canvas = document.getElementById('pcChart');
+            if(!canvas) return;
+            canvas.width = canvas.parentElement.clientWidth - 16;
+            canvas.height = 180;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a0c14'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 0.5;
+            for(let i=0;i<5;i++){const y=15+i*35;ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(canvas.width-10,y);ctx.stroke();}
+            // Y-axis labels (log scale)
+            ctx.fillStyle = '#78909c'; ctx.font = '9px JetBrains Mono';
+            ['1e-1','1e-2','1e-3','1e-4','1e-5'].forEach((l,i)=>ctx.fillText(l,2,20+i*35));
+            // Threshold lines
+            ctx.strokeStyle = 'rgba(255,23,68,0.4)'; ctx.setLineDash([4,4]); ctx.beginPath();
+            const y1e2 = 15+35; ctx.moveTo(40,y1e2); ctx.lineTo(canvas.width-10,y1e2); ctx.stroke();
+            ctx.strokeStyle = 'rgba(255,171,0,0.3)'; ctx.beginPath();
+            const y1e3 = 15+70; ctx.moveTo(40,y1e3); ctx.lineTo(canvas.width-10,y1e3); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(255,23,68,0.6)'; ctx.font='8px Inter'; ctx.fillText('EMERGENCY',canvas.width-65,y1e2-3);
+            ctx.fillStyle = 'rgba(255,171,0,0.5)'; ctx.fillText('RED',canvas.width-25,y1e3-3);
+            // Plot each conjunction series
+            const colors = {'EVT-2041':'#ff5252','EVT-2042':'#ffd740','EVT-2043':'#ff1744'};
+            const xScale = (canvas.width-50)/72;
+            const yLog = (pc) => { const lp = -Math.log10(Math.max(pc,1e-8)); return 15+(lp-1)*35; };
+            Object.entries(STATE.pcTimeline).forEach(([id,evt])=>{
+                ctx.strokeStyle = colors[id]||'#00e5ff'; ctx.lineWidth = 2; ctx.beginPath();
+                evt.series.forEach((pt,i)=>{
+                    const x = 40+(pt.t+72)*xScale;
+                    const y = Math.min(Math.max(yLog(pt.pc),10),175);
+                    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+                });
+                ctx.stroke();
+                // Label
+                const last = evt.series[evt.series.length-1];
+                ctx.fillStyle = colors[id]||'#00e5ff'; ctx.font='9px Inter';
+                ctx.fillText(id.slice(-4),40+(last.t+72)*xScale+3,yLog(last.pc)-5);
+            });
+            // X-axis
+            ctx.fillStyle = '#78909c'; ctx.font = '9px JetBrains Mono';
+            [-72,-48,-24,-12,0].forEach(h=>{const x=40+(h+72)*xScale;ctx.fillText(`T${h}h`,x-12,canvas.height-3);});
+        }, 50);
+    } else if(tab === 'maneuver') {
+        // ── #4: Maneuver Decision Panel ────────────────
+        el.innerHTML = STATE.maneuvers.map(m => {
+            const conj = STATE.conjunctions.find(c=>c.id===m.conjId);
+            return `<div style="margin-bottom:10px">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;padding:4px 8px;background:rgba(255,23,68,0.1);border-left:3px solid #ff1744;border-radius:0 4px 4px 0;margin-bottom:4px;color:#ff8a80">
+                    ${m.conjId} — ${m.asset} | Fuel: ${m.fuelKg} kg (${m.fuelPct}%)
+                </div>
+                <table class="inv-table"><thead><tr><th>Option</th><th>ΔV</th><th>Fuel</th><th>New Pc</th><th>New Miss</th><th>Window</th><th>Risk</th></tr></thead><tbody>` +
+                m.dv_options.map(o => {
+                    const badge = o.risk==='LOW'?'badge-green':o.risk==='MEDIUM'?'badge-yellow':'badge-red';
+                    return `<tr><td style="color:var(--text-primary)">${o.name}</td><td>${o.dv} m/s</td><td>${o.fuelCost} kg</td>
+                        <td style="color:${o.newPc<1e-4?'#00e676':o.newPc<1e-2?'#ffab00':'#ff1744'}">${o.newPc.toExponential(1)}</td>
+                        <td>${o.newMiss} km</td><td style="font-size:9px">${o.window}</td><td><span class="badge ${badge}">${o.risk}</span></td></tr>`;
+                }).join('') +
+                `</tbody></table></div>`;
+        }).join('');
+    } else if(tab === 'launches') {
+        // ── #7: Launch Timeline ────────────────────────
+        el.innerHTML = `<div style="padding:4px 8px;font-size:11px;color:var(--text-secondary);margin-bottom:4px">${STATE.launches.length} launches in next 7 days — each creates new trackable objects</div>
+        <table class="inv-table"><thead><tr><th>Date</th><th>Vehicle</th><th>Payload</th><th>Orbit</th><th>Status</th></tr></thead><tbody>` +
+        STATE.launches.map(l => {
+            const d = new Date(l.date); const hrs = Math.max(0,Math.round((d-new Date())/3600000));
+            const badge = l.status==='GO'?'badge-green':'badge-yellow';
+            return `<tr title="${l.site} — ${l.owner}">
+                <td style="color:var(--text-primary)">${l.date.slice(5,16)}</td>
+                <td>${l.vehicle}</td><td style="font-size:10px">${l.payload}</td><td style="font-size:10px">${l.orbit}</td>
+                <td><span class="badge ${badge}">${l.status}</span> <span style="font-size:9px;color:var(--text-secondary)">${hrs}h</span></td>
+            </tr>`;
+        }).join('') + `</tbody></table>`;
+    } else if(tab === 'reentries') {
+        // ── #8: Reentry Predictions ────────────────────
+        el.innerHTML = `<div style="padding:4px 8px;font-size:11px;color:var(--text-secondary);margin-bottom:4px">${STATE.reentries.length} predicted reentries — monitoring uncontrolled objects</div>
+        <table class="inv-table"><thead><tr><th>Object</th><th>Mass</th><th>Date</th><th>Uncert.</th><th>Risk</th></tr></thead><tbody>` +
+        STATE.reentries.map(r => {
+            const badge = r.risk==='HIGH'?'badge-red':r.risk==='MEDIUM'?'badge-yellow':'badge-green';
+            return `<tr title="${r.note} — Footprint: ${r.footprint}">
+                <td style="color:var(--text-primary);font-size:10px">${r.name}</td><td>${(r.mass/1000).toFixed(1)}t</td>
+                <td>${r.predictedDate.slice(5)}</td><td>${r.uncertainty}</td>
+                <td><span class="badge ${badge}">${r.risk}</span></td></tr>`;
+        }).join('') + `</tbody></table>`;
+    } else if(tab === 'debris') {
+        // ── #6: Debris Cloud Events ───────────────────
+        el.innerHTML = `<div style="padding:4px 8px;font-size:11px;color:var(--text-secondary);margin-bottom:4px">Major debris-generating events — primary conjunction threat sources</div>
+        <table class="inv-table"><thead><tr><th>Event</th><th>Type</th><th>Alt</th><th>Fragments</th><th>Tracked</th><th>Decayed</th></tr></thead><tbody>` +
+        STATE.debrisEvents.map(d => {
+            return `<tr><td style="color:${d.color};font-weight:600;font-size:10px">${d.name}</td><td style="font-size:10px">${d.type}</td>
+                <td>${d.alt} km</td><td style="color:var(--text-primary)">${d.fragments.toLocaleString()}</td>
+                <td>${d.tracked.toLocaleString()}</td><td style="color:var(--text-secondary)">${d.decayed.toLocaleString()}</td></tr>`;
+        }).join('') + `</tbody></table>
+        <div style="margin-top:6px;padding:4px 8px;font-size:10px;color:var(--text-secondary)">
+            Total tracked debris from major events: <span style="color:var(--text-primary);font-weight:600">${STATE.debrisEvents.reduce((s,d)=>s+d.tracked,0).toLocaleString()}</span> of
+            <span style="color:var(--text-primary)">${STATE.debrisEvents.reduce((s,d)=>s+d.fragments,0).toLocaleString()}</span> generated
+        </div>`;
+    } else if(tab === 'trending') {
+        // ── #11: Historical Trending ──────────────────
+        el.innerHTML = `<div style="padding:4px 8px;font-size:11px;color:var(--text-secondary);margin-bottom:4px">Catalog growth & conjunction frequency trends</div>
+        <canvas id="trendChart" style="width:100%;height:160px"></canvas>
+        <div style="padding:4px 8px;margin-top:4px;font-size:10px;color:var(--text-secondary)">
+            <span style="display:inline-block;width:10px;height:10px;background:#00e5ff;border-radius:2px;margin-right:4px"></span> Catalog size
+            <span style="display:inline-block;width:10px;height:10px;background:#ff5252;border-radius:2px;margin-left:12px;margin-right:4px"></span> RED conjunctions/week
+            <span style="display:inline-block;width:10px;height:10px;background:#ffd740;border-radius:2px;margin-left:12px;margin-right:4px"></span> YELLOW/week
+        </div>
+        <div style="padding:4px 8px;margin-top:6px;font-size:11px;font-weight:600;color:var(--text-primary)">Detection Rate (7 day)</div>
+        <canvas id="detRateChart" style="width:100%;height:80px"></canvas>`;
+        setTimeout(() => {
+            // Catalog growth chart
+            const c1 = document.getElementById('trendChart');
+            if(!c1) return;
+            c1.width = c1.parentElement.clientWidth - 16; c1.height = 160;
+            const x1 = c1.getContext('2d');
+            x1.fillStyle = '#0a0c14'; x1.fillRect(0,0,c1.width,c1.height);
+            const cg = STATE.trends.catalogGrowth;
+            const xS = (c1.width-50)/(cg.length-1);
+            const yS = (c1.height-30)/50000;
+            // Grid
+            x1.strokeStyle='rgba(255,255,255,0.05)';x1.lineWidth=0.5;
+            [20000,30000,40000].forEach(v=>{const y=c1.height-15-v*yS;x1.beginPath();x1.moveTo(40,y);x1.lineTo(c1.width-5,y);x1.stroke();
+                x1.fillStyle='#78909c';x1.font='8px JetBrains Mono';x1.fillText((v/1000)+'K',5,y+3);});
+            // Line
+            x1.strokeStyle='#00e5ff';x1.lineWidth=2;x1.beginPath();
+            cg.forEach((pt,i)=>{const px=40+i*xS;const py=c1.height-15-pt.count*yS;i===0?x1.moveTo(px,py):x1.lineTo(px,py);});
+            x1.stroke();
+            // Fill
+            x1.lineTo(40+(cg.length-1)*xS,c1.height-15);x1.lineTo(40,c1.height-15);x1.closePath();
+            x1.fillStyle='rgba(0,229,255,0.08)';x1.fill();
+            // X labels
+            x1.fillStyle='#78909c';x1.font='8px JetBrains Mono';
+            cg.forEach((pt,i)=>{if(i%2===0)x1.fillText(pt.date,40+i*xS-10,c1.height-2);});
+            // Detection rate chart
+            const c2 = document.getElementById('detRateChart');
+            if(!c2) return;
+            c2.width = c2.parentElement.clientWidth - 16; c2.height = 80;
+            const x2 = c2.getContext('2d');
+            x2.fillStyle = '#0a0c14'; x2.fillRect(0,0,c2.width,c2.height);
+            const dr = STATE.trends.detectionRate;
+            const xS2 = (c2.width-50)/(dr.length-1);
+            x2.strokeStyle = 'rgba(0,230,118,0.3)'; x2.lineWidth = 0.5;
+            [85,90].forEach(v=>{const y=(95-v)/15*60+5;x2.beginPath();x2.moveTo(40,y);x2.lineTo(c2.width-5,y);x2.stroke();
+                x2.fillStyle='#78909c';x2.font='8px JetBrains Mono';x2.fillText(v+'%',8,y+3);});
+            x2.strokeStyle='#00e676';x2.lineWidth=2;x2.beginPath();
+            dr.forEach((pt,i)=>{const px=40+i*xS2;const py=(95-pt.rate)/15*60+5;i===0?x2.moveTo(px,py):x2.lineTo(px,py);});
+            x2.stroke();
+            dr.forEach((pt,i)=>{const px=40+i*xS2;const py=(95-pt.rate)/15*60+5;
+                x2.beginPath();x2.arc(px,py,3,0,Math.PI*2);x2.fillStyle='#00e676';x2.fill();});
+            x2.fillStyle='#78909c';x2.font='8px JetBrains Mono';
+            dr.forEach((pt,i)=>x2.fillText(pt.date.slice(5),40+i*xS2-12,c2.height-2));
+        }, 50);
     }
 }
 

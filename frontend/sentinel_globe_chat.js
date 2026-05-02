@@ -309,6 +309,199 @@ if(fullCatBtn && typeof viewer !== 'undefined') {
     });
 }
 
+// ── #3: Covariance Ellipsoids on ALL conjunctions ───
+if(typeof viewer !== 'undefined' && typeof STATE !== 'undefined') {
+    STATE.conjunctions.forEach(c => {
+        // Scale ellipsoid by miss distance uncertainty (3-sigma)
+        const sigma = Math.max(c.miss * 1000, 500); // meters, minimum 500m visualization
+        const entity = globeLayers.conj?.find(e => e);
+        // Add covariance ellipsoid near each conjunction marker
+        if(globeLayers.conj) {
+            const idx = STATE.conjunctions.indexOf(c);
+            const e = globeLayers.conj[idx];
+            if(e && e.position) {
+                const covColor = c.tier==='EMERGENCY' ? Cesium.Color.RED.withAlpha(0.06) :
+                                 c.tier==='RED' ? Cesium.Color.fromCssColorString('#ff5252').withAlpha(0.05) :
+                                 Cesium.Color.YELLOW.withAlpha(0.04);
+                viewer.entities.add({
+                    position: e.position.getValue(Cesium.JulianDate.now()),
+                    ellipsoid: {
+                        radii: new Cesium.Cartesian3(sigma*3, sigma*3, sigma*2),
+                        material: covColor,
+                        outline: true, outlineColor: covColor.withAlpha(0.3), outlineWidth: 1,
+                    },
+                    label: { text: `${c.miss}km ±${(sigma/1000).toFixed(1)}km`, font:'9px JetBrains Mono',
+                        fillColor: Cesium.Color.fromCssColorString('#b0bec5'), pixelOffset: new Cesium.Cartesian2(0,20),
+                        showBackground: true, backgroundColor: Cesium.Color.BLACK.withAlpha(0.5), show: false },
+                });
+            }
+        }
+    });
+}
+
+// ── #5: Sensor Coverage Cones ───────────────────────
+globeLayers.coverage = [];
+window._addCoverageCones = function() {
+    if(typeof viewer === 'undefined' || !STATE.sites.length) return;
+    STATE.sites.forEach(s => {
+        const fov = s.type === 'radar' ? 6 : 3; // degrees field of regard
+        const range = s.type === 'radar' ? 2000000 : 800000; // meters range
+        const col = s.status === 'active' ? Cesium.Color.fromCssColorString('#00e676').withAlpha(0.03) :
+                    s.status === 'degraded' ? Cesium.Color.fromCssColorString('#ffab00').withAlpha(0.03) :
+                    Cesium.Color.fromCssColorString('#ff1744').withAlpha(0.02);
+        const e = viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(s.lon, s.lat),
+            ellipsoid: {
+                radii: new Cesium.Cartesian3(range, range, range * 0.6),
+                material: col,
+                outline: true, outlineColor: col.withAlpha(0.15), outlineWidth: 1,
+            },
+            show: false,
+        });
+        globeLayers.coverage.push(e);
+    });
+};
+
+// ── #6: Debris Cloud Globe Visualization ────────────
+globeLayers.debris = [];
+window._addDebrisClouds = function() {
+    if(typeof viewer === 'undefined' || !STATE.debrisEvents) return;
+    STATE.debrisEvents.forEach(evt => {
+        const alt = evt.alt * 1000; // km to meters
+        const count = Math.min(Math.round(evt.tracked / 10), 200); // Scale for perf
+        const col = Cesium.Color.fromCssColorString(evt.color).withAlpha(0.35);
+        for(let i = 0; i < count; i++) {
+            // Spread fragments around the original altitude/inclination band
+            const lat = (Math.random() - 0.5) * evt.inc * 2;
+            const lon = Math.random() * 360 - 180;
+            const altVar = alt + (Math.random() - 0.5) * 200000;
+            const e = viewer.entities.add({
+                position: Cesium.Cartesian3.fromDegrees(lon, lat, altVar),
+                point: { pixelSize: 1, color: col, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+                show: false,
+            });
+            globeLayers.debris.push(e);
+        }
+        // Label the debris cloud center
+        const labelE = viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(0, evt.inc * 0.4, alt),
+            label: { text: evt.name, font:'9px Inter', fillColor: Cesium.Color.fromCssColorString(evt.color),
+                pixelOffset: new Cesium.Cartesian2(0,-8), showBackground: true,
+                backgroundColor: Cesium.Color.BLACK.withAlpha(0.6), scale: 0.8 },
+            show: false,
+        });
+        globeLayers.debris.push(labelE);
+    });
+};
+
+// ── #9: GEO Belt View ───────────────────────────────
+const geoViewBtn = document.getElementById('geoViewBtn');
+if(geoViewBtn && typeof viewer !== 'undefined') {
+    let geoRing = null;
+    geoViewBtn.addEventListener('click', () => {
+        geoViewBtn.classList.toggle('active');
+        if(geoViewBtn.classList.contains('active')) {
+            // Fly to GEO belt equatorial view
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(0, 0, 80000000),
+                orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
+                duration: 2,
+            });
+            // Draw GEO ring
+            if(!geoRing) {
+                const positions = [];
+                for(let i = 0; i <= 360; i += 2) {
+                    positions.push(Cesium.Cartesian3.fromDegrees(i, 0, 35786000));
+                }
+                geoRing = viewer.entities.add({
+                    polyline: { positions, width: 2, material: Cesium.Color.fromCssColorString('#ffd740').withAlpha(0.4),
+                        clampToGround: false },
+                });
+            }
+            geoRing.show = true;
+        } else {
+            if(geoRing) geoRing.show = false;
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(20, 10, 25000000),
+                duration: 2,
+            });
+        }
+    });
+}
+
+// ── #10: Owner/Operator Popup on Click ──────────────
+if(typeof viewer !== 'undefined') {
+    viewer.selectedEntityChanged.addEventListener(entity => {
+        if(!entity) return;
+        // If entity has a description that includes NORAD, look up owner
+        const desc = entity.description?.getValue(Cesium.JulianDate.now()) || '';
+        const noradMatch = desc.match(/NORAD:\s*(\d+)/);
+        if(noradMatch) {
+            const norad = parseInt(noradMatch[1]);
+            const owner = STATE.owners[norad];
+            if(owner) {
+                entity.description = new Cesium.ConstantProperty(
+                    desc + `<hr><b>Owner/Operator:</b> ${owner.owner}<br><b>Country:</b> ${owner.country}<br><b>Purpose:</b> ${owner.purpose}<br><b>Launched:</b> ${owner.launched}<br><b>Mass:</b> ${typeof owner.mass === 'number' ? owner.mass.toLocaleString()+' kg' : owner.mass}`
+                );
+            }
+        }
+    });
+}
+
+// ── #12: Time Scrubber ──────────────────────────────
+const timeSlider = document.getElementById('timeSlider');
+const timeLabel = document.getElementById('timeLabel');
+if(timeSlider && timeLabel) {
+    timeSlider.addEventListener('input', () => {
+        const h = parseInt(timeSlider.value);
+        if(h === 0) {
+            timeLabel.textContent = 'NOW (T+0h)';
+            timeLabel.style.color = '#e8eaf6';
+        } else if(h > 0) {
+            timeLabel.textContent = `T+${h}h (future)`;
+            timeLabel.style.color = '#76ff03';
+        } else {
+            timeLabel.textContent = `T${h}h (past)`;
+            timeLabel.style.color = '#78909c';
+        }
+        // Shift Cesium clock
+        if(typeof viewer !== 'undefined') {
+            const offset = h * 3600;
+            const now = Cesium.JulianDate.now();
+            const shifted = Cesium.JulianDate.addSeconds(now, offset, new Cesium.JulianDate());
+            viewer.clock.currentTime = shifted;
+        }
+    });
+}
+
+// ── #13: Space Weather Impact Overlay ───────────────
+// Show drag uncertainty increase when Kp is high
+if(typeof STATE !== 'undefined') {
+    const kp = STATE.weather.kp;
+    if(kp >= 5) {
+        setTimeout(() => {
+            if(typeof pushAlert === 'function') {
+                pushAlert('warning', `<b>Space Weather:</b> Kp=${kp} — Elevated atmospheric drag. LEO orbit predictions degraded by ~${Math.round(kp*5)}%. Density model uncertainty increased.`);
+            }
+        }, 10000);
+    }
+}
+
+// ── #14: Breakup/Fragmentation Alert ────────────────
+if(typeof pushAlert === 'function') {
+    setTimeout(() => {
+        pushAlert('critical', '<b>BREAKUP ALERT:</b> Possible fragmentation event detected — FENGYUN 4A debris (2025-08-14 event) showing 3 new trackable fragments in last 24h. UCTs generated.');
+    }, 12000);
+}
+
+// Initialize globe layers after sites load
+window._addGlobeSites_orig = window._addGlobeSites;
+window._addGlobeSites = function() {
+    if(window._addGlobeSites_orig) window._addGlobeSites_orig();
+    window._addCoverageCones();
+    window._addDebrisClouds();
+};
+
 // ── Natural Language Chat Engine ────────────────────
 const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
