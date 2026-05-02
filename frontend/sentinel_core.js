@@ -1186,6 +1186,57 @@ function openProgrammerSheet(site) {
             </div>
         </div>
 
+        <h3>⚡ Site Resilience & Self-Healing</h3>
+        ${(() => {
+            const res = window.getSiteResilience ? getSiteResilience(site) : null;
+            if (!res) return '<div style="color:#78909c;font-size:9px">Resilience engine loading...</div>';
+            return `
+            <div style="background:rgba(118,255,3,0.04);border:1px solid rgba(118,255,3,0.12);border-radius:6px;padding:8px;margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div style="font-size:11px;font-weight:700;color:#76ff03">SITE UPTIME: ${res.uptimePct}%</div>
+                    <div style="font-size:9px;color:#78909c">${res.autoRecoveries} auto-recoveries (90d) · 0 unplanned outages</div>
+                </div>
+                <div style="display:flex;gap:12px;margin-top:6px;font-size:9px;color:#b0bec5">
+                    <span>Fleet MTTR: <b style="color:#76ff03">${res.fleetStats.mttr} min</b></span>
+                    <span>Fleet MTBF: <b style="color:#76ff03">${res.fleetStats.mtbf} hrs</b></span>
+                    <span>Fleet Uptime: <b style="color:#76ff03">${res.fleetStats.uptimePct}%</b></span>
+                </div>
+            </div>
+            <table>
+                <tr><th style="width:24px"></th><th>Subsystem</th><th>Trigger</th><th>Recovery</th><th>Status</th><th>90d Triggers</th></tr>
+                ${res.subsystems.map(s => {
+                    const statusColors = {armed:'#76ff03',active:'#76ff03',monitoring:'#00e5ff',closed:'#76ff03',scheduled:'#b0bec5',verified:'#76ff03',ready:'#b0bec5',watching:'#ffd740'};
+                    return `<tr>
+                        <td style="font-size:12px;text-align:center">${s.icon}</td>
+                        <td style="font-size:9px;font-weight:600;color:#e8eaf6">${s.name}</td>
+                        <td style="font-size:8px;color:#90a4ae">${s.triggerCondition}</td>
+                        <td style="font-size:8px;color:#b0bec5;font-family:JetBrains Mono,mono">${s.recoveryTime}</td>
+                        <td><span style="color:${statusColors[s.status]||'#78909c'};font-size:8px;font-weight:700;text-transform:uppercase">${s.status}</span></td>
+                        <td style="font-size:9px;text-align:center;color:${s.triggerCount90d > 10 ? '#ffab00' : '#76ff03'}">${s.triggerCount90d}</td>
+                    </tr>`;
+                }).join('')}
+            </table>
+
+            <h3>🛡 Redundancy Architecture</h3>
+            <table>
+                <tr><th>Layer</th><th>Implementation</th><th>Metric</th></tr>
+                ${res.redundancy.map(r => `<tr>
+                    <td style="color:#e8eaf6;font-weight:600;font-size:9px;white-space:nowrap">${r.layer}</td>
+                    <td style="font-size:9px;color:#b0bec5">${r.detail}</td>
+                    <td style="font-size:8px;color:#76ff03;font-family:JetBrains Mono,mono">${r.metric}</td>
+                </tr>`).join('')}
+            </table>
+
+            <h3>📊 Observability Stack</h3>
+            <table>
+                ${Object.entries(res.observability).map(([k,v]) => `<tr>
+                    <td style="color:#78909c;width:100px;font-size:9px;text-transform:capitalize">${k}</td>
+                    <td style="font-size:9px;color:#b0bec5;font-family:JetBrains Mono,mono">${v}</td>
+                </tr>`).join('')}
+            </table>
+            `;
+        })()}
+
         <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
             <a href="#" onclick="openTechnicianSheet(_lastModalSite);return false" style="color:#ffd740;font-size:9px;text-decoration:underline">← Back to Technician Sheet</a>
             <a href="#" onclick="openSiteModal(_lastModalSite);return false" style="color:#00e5ff;font-size:9px;text-decoration:underline">← Back to Site Tech Catalog</a>
