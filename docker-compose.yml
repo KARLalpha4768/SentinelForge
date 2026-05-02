@@ -1,0 +1,41 @@
+# SentinelForge — Local Development Stack
+# Usage: docker compose up
+# Opens: http://localhost:9876/sentinel_ops.html (Ops Center)
+#        http://localhost:8001/docs (Digital Twin API)
+
+services:
+  # ── Operations Center (static frontend) ─────────────
+  ops-center:
+    build:
+      context: .
+      target: ops-center
+    ports:
+      - "9876:9876"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9876/sentinel_ops.html')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Digital Twin WebSocket API ──────────────────────
+  digital-twin:
+    build:
+      context: .
+      target: digital-twin
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/docs')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Pipeline Test Runner (runs once, exits) ─────────
+  test-runner:
+    build:
+      context: .
+      target: science
+    command: ["end_to_end_test.py"]
+    profiles: ["test"]

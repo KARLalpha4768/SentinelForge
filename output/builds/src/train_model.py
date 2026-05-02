@@ -34,28 +34,72 @@ class StreakDetectionNet(nn.Module):
 
 
 class StreakDataset(Dataset):
-    """Dataset of 64x64 cutouts: noise, stars, streaks."""
-    def __init__(self, n_samples=10000):
+    """Realistic synthetic dataset of 64x64 cutouts: noise, stars, streaks.
+
+    Generates patches with:
+    - Poisson shot noise + Gaussian read noise (realistic CCD model)
+    - Random background gradient (sky glow variation across field)
+    - Gaussian PSF convolution for stars (FWHM 2-4 px)
+    - Randomized streak position, angle, length, and brightness
+    - Random hot pixels (detector defects)
+    - Random label assignment (no data leakage from index ordering)
+    """
+    def __init__(self, n_samples=10000, seed=None):
         self.n = n_samples
         self.data = []
         self.labels = []
-        for i in range(n_samples):
-            label = i % 3
-            patch = np.random.normal(100, 10, (64, 64)).astype(np.float32)
-            if label == 1:  # star
-                cx, cy = 32, 32
-                for dy in range(-3, 4):
-                    for dx in range(-3, 4):
-                        r2 = dx**2 + dy**2
-                        patch[cy+dy, cx+dx] += 500 * np.exp(-r2/3)
-            elif label == 2:  # streak
-                angle = np.random.uniform(0, np.pi)
-                length = np.random.randint(10, 40)
-                for k in range(-length//2, length//2):
-                    px = int(32 + k * np.cos(angle))
-                    py = int(32 + k * np.sin(angle))
-                    if 0 <= px < 64 and 0 <= py < 64:
-                        patch[py, px] += 200
+        rng = np.random.RandomState(seed)
+
+        for _ in range(n_samples):
+            label = rng.randint(0, 3)  # Random label — no i%3 leakage
+
+            # Background: sky + gradient + Poisson shot noise
+            sky_level = rng.uniform(80, 150)
+            grad_x = rng.uniform(-0.5, 0.5)
+            grad_y = rng.uniform(-0.5, 0.5)
+            xx, yy = np.meshgrid(np.arange(64), np.arange(64))
+            background = sky_level + grad_x * (xx - 32) + grad_y * (yy - 32)
+            patch = rng.poisson(np.clip(background, 1, None)).astype(np.float32)
+
+            # Read noise (Gaussian, ~5-15 ADU RMS)
+            read_noise = rng.normal(0, rng.uniform(5, 15), (64, 64))
+            patch += read_noise.astype(np.float32)
+
+            # Random hot pixels (1-5 per patch)
+            n_hot = rng.randint(1, 6)
+            for _ in range(n_hot):
+                hx, hy = rng.randint(0, 64, 2)
+                patch[hy, hx] += rng.uniform(200, 1000)
+
+            if label == 1:  # Point source (star) with Gaussian PSF
+                cx = rng.randint(10, 54)
+                cy = rng.randint(10, 54)
+                fwhm = rng.uniform(2.0, 4.0)
+                sigma = fwhm / 2.355
+                flux = rng.uniform(300, 2000)
+                for dy in range(-6, 7):
+                    for dx in range(-6, 7):
+                        ny, nx = cy + dy, cx + dx
+                        if 0 <= ny < 64 and 0 <= nx < 64:
+                            r2 = dx**2 + dy**2
+                            patch[ny, nx] += flux * np.exp(-r2 / (2 * sigma**2))
+
+            elif label == 2:  # Streak (satellite trail)
+                cx = rng.randint(10, 54)
+                cy = rng.randint(10, 54)
+                angle = rng.uniform(0, np.pi)
+                length = rng.randint(12, 50)
+                brightness = rng.uniform(100, 500)
+                width = rng.uniform(1.0, 2.5)  # PSF-broadened streak
+                cos_a, sin_a = np.cos(angle), np.sin(angle)
+                for k in range(-length // 2, length // 2):
+                    for w in np.linspace(-width, width, 5):
+                        px = int(cx + k * cos_a + w * sin_a)
+                        py = int(cy + k * sin_a - w * cos_a)
+                        if 0 <= px < 64 and 0 <= py < 64:
+                            patch[py, px] += brightness * np.exp(-w**2 / (2 * (width/2)**2))
+
+            # Normalize (zero-mean, unit-variance)
             patch = (patch - patch.mean()) / (patch.std() + 1e-6)
             self.data.append(patch)
             self.labels.append(label)

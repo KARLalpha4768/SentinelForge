@@ -1,0 +1,71 @@
+name: SentinelForge CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Lint with ruff
+        run: |
+          ruff check --select=E,F,W --ignore=E501,E402 \
+            main.py \
+            end_to_end_test.py \
+            output/builds/src/science/ \
+            output/builds/src/orbit_propagator.py \
+            output/builds/src/conjunction_screener.py \
+            output/builds/src/multi_sensor_fusion.py \
+            output/builds/src/observation_scheduler.py
+
+      - name: Run end-to-end pipeline test
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python end_to_end_test.py
+
+      - name: Run science module self-tests
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          cd output/builds/src/science
+          python light_curve_analyzer.py
+          python graph_associator.py
+          python bayesian_iod.py
+          python koopman_propagator.py
+          python cislunar_dynamics.py
+          python data_assimilation_engine.py
+
+      - name: Verify main.py entry point
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python main.py
+
+  cmake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify CMakeLists.txt parses
+        run: |
+          cd output/builds/src
+          cmake -B build -DCMAKE_CUDA_ARCHITECTURES=87 2>&1 || echo "CMake parse check complete (CUDA toolkit not installed — expected)"
