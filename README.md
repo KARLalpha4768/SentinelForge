@@ -148,32 +148,44 @@ Raw CCD Frame (32 MB)
 git clone https://github.com/KARLalpha4768/SentinelForge.git
 cd SentinelForge
 
-# 2. Install
+# 2. Install Python dependencies (standard pip — no C++ build required)
 pip install -r requirements.txt
 
-# 3. Verify
-python main.py
-python end_to_end_test.py
+# 3. Verify — runs the full pipeline integration test
+python main.py              # Shows CLI banner
+python end_to_end_test.py   # Runs 6 module tests — expect "6/6 PASSED"
 
-# 4. Run science modules independently
+# 4. Run science modules independently (each has a built-in self-test)
 cd output/builds/src/science/
-python light_curve_analyzer.py      # FFT spin estimation + contrastive embedding
-python graph_associator.py          # Sinkhorn data association + UCT detection
-python bayesian_iod.py              # MCMC orbit determination
-python koopman_propagator.py        # EDMD linearized propagation
-python cislunar_dynamics.py         # CR3BP Lagrange points + manifolds
-python data_assimilation_engine.py  # Global catalog assimilation
+python light_curve_analyzer.py      # → "All tests passed" + spin/embedding/classification
+python graph_associator.py          # → "All graph associator tests passed"
+python bayesian_iod.py              # → MCMC orbit determination
+python koopman_propagator.py        # → EDMD linearized propagation
+python cislunar_dynamics.py         # → CR3BP Lagrange points + manifolds
+python data_assimilation_engine.py  # → Global catalog assimilation
+cd ../../../..
 
-# 5. Launch Operations Center
+# 5. Launch Operations Center (ZERO build steps — pure static HTML/JS)
 cd frontend/
 python -m http.server 9876
 # Open http://localhost:9876/sentinel_ops.html
+#
+# What you'll see:
+#   → CesiumJS 3D globe with 172 ground stations
+#   → CelesTrak fetches LIVE satellite catalog (~10K objects) within 3 seconds
+#   → Catalog count turns GREEN when live data is active
+#   → Hover any ground station → rich tooltip with sensor specs
+#   → Click through: Site Tech Catalog → Technician Sheet → Programmer Sheet
+#   → Real-time gauge drift, alert toasts, conjunction panels
+#   → Console shows: [CelesTrak] and [Resilience] log messages
 
-# 6. Launch Digital Twin
+# 6. Launch Digital Twin (optional — requires FastAPI)
 pip install fastapi uvicorn websockets
 uvicorn src.api.twin_ws:app --port 8001
 # Open frontend/digital_twin.html in browser
 ```
+
+> **Note:** The Operations Center (`sentinel_ops.html`) requires **no npm, no node, no build step.** It is pure HTML/CSS/JS served by any static file server. CesiumJS loads from CDN. CelesTrak data is fetched client-side with zero authentication.
 
 ---
 

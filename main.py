@@ -10,6 +10,11 @@ Usage:
 import sys
 import os
 
+# Fix Unicode output on Windows terminals (cp1252 → UTF-8)
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 # Ensure sentinelforge is on path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
