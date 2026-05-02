@@ -909,14 +909,101 @@ document.querySelectorAll('.inv-tab').forEach(tab => {
 // Globe layer toggles — wired in sentinel_globe_chat.js
 
 // ── Push Alerts ─────────────────────────────────────
-function pushAlert(level, msg) {
+function pushAlert(level, msg, meta) {
     const stack = document.getElementById('alertStack');
     const toast = document.createElement('div');
     toast.className = `alert-toast ${level}`;
     const icon = level==='critical' ? '🔴' : level==='warning' ? '🟡' : '🔵';
     toast.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+    toast.style.cursor = 'pointer';
+    toast.title = 'Click for full alert detail & notification roster';
+    toast.addEventListener('click', () => openAlertDetail(level, msg, meta || {}));
     stack.appendChild(toast);
-    setTimeout(() => toast.remove(), 9000);
+    setTimeout(() => toast.remove(), 12000);
+}
+
+function openAlertDetail(level, msg, meta) {
+    const tierMap = {critical:'EMERGENCY',warning:'RED',info:'INFO'};
+    const tierName = meta.tier || tierMap[level] || 'YELLOW';
+    const tier = STATE.escalation.tiers.find(t => t.level === tierName) || STATE.escalation.tiers[0];
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    title.innerHTML = `<span style="color:${tier.color}">⚠ ${tier.level} ALERT</span>`;
+    const chans = STATE.escalation.channels;
+    const procs = STATE.escalation.procedures;
+    // Find matching procedure
+    const matchProc = procs.find(p => {
+        if(meta.type==='conjunction' && p.trigger.includes('conjunction')) return true;
+        if(meta.type==='site' && p.trigger.includes('Site')) return true;
+        if(meta.type==='uct' && p.trigger.includes('UCT')) return true;
+        if(meta.type==='weather' && p.trigger.includes('weather')) return true;
+        if(meta.type==='edge' && p.trigger.includes('Edge')) return true;
+        return false;
+    }) || procs[0];
+
+    body.innerHTML = `
+        <h3 style="color:${tier.color}">📋 Alert Detail</h3>
+        <div style="background:rgba(${tier.color==='#ff1744'?'255,23,68':tier.color==='#ff5252'?'255,82,82':tier.color==='#ffab00'?'255,171,0':'68,138,255'},0.08);border:1px solid ${tier.color}30;border-radius:8px;padding:12px;margin-bottom:12px">
+            <div style="font-size:12px;color:#e8eaf6;margin-bottom:6px">${msg}</div>
+            ${meta.detail ? `<div style="font-size:10px;color:#b0bec5;margin-top:6px">${meta.detail}</div>` : ''}
+        </div>
+        <table>
+            <tr><td style="color:#78909c;width:140px">Tier</td><td style="color:${tier.color};font-weight:700">${tier.level}</td></tr>
+            <tr><td style="color:#78909c">Criteria</td><td>${tier.criteria}</td></tr>
+            <tr><td style="color:#78909c">Required Response</td><td style="color:#e8eaf6;font-weight:600">${tier.responseTime}</td></tr>
+            ${meta.tca ? `<tr><td style="color:#78909c">Time to TCA</td><td style="color:#ff5252;font-weight:700">${meta.tca}</td></tr>` : ''}
+            ${meta.pc ? `<tr><td style="color:#78909c">Collision Prob (Pc)</td><td style="font-family:JetBrains Mono,mono;color:#ff1744">${meta.pc}</td></tr>` : ''}
+            ${meta.miss ? `<tr><td style="color:#78909c">Miss Distance</td><td style="font-family:JetBrains Mono,mono;color:#ffab00">${meta.miss}</td></tr>` : ''}
+            <tr><td style="color:#78909c">Timestamp</td><td style="font-family:JetBrains Mono,mono">${new Date().toISOString().slice(0,19)}Z</td></tr>
+        </table>
+
+        <h3>📞 Notification Roster — ${tier.notify.length} Recipients</h3>
+        <table>
+            <tr><th>Role</th><th>Name</th><th>Channel</th><th>Priority</th><th>Duty</th><th>Status</th></tr>
+            ${tier.notify.map((n,i) => {
+                const pCol = n.priority==='FLASH'?'#ff1744':n.priority==='IMMEDIATE'?'#ff5252':n.priority==='PRIORITY'?'#ffab00':'#448aff';
+                const sent = i < tier.notify.length - 1 ? '✓ Sent' : '⏳ Queued';
+                const sentCol = sent.includes('Sent') ? '#00e676' : '#ffd740';
+                return `<tr>
+                    <td style="color:#e8eaf6;font-weight:600">${n.role}</td>
+                    <td>${n.name}</td>
+                    <td style="font-size:10px">${n.channel}</td>
+                    <td style="color:${pCol};font-weight:600">${n.priority}</td>
+                    <td style="font-size:10px;color:#78909c">${n.duty}</td>
+                    <td style="color:${sentCol};font-size:10px">${sent}</td>
+                </tr>`;
+            }).join('')}
+        </table>
+
+        <h3>📡 Communication Channels</h3>
+        <table>
+            <tr><th>Channel</th><th>Type</th><th>Endpoint</th><th>Protocol</th><th>Coverage</th></tr>
+            ${chans.map(c => `<tr>
+                <td style="color:#e8eaf6;font-weight:600">${c.name}</td>
+                <td>${c.type}</td>
+                <td style="font-size:10px;font-family:JetBrains Mono,mono;color:#76ff03">${c.endpoint}</td>
+                <td>${c.protocol}</td>
+                <td style="color:#78909c">${c.coverage}</td>
+            </tr>`).join('')}
+        </table>
+
+        <h3>📖 Response Procedure</h3>
+        <div style="background:rgba(100,160,255,0.06);border:1px solid rgba(100,160,255,0.12);border-radius:8px;padding:12px">
+            <div style="color:#e8eaf6;font-weight:600;margin-bottom:6px">${matchProc.trigger}</div>
+            <div style="font-size:11px;color:#b0bec5">${matchProc.steps.split(' → ').map((s,i) => `<div style="margin:4px 0;padding-left:8px;border-left:2px solid ${i===0?'#ff1744':i<3?'#ffab00':'#00e676'}">${s}</div>`).join('')}</div>
+        </div>
+
+        <h3>📊 All Escalation Tiers</h3>
+        ${STATE.escalation.tiers.map(t => `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:6px 8px;border-radius:6px;background:${t.level===tier.level?'rgba(100,160,255,0.08)':'transparent'};border:1px solid ${t.level===tier.level?'rgba(100,160,255,0.15)':'transparent'}">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${t.color}"></span>
+                <span style="color:${t.color};font-weight:700;width:100px">${t.level}</span>
+                <span style="flex:1;font-size:10px;color:#78909c">${t.criteria}</span>
+                <span style="font-size:10px;color:#e8eaf6;font-weight:600">${t.responseTime}</span>
+                <span style="font-size:10px;color:#78909c">${t.notify.length} contacts</span>
+            </div>`).join('')}
+    `;
+    document.getElementById('siteModal').style.display = 'flex';
 }
 
 // ── Initial Render ──────────────────────────────────
@@ -983,11 +1070,20 @@ window.addEventListener('resize', renderMap);
 
 // Push initial alerts after 2 seconds
 setTimeout(() => {
-    pushAlert('critical', '<b>EMERGENCY Conjunction:</b> NOAA-20 vs FENGYUN DEB — Pc=4.1e-2, miss=0.18 km, TCA in 27h');
+    pushAlert('critical', '<b>EMERGENCY Conjunction:</b> NOAA-20 vs FENGYUN DEB — Pc=4.1e-2, miss=0.18 km, TCA in 27h', {
+        tier:'EMERGENCY', type:'conjunction', pc:'4.1e-2', miss:'0.18 km', tca:'T-27h 14m',
+        detail:'Primary: NOAA-20 (JPSS-1, NORAD 43013) — Sun-synchronous LEO, critical weather satellite. Secondary: FENGYUN 1C debris fragment (NORAD 29755) from 2007 ASAT test. Covariance source: 18 SDS special perturbations. Last OD update: 12 min ago. Maneuver decision gate: TCA - 6h.'
+    });
 }, 2000);
 setTimeout(() => {
-    pushAlert('warning', '<b>Site Degraded:</b> NAM-01 Gamsberg — Seeing 1.8", above threshold. Scheduling paused.');
+    pushAlert('warning', '<b>Site Degraded:</b> NAM-01 Gamsberg — Seeing 1.8", above threshold. Scheduling paused.', {
+        tier:'YELLOW', type:'site',
+        detail:'Site NAM-01 (Gamsberg, Namibia) seeing has exceeded the 1.5" operational threshold for 45 minutes. Atmospheric turbulence driven by elevated ground-layer winds (18 kt). Tasking queue frozen at 7 pending. Backup coverage redistributed to CHL-01 (Cerro Pachón) and AUS-01 (Siding Spring).'
+    });
 }, 4500);
 setTimeout(() => {
-    pushAlert('info', '<b>UCT Promoted:</b> UCT-0093 → TENTATIVE (5 passes, GEO belt, possible new GEO payload)');
+    pushAlert('info', '<b>UCT Promoted:</b> UCT-0093 → TENTATIVE (5 passes, GEO belt, possible new GEO payload)', {
+        tier:'INFO', type:'uct',
+        detail:'Uncorrelated track UCT-0093 has been promoted to TENTATIVE after 5 consistent passes across 3 sites (ExoAnalytic network). Orbital elements suggest GEO belt insertion (a=42,164 km, e=0.0002, i=0.05°). Does not match any known launch manifest entry. Possible clandestine GEO deployment. Flagged for priority follow-up observation and cross-reference with NRO database.'
+    });
 }, 7000);
