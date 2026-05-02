@@ -228,15 +228,48 @@ Interactive 3D Earth with ground stations, orbital shells, and conjunction event
 
 ---
 
-## Ops Center Documentation Tiers
+## Ops Center — Ground Station UX Flow
 
-The ground station interface provides three linked documentation tiers:
+Hovering and clicking on any of the 172 ground stations in the map opens a **three-tier deep-dive documentation system**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  2D MAP: 172 ground stations (color-coded by status)                   │
+│  ● green = active   ● amber = degraded   ● red = offline              │
+│  Slingshot sites pulse yellow when tracking conjunction events          │
+│                                                                         │
+│  HOVER over any dot →                                                   │
+│  ┌──────────────────────────────────────────────────┐                   │
+│  │ Rich Tooltip: site name, coords, sensor type,    │                   │
+│  │ detection rate, GPU load, network, status         │                   │
+│  │ [📋 TECHNICIAN SHEET]  [🔧 View Tech Catalog]    │                   │
+│  └──────────┬───────────────────────┬───────────────┘                   │
+│             │ click                  │ click                             │
+│             ▼                        ▼                                   │
+│  ┌─── Tier 1 ───────────┐  ┌─── Tier 2 ───────────────┐               │
+│  │ Site Tech Catalog     │  │ Technician Upgrade Sheet  │               │
+│  │ Sensor specs, network │  │ Checklists, upgrade tasks │               │
+│  │ detection inventory   │  │ tools/parts, sign-off     │               │
+│  │ [📋 TECH SHEET →]     │  │ [🖥 PROGRAMMER SHEET →]   │               │
+│  └───────────────────────┘  └──────────┬────────────────┘               │
+│                                        │ click                          │
+│                                        ▼                                │
+│                             ┌─── Tier 3 ───────────────┐               │
+│                             │ Programmer Integration    │               │
+│                             │ Role matrix, deploy flow  │               │
+│                             │ Slingshot alignment,      │               │
+│                             │ self-healing, observability│               │
+│                             └───────────────────────────┘               │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 | Tier | Modal | Audience | Content |
 |------|-------|----------|---------|
 | 1 | **Site Tech Catalog** | Executives / Analysts | Sensor specs, data network, detection inventory, operational status |
 | 2 | **Technician Upgrade Sheet** | Field Technicians | Pre-visit checklists, upgrade tasks, tools/parts, post-upgrade validation |
 | 3 | **Programmer Integration Sheet** | Software Engineers | Role matrix, deployment workflow, Slingshot alignment, self-healing, observability |
+
+All tiers have back-navigation links to traverse the hierarchy in either direction.
 
 ---
 

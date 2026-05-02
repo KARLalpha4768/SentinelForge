@@ -71,8 +71,13 @@ To move beyond 2020-era industry standards, SentinelForge incorporates **twenty*
 * **The SOTA Method:** `sentinel_ops.html` + `sentinel_core.js` (2,300+ lines) + `sentinel_globe_chat.js` + `sentinel_celestrak.js` + `sentinel_resilience.js` provides a full mission operations center with:
   - **CesiumJS 3D Globe:** Interactive globe authenticated via Cesium Ion, rendering ground stations, orbital shells (LEO/MEO/GEO), conjunction event markers, and debris clouds. Rotatable, zoomable, with layer toggles.
   - **CelesTrak Live Data Integration:** On page load, fetches real GP (General Perturbations) data from CelesTrak's public API — 10,000+ active satellites classified by orbit regime and object type (Starlink, OneWeb, Kuiper, debris, rocket bodies). The command bar catalog count turns green when live data is active.
-  - **Ground Network Map:** Interactive 172-site global sensor network with Slingshot-only yellow pulse animation for sites tracking conjunction events. Hover tooltips with full sensor specs and clickable links to all three documentation tiers.
-  - **3-Tier Field Documentation System:**
+  - **Ground Network Map — Interactive UX Flow:** The 2D equirectangular map renders all 172 ground stations as color-coded dots (green = active, amber = degraded, red = offline). Slingshot-network sites tracking conjunction events pulse yellow. The full interaction flow:
+    1. **Hover** over any ground station → A rich tooltip appears showing site name, coordinates, sensor type/generation, detection rate, GPU load, network, and live status. The tooltip includes a clickable **"📋 TECHNICIAN UPGRADE SHEET"** link and a **"🔧 View Site Tech Catalog"** button.
+    2. **Click** the site dot (or the "View" button) → Opens the **Site Tech Catalog** modal (Tier 1) with full sensor specifications, satellite data network hookup, detection inventory, and operational status.
+    3. Inside the Tech Catalog → A **"📋 TECHNICIAN UPGRADE SHEET"** link at the bottom opens Tier 2.
+    4. Inside the Technician Sheet → A purple **"🖥 PROGRAMMER INTEGRATION SHEET →"** button at the bottom opens Tier 3.
+    5. All three tiers have **back-navigation links** to traverse the hierarchy in either direction.
+  - **3-Tier Field Documentation System** (accessible via the hover/click flow above):
     1. **Site Tech Catalog** (Tier 1) — Sensor specifications, data network hookup, satellite data pipeline, detection inventory, and operational status. Audience: analysts and executives.
     2. **Technician Upgrade Sheet** (Tier 2) — Field Service Orders with pre-visit checklists, per-site upgrade tasks (tools, parts, costs, ETAs), post-upgrade validation protocols, and technician sign-off. Audience: on-site field technicians.
     3. **Programmer Integration Sheet** (Tier 3) — Role matrix (remote SW engineer vs. on-site tech), 7-step software deployment workflow, Slingshot Aerospace job-spec alignment (8 responsibilities mapped), communication protocol, per-network software stack, remote vs. on-site diagnostic capabilities, and full site resilience/self-healing dashboard. Audience: software engineers.
