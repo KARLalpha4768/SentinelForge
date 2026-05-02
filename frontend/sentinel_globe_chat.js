@@ -180,6 +180,135 @@ if(liveMapBtn) {
     });
 }
 
+// ── Full Catalog: Real Satellite Positions ──────────
+const fullCatBtn = document.getElementById('fullCatalogToggle');
+let fullCatEntities = [];
+let fullCatLoaded = false;
+let fullCatVisible = false;
+
+// Convert Keplerian elements to ECI to lat/lon/alt (simplified, no perturbations)
+function kepler2lla(inc, raan, ecc, argp, ma, mm, epoch) {
+    const mu = 398600.4418; // km³/s²
+    const Re = 6371;
+    const n = mm * 2 * Math.PI / 86400; // rad/s
+    const a = Math.pow(mu / (n * n), 1/3); // semi-major axis km
+    // Propagate mean anomaly to now
+    const now = new Date();
+    const epochDate = new Date(epoch);
+    const dt = (now - epochDate) / 1000; // seconds since epoch
+    let M = (ma * Math.PI / 180) + n * dt;
+    M = M % (2 * Math.PI);
+    // Solve Kepler's equation (Newton iteration)
+    let E = M;
+    for(let i = 0; i < 8; i++) E = E - (E - ecc * Math.sin(E) - M) / (1 - ecc * Math.cos(E));
+    // True anomaly
+    const sinV = Math.sqrt(1 - ecc*ecc) * Math.sin(E) / (1 - ecc*Math.cos(E));
+    const cosV = (Math.cos(E) - ecc) / (1 - ecc*Math.cos(E));
+    const v = Math.atan2(sinV, cosV);
+    const r = a * (1 - ecc * Math.cos(E));
+    // Argument of latitude
+    const u = v + argp * Math.PI / 180;
+    const rI = inc * Math.PI / 180;
+    const rR = raan * Math.PI / 180;
+    // ECI position
+    const gmst = getGMST(now);
+    const xECI = r * (Math.cos(rR)*Math.cos(u) - Math.sin(rR)*Math.sin(u)*Math.cos(rI));
+    const yECI = r * (Math.sin(rR)*Math.cos(u) + Math.cos(rR)*Math.sin(u)*Math.cos(rI));
+    const zECI = r * Math.sin(u) * Math.sin(rI);
+    // Rotate to ECEF
+    const xECEF = xECI * Math.cos(gmst) + yECI * Math.sin(gmst);
+    const yECEF = -xECI * Math.sin(gmst) + yECI * Math.cos(gmst);
+    const lon = Math.atan2(yECEF, xECEF) * 180 / Math.PI;
+    const lat = Math.atan2(zECI, Math.sqrt(xECEF*xECEF + yECEF*yECEF)) * 180 / Math.PI;
+    const alt = (r - Re) * 1000; // meters
+    return { lat, lon, alt: Math.max(alt, 160000) };
+}
+function getGMST(date) {
+    const JD = date.getTime() / 86400000 + 2440587.5;
+    const T = (JD - 2451545.0) / 36525;
+    let gmst = 280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933*T*T;
+    return (gmst % 360) * Math.PI / 180;
+}
+
+if(fullCatBtn && typeof viewer !== 'undefined') {
+    fullCatBtn.addEventListener('click', async () => {
+        if(fullCatLoaded && fullCatVisible) {
+            // Hide
+            fullCatEntities.forEach(e => e.show = false);
+            fullCatVisible = false;
+            fullCatBtn.classList.remove('active');
+            fullCatBtn.textContent = `Full Catalog (${fullCatEntities.length.toLocaleString()})`;
+            return;
+        }
+        if(fullCatLoaded) {
+            // Show again
+            fullCatEntities.forEach(e => e.show = true);
+            fullCatVisible = true;
+            fullCatBtn.classList.add('active');
+            return;
+        }
+        // Fetch real satellites from CelesTrak
+        fullCatBtn.textContent = 'Loading...';
+        fullCatBtn.style.color = '#76ff03';
+        try {
+            const groups = [
+                { url: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json', color: '#00e5ff', size: 1.5, label: 'Active' },
+            ];
+            let totalPlotted = 0;
+            for(const g of groups) {
+                const resp = await fetch(g.url);
+                if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const sats = await resp.json();
+                if(!Array.isArray(sats)) continue;
+                // Limit to first 10,000 for performance
+                const subset = sats.slice(0, 10000);
+                for(const sat of subset) {
+                    try {
+                        const pos = kepler2lla(
+                            sat.INCLINATION, sat.RA_OF_ASC_NODE, sat.ECCENTRICITY,
+                            sat.ARG_OF_PERICENTER, sat.MEAN_ANOMALY, sat.MEAN_MOTION,
+                            sat.EPOCH
+                        );
+                        if(isNaN(pos.lat) || isNaN(pos.lon)) continue;
+                        // Color by object type
+                        let col = Cesium.Color.fromCssColorString('#00e5ff').withAlpha(0.6);
+                        let sz = 1.5;
+                        const name = (sat.OBJECT_NAME || '').toUpperCase();
+                        const type = (sat.OBJECT_TYPE || '').toUpperCase();
+                        if(type.includes('DEB') || name.includes('DEB')) {
+                            col = Cesium.Color.fromCssColorString('#ff1744').withAlpha(0.3); sz = 1;
+                        } else if(type.includes('R/B') || name.includes('R/B')) {
+                            col = Cesium.Color.fromCssColorString('#ffd740').withAlpha(0.5); sz = 2;
+                        } else if(name.includes('STARLINK')) {
+                            col = Cesium.Color.fromCssColorString('#76ff03').withAlpha(0.5); sz = 1.5;
+                        } else if(name.includes('ONEWEB')) {
+                            col = Cesium.Color.fromCssColorString('#00e676').withAlpha(0.5); sz = 1.5;
+                        }
+                        const entity = viewer.entities.add({
+                            position: Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, pos.alt),
+                            point: { pixelSize: sz, color: col, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+                            description: `<b>${sat.OBJECT_NAME}</b><br>NORAD: ${sat.NORAD_CAT_ID}<br>Type: ${sat.OBJECT_TYPE || 'Payload'}<br>Inc: ${sat.INCLINATION}° Period: ${(1440/sat.MEAN_MOTION).toFixed(1)} min<br>Epoch: ${sat.EPOCH}`,
+                        });
+                        fullCatEntities.push(entity);
+                        totalPlotted++;
+                    } catch(e) { /* skip bad elements */ }
+                }
+            }
+            fullCatLoaded = true;
+            fullCatVisible = true;
+            fullCatBtn.classList.add('active');
+            fullCatBtn.textContent = `Full Catalog (${totalPlotted.toLocaleString()})`;
+            fullCatBtn.style.color = '';
+            console.log(`[SentinelForge] Plotted ${totalPlotted} real satellites from CelesTrak GP data`);
+        } catch(err) {
+            fullCatBtn.textContent = 'Catalog Error';
+            fullCatBtn.style.color = '#ff1744';
+            console.error('[SentinelForge] Catalog fetch error:', err);
+            setTimeout(() => { fullCatBtn.textContent = 'Full Catalog'; fullCatBtn.style.color = ''; }, 3000);
+        }
+    });
+}
+
 // ── Natural Language Chat Engine ────────────────────
 const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
