@@ -1,6 +1,6 @@
 # SentinelForge ML Training Summary
 
-Generated: 2026-05-02 17:46:39
+Generated: 2026-05-02 18:24:16
 
 | Model | Module | Params | Train Samples | Key Metric | Inference |
 |-------|--------|--------|---------------|------------|----------|

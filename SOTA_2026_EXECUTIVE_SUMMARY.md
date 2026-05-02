@@ -155,3 +155,37 @@ make -j$(nproc)
 ```
 Produces `libsentinelforge_edge.a` linking 4 modules: calibration (flat-field/dark), streak detection (Hough + morphological), plate solving (triangle matching + WCS with atmospheric refraction), and photometry (aperture + PSF fitting with Gaussian deblending).
 
+## 6. Space Traffic Management (STM) Compliance
+
+SentinelForge is designed for alignment with emerging Space Traffic Coordination frameworks:
+
+### FAA Space Safety Oversight (Proposed Rule, 2025)
+- **Conjunction Data Sharing:** SentinelForge's Kafka-based telemetry pipeline supports real-time conjunction notification to the FAA's proposed Space Safety Data Repository.
+- **Maneuver Notification:** Module Q (Conjunction Decision) generates machine-readable maneuver plans compatible with the proposed CDM (Conjunction Data Message) format per CCSDS 508.0-B-1.
+- **Post-Maneuver Screening:** Automated secondary conjunction checks validate that avoidance burns don't create new collision risks — a requirement under proposed STM rules.
+
+### IADC Space Debris Mitigation Guidelines
+- **25-Year De-orbit Compliance:** The PINN propagator (Module C) can forward-propagate any LEO object to verify compliance with the 25-year post-mission disposal guideline.
+- **Passivation Monitoring:** Light curve analysis (Module A) detects residual spin/tumble rates that indicate incomplete passivation of decommissioned spacecraft.
+
+### UN COPUOS Long-term Sustainability Guidelines
+- **Transparency:** The Operations Center (Module S) provides full audit trails for conjunction assessments, escalation decisions, and maneuver recommendations.
+- **Data Sharing:** CelesTrak GP integration demonstrates interoperability with international space object catalogs.
+
+## 7. Red Team Exercise — ASAT Debris Cascade
+
+SentinelForge includes a built-in Red Team scenario (`sentinel_redteam.js`) that simulates a kinetic ASAT debris cloud emergency:
+
+| Phase | T+ | Event | Module |
+|-------|-----|-------|--------|
+| Detection | 0:00 | ASAT impact detected via SBIRS IR signature | Edge Detection (A) |
+| Tracking | 2:00 | 312 fragments tracked by Space Fence | Graph Associator (B) |
+| Screening | 5:00 | Debris cloud intersects ISS orbital shell | PINN (C) + FNO (L) |
+| **EMERGENCY** | **6:00** | **ISS conjunction Pc > 1e-2** | **Non-Gaussian Pc (D)** |
+| Escalation | 6:20 | FLASH notifications to Mission Director, 18th SDS, NASA CARA | Decision Support (Q) |
+| Maneuver | 7:00 | Hohmann boost: Δv = 1.34 m/s, fuel cost = 3.2 kg | Decision Support (Q) |
+| Secondary | 8:00 | Post-maneuver screen: CLEAR (no new conjunctions) | Covariance Realism (R) |
+| Execute | 4:00:00 | ISS Progress thruster burn — miss distance: 1.2 km → 4.1 km | PINN (C) |
+| Stand-down | 10:00:00 | Conjunction cleared. 312 fragments added to catalog | Lifecycle (P) |
+
+Run in the Operations Center: `runRedTeamScenario()` from the browser console.

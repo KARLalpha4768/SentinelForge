@@ -1,4 +1,22 @@
-/* SentinelForge Ops Center — Core Engine */
+/**
+ * SentinelForge Operations Center — Core Engine
+ * @module sentinel_core
+ * @description 2,300+ line mission operations dashboard engine.
+ * Manages system state, gauge rendering, ground network visualization,
+ * inventory panels, conjunction decision support, and alert management.
+ * 
+ * @author Karl David / Kham Enterprises LLC
+ * @version 1.0.0
+ * @license Proprietary
+ * 
+ * Architecture:
+ *   STATE object → render functions → DOM updates (no framework)
+ *   CelesTrak integration via sentinel_celestrak.js
+ *   Self-healing telemetry via sentinel_resilience.js
+ *   3D globe via sentinel_globe_chat.js (CesiumJS)
+ *   Red Team exercises via sentinel_redteam.js
+ *   Custody chain via sentinel_custody.js
+ */
 
 // ── Simulated System State ──────────────────────────
 const STATE = {
@@ -263,6 +281,11 @@ const STATE = {
 };
 
 // ── UTC Clock ───────────────────────────────────────
+/**
+ * Update the UTC clock display in the command bar.
+ * Called every 1000ms via setInterval.
+ * @returns {void}
+ */
 function updateClock() {
     const el = document.getElementById('utcClock');
     if(el) el.textContent = new Date().toISOString().slice(11,19);
@@ -270,6 +293,18 @@ function updateClock() {
 setInterval(updateClock, 1000); updateClock();
 
 // ── Gauge Rendering (SVG arc gauges) ────────────────
+/**
+ * Create an SVG arc gauge for a system health metric.
+ * @param {Object} g - Gauge definition from STATE.gauges
+ * @param {string} g.key - Unique gauge identifier
+ * @param {number} g.value - Current value
+ * @param {number} g.min - Minimum scale value
+ * @param {number} g.max - Maximum scale value
+ * @param {number} g.green - Threshold for green (nominal)
+ * @param {number} g.yellow - Threshold for yellow (warning)
+ * @param {boolean} [g.invert] - If true, lower values are better
+ * @returns {string} SVG markup string
+ */
 function createGaugeSVG(g) {
     const pct = Math.min((g.value - g.min) / (g.max - g.min), 1);
     const sweep = 240, startA = 150;
@@ -291,6 +326,12 @@ function createGaugeSVG(g) {
     </svg>`;
 }
 
+/**
+ * Render all system health gauges into the gauge panel.
+ * Reads STATE.gauges array and generates SVG arc gauges with
+ * scope badges, trend indicators, and descriptive tooltips.
+ * @returns {void}
+ */
 function renderGauges() {
     const panel = document.getElementById('gaugePanel');
     const scopeColors = { FLEET:'#00e5ff', CATALOG:'#76ff03', FILTER:'#e040fb', CLOUD:'#ffd740', OPS:'#ff9100', SCIENCE:'#448aff' };
@@ -313,6 +354,12 @@ function renderGauges() {
 }
 
 // ── Ground Sites ────────────────────────────────────
+/**
+ * Render the ground station network panel.
+ * Groups 172 sites by network, displays active/degraded/offline counts,
+ * and shows radar vs optical sensor distribution.
+ * @returns {void}
+ */
 function renderSites() {
     const el = document.getElementById('groundSites');
     // Group by network

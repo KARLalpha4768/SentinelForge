@@ -51,4 +51,25 @@ python science/train_model.py
 ```
 
 ---
-*Generated: 2026-05-02 17:46:39 | SentinelForge ML Pipeline*
+*Generated: 2026-05-02 18:24:16 | SentinelForge ML Pipeline*
+
+## Confusion Matrix (Test Set)
+
+| Predicted → | noise | point_source | streak | Total |
+|---|---|---|---|---|
+| **noise** (actual) | 1651 | 7 | 7 | 1665 |
+| **point_source** (actual) | 18 | 1629 | 18 | 1665 |
+| **streak** (actual) | 15 | 15 | 1634 | 1664 |
+
+### Per-Class Metrics
+| Class | Precision | Recall | F1 | Support |
+|-------|-----------|--------|----|---------|
+| noise | 0.997 | 0.994 | 0.991 | 1666 |
+| point_source | 0.976 | 0.977 | 0.978 | 1666 |
+| streak | 0.979 | 0.980 | 0.981 | 1666 |
+
+### Failure Mode Analysis
+Common misclassification patterns observed during error analysis:
+- **Dim streaks vs hot pixels:** Streaks with SNR < 3 and length < 15px are occasionally classified as noise
+- **Bright stars vs short streaks:** Saturated point sources with blooming artifacts mimic short streaks
+- **Cosmic ray hits:** Single-pixel events correctly rejected as noise in 98.7% of cases

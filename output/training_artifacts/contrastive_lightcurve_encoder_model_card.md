@@ -48,4 +48,4 @@ python science/light_curve_analyzer.py
 ```
 
 ---
-*Generated: 2026-05-02 17:46:39 | SentinelForge ML Pipeline*
+*Generated: 2026-05-02 18:24:16 | SentinelForge ML Pipeline*

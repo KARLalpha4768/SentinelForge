@@ -3,7 +3,7 @@
 ## Overview
 - **Module:** `pinn_orbit.py`
 - **Task:** Physics-informed orbit state prediction (position + velocity)
-- **Architecture:** `MLP(7→256→256→256→6) + PhysicsLoss(J2+J3+J4+Drag)`
+- **Architecture:** `MLP(7-256-256-256-6) + PhysicsLoss(J2-J6+Drag)`
 - **Parameters:** 201,734
 - **Framework:** PyTorch 2.3.0 + CUDA 12.4
 - **Export:** ONNX opset 17 → TensorRT 10.0
@@ -48,4 +48,4 @@ python science/pinn_orbit.py
 ```
 
 ---
-*Generated: 2026-05-02 17:46:39 | SentinelForge ML Pipeline*
+*Generated: 2026-05-02 18:24:16 | SentinelForge ML Pipeline*
