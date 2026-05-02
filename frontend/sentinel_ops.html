@@ -14,17 +14,17 @@
 
     <!-- ① COMMAND BAR -->
     <header class="command-bar">
-        <span class="cmd-logo">SentinelForge</span>
-        <div class="cmd-health" id="sysHealth" title="System Health"></div>
+        <span class="cmd-logo" title="SentinelForge Operations Center — Space Domain Awareness Dashboard">SentinelForge</span>
+        <div class="cmd-health" id="sysHealth" title="System Health Indicator — Green: nominal, Yellow: degraded, Red: critical"></div>
         <div class="cmd-divider"></div>
-        <div class="cmd-metric"><span class="cmd-metric-label">Catalog</span><span class="cmd-metric-value" id="catalogCount">46,238</span></div>
-        <div class="cmd-metric"><span class="cmd-metric-label">Observed 24h</span><span class="cmd-metric-value" id="obs24h">11,847</span></div>
-        <div class="cmd-metric"><span class="cmd-metric-label">UCTs</span><span class="cmd-metric-value" id="uctCount">14</span></div>
+        <div class="cmd-metric" title="Total tracked objects in the SentinelForge catalog"><span class="cmd-metric-label">Catalog</span><span class="cmd-metric-value" id="catalogCount">46,238</span></div>
+        <div class="cmd-metric" title="Objects observed by at least one sensor in the last 24 hours"><span class="cmd-metric-label">Observed 24h</span><span class="cmd-metric-value" id="obs24h">11,847</span></div>
+        <div class="cmd-metric" title="Uncorrelated Tracks — detections not yet matched to any cataloged object"><span class="cmd-metric-label">UCTs</span><span class="cmd-metric-value" id="uctCount">14</span></div>
         <div class="cmd-divider"></div>
-        <div class="cmd-weather">
-            <span class="cmd-weather-val">F10.7</span><span class="cmd-weather-num">145</span>
-            <span class="cmd-weather-val">Kp</span><span class="cmd-weather-num">1.67</span>
-            <span class="cmd-weather-val">Dst</span><span class="cmd-weather-num">-30</span>
+        <div class="cmd-weather" title="Space Weather Indices — sourced from NOAA SWPC">
+            <span class="cmd-weather-val" title="F10.7 Solar Radio Flux (sfu) — proxy for solar UV/EUV heating of thermosphere. Higher = more drag on LEO satellites">F10.7</span><span class="cmd-weather-num">145</span>
+            <span class="cmd-weather-val" title="Kp Index (0-9) — global geomagnetic activity. ≥5 = geomagnetic storm. Affects thermospheric density and drag">Kp</span><span class="cmd-weather-num">1.67</span>
+            <span class="cmd-weather-val" title="Dst Index (nT) — ring current intensity. Negative = storm. Below -100 nT = severe geomagnetic storm">Dst</span><span class="cmd-weather-num">-30</span>
         </div>
         <div class="cmd-spacer"></div>
         <div class="cmd-alerts" id="alertBadge">⚠ 3 Alerts</div>
@@ -35,23 +35,23 @@
     <!-- ② 3D GLOBE -->
     <div class="globe-zone">
         <div class="globe-controls">
-            <button class="globe-btn active" data-layer="leo">LEO</button>
-            <button class="globe-btn active" data-layer="meo">MEO</button>
-            <button class="globe-btn active" data-layer="geo">GEO</button>
-            <button class="globe-btn" data-layer="conj">Conjunctions</button>
-            <button class="globe-btn" data-layer="uct">UCTs</button>
-            <button class="globe-btn" data-layer="sites">Sites</button>
-            <button class="globe-btn" id="coverageToggle" data-layer="coverage">Coverage</button>
-            <button class="globe-btn" id="debrisCloudToggle" data-layer="debris">Debris Clouds</button>
-            <button class="globe-btn" id="geoViewBtn" style="border-color:#ffd740">GEO</button>
+            <button class="globe-btn active" data-layer="leo" title="Toggle Low Earth Orbit shell (200-2,000 km)">LEO</button>
+            <button class="globe-btn active" data-layer="meo" title="Toggle Medium Earth Orbit shell (2,000-35,000 km)">MEO</button>
+            <button class="globe-btn active" data-layer="geo" title="Toggle Geostationary Orbit shell (~35,786 km)">GEO</button>
+            <button class="globe-btn" data-layer="conj" title="Toggle conjunction event markers on globe">Conjunctions</button>
+            <button class="globe-btn" data-layer="uct" title="Toggle Uncorrelated Track markers on globe">UCTs</button>
+            <button class="globe-btn" data-layer="sites" title="Toggle ground station markers on globe">Sites</button>
+            <button class="globe-btn" id="coverageToggle" data-layer="coverage" title="Toggle sensor coverage footprint cones">Coverage</button>
+            <button class="globe-btn" id="debrisCloudToggle" data-layer="debris" title="Toggle debris cloud visualization">Debris Clouds</button>
+            <button class="globe-btn" id="geoViewBtn" style="border-color:#ffd740" title="Snap camera to GEO belt view (equatorial, 42,164 km)">GEO View</button>
             <span style="flex:1"></span>
-            <button class="globe-btn" id="fullCatalogToggle" style="background:rgba(118,255,3,0.1);border-color:#76ff03">Full Catalog</button>
-            <button class="globe-btn" id="liveMapToggle" style="background:rgba(0,229,255,0.1);border-color:#00e5ff">Live Map ↗</button>
+            <button class="globe-btn" id="fullCatalogToggle" style="background:rgba(118,255,3,0.1);border-color:#76ff03" title="Load full 46,000+ object catalog onto globe (performance intensive)">Full Catalog</button>
+            <button class="globe-btn" id="liveMapToggle" style="background:rgba(0,229,255,0.1);border-color:#00e5ff" title="Switch to 2D equirectangular ground network map">Live Map ↗</button>
         </div>
         <!-- Time Scrubber -->
-        <div class="time-scrubber" id="timeScrubber" style="position:absolute;bottom:140px;left:12px;right:340px;z-index:10;display:flex;align-items:center;gap:8px;padding:4px 10px;background:rgba(10,12,20,0.85);border-radius:8px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(8px)">
-            <span style="font-size:9px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px">T-</span>
-            <input type="range" id="timeSlider" min="-72" max="24" value="0" step="1" style="flex:1;accent-color:#7c4dff;height:4px">
+        <div class="time-scrubber" id="timeScrubber" style="position:absolute;bottom:140px;left:12px;right:340px;z-index:10;display:flex;align-items:center;gap:8px;padding:4px 10px;background:rgba(10,12,20,0.85);border-radius:8px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(8px)" title="Drag to propagate catalog forward/backward in time (±72 hours)">
+            <span style="font-size:9px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px" title="Time offset from current epoch">T±</span>
+            <input type="range" id="timeSlider" min="-72" max="24" value="0" step="1" style="flex:1;accent-color:#7c4dff;height:4px" aria-label="Time propagation slider (-72h to +24h)">
             <span id="timeLabel" style="font-family:'JetBrains Mono';font-size:11px;color:var(--text-primary);min-width:70px">NOW (T+0h)</span>
         </div>
         <div id="cesiumContainer"></div>
@@ -74,7 +74,7 @@
     <!-- ③ GROUND NETWORK -->
     <div class="ground-zone">
         <div class="ground-map" id="groundMap">
-            <div class="card-header">Ground Network</div>
+            <div class="card-header" title="172 ground stations across 8 sensor networks — hover over a site for details, click to open Site Tech Catalog">Ground Network <span style="font-size:8px;color:#546e7a;margin-left:6px">Hover for details · Click to inspect</span></div>
             <canvas id="mapCanvas" style="width:100%;height:calc(100% - 33px);display:block;cursor:crosshair;"></canvas>
             <canvas id="mapOverlay" style="position:absolute;left:0;top:33px;width:100%;height:calc(100% - 33px);pointer-events:none;"></canvas>
             <div id="mapTooltip" class="map-tooltip" style="display:none;"></div>
@@ -94,20 +94,20 @@
 
     <!-- ⑤ CATALOG INVENTORY -->
     <div class="inventory-zone">
-        <div class="inv-tabs">
-            <div class="inv-tab active" data-tab="overview">Overview</div>
-            <div class="inv-tab" data-tab="pcTimeline">Pc Timeline</div>
-            <div class="inv-tab" data-tab="maneuver">Maneuver</div>
-            <div class="inv-tab" data-tab="feeds">Feeds</div>
-            <div class="inv-tab" data-tab="conj">Conjunctions</div>
-            <div class="inv-tab" data-tab="uct">UCTs</div>
-            <div class="inv-tab" data-tab="launches">Launches</div>
-            <div class="inv-tab" data-tab="reentries">Reentries</div>
-            <div class="inv-tab" data-tab="debris">Debris</div>
-            <div class="inv-tab" data-tab="trending">Trending</div>
-            <div class="inv-tab" data-tab="escalation">Escalation</div>
-            <div class="inv-tab" data-tab="diagnostics">Diagnostics</div>
-            <div class="inv-tab" data-tab="opsTempo">Ops Tempo</div>
+        <div class="inv-tabs" title="Catalog Inventory — switch views to inspect conjunctions, UCTs, launches, debris, and escalations">
+            <div class="inv-tab active" data-tab="overview" title="Catalog summary: orbit regime breakdown, state distribution, and priority reacquisition queue">Overview</div>
+            <div class="inv-tab" data-tab="pcTimeline" title="Probability of Collision timeline — Pc evolution over next 72 hours for all tracked conjunctions">Pc Timeline</div>
+            <div class="inv-tab" data-tab="maneuver" title="Avoidance maneuver planning — Δv cost, fuel budget, and secondary conjunction screening">Maneuver</div>
+            <div class="inv-tab" data-tab="feeds" title="Live data feeds — CelesTrak, Space-Track, and edge node telemetry streams">Feeds</div>
+            <div class="inv-tab" data-tab="conj" title="Active conjunction events with miss distance, Pc, and escalation status">Conjunctions</div>
+            <div class="inv-tab" data-tab="uct" title="Uncorrelated Tracks — detections not yet matched to any cataloged object">UCTs</div>
+            <div class="inv-tab" data-tab="launches" title="Recent and upcoming launches with predicted orbital elements">Launches</div>
+            <div class="inv-tab" data-tab="reentries" title="Predicted atmospheric reentry events with decay windows">Reentries</div>
+            <div class="inv-tab" data-tab="debris" title="Tracked debris fields, fragmentation events, and cloud evolution">Debris</div>
+            <div class="inv-tab" data-tab="trending" title="Trending objects — maneuvers detected, brightness changes, and orbit anomalies">Trending</div>
+            <div class="inv-tab" data-tab="escalation" title="Escalation protocols — notification tiers, communication rosters, and response procedures">Escalation</div>
+            <div class="inv-tab" data-tab="diagnostics" title="Pipeline diagnostics — module health, latency metrics, and error rates">Diagnostics</div>
+            <div class="inv-tab" data-tab="opsTempo" title="Operational tempo — observation rates, processing throughput, and shift schedules">Ops Tempo</div>
         </div>
         <div class="inv-content" id="invContent"></div>
     </div>

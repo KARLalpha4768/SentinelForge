@@ -366,7 +366,7 @@ function renderSites() {
     const nets = {};
     STATE.sites.forEach(s => { if(!nets[s.network]) nets[s.network]=[]; nets[s.network].push(s); });
     const sorted = Object.entries(nets).sort((a,b) => b[1].length - a[1].length);
-    el.innerHTML = '<div class="card-header">Networks · ' + STATE.sites.length + ' Sites</div>' +
+    el.innerHTML = '<div class="card-header" title="Sensor networks organized by operator. Status: 🟢 Active, 🟡 Degraded, 🔴 Offline">Networks · ' + STATE.sites.length + ' Sites <span style="font-size:7px;color:#546e7a;margin-left:4px">🟢 Active 🟡 Degraded 🔴 Offline</span></div>' +
     sorted.map(([net, sites]) => {
         const active = sites.filter(s => s.status==='active').length;
         const deg = sites.filter(s => s.status==='degraded').length;
@@ -381,8 +381,8 @@ function renderSites() {
                 <span style="flex:1"></span>
                 <span style="font-size:10px;color:var(--text-secondary)">${sites.length}</span>
             </div>
-            <div class="site-stats">
-                🟢<span>${active}</span> 🟡<span>${deg}</span> 🔴<span>${off}</span> | Radar <span>${radar}</span> Optical <span>${optical}</span>
+            <div class="site-stats" title="Active / Degraded / Offline sites | Sensor type distribution">
+                🟢<span title="Active sites">${active}</span> 🟡<span title="Degraded sites">${deg}</span> 🔴<span title="Offline sites">${off}</span> | Radar <span>${radar}</span> Optical <span>${optical}</span>
             </div>
         </div>`;
     }).join('');
