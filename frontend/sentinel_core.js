@@ -450,7 +450,163 @@ function renderMap() {
     });
 }
 
-// ── Site Technology Catalog ─────────────────────────
+// ── Conjunction Detection Blink Animation ───────────
+// Maps conjunction events to the ground stations tasked with tracking them
+function getConjTrackingSites() {
+    const assignments = [];
+    STATE.conjunctions.forEach(c => {
+        // Determine which sites are involved based on conjunction tier + orbital regime
+        let siteFilter;
+        if(c.id === 'EVT-2041') {
+            // ISS conjunction — task USSF radars + all available optical for ISS-altitude passes
+            siteFilter = s => (
+                ['SSN-EGLIN','SSN-CLEAR','SSN-FYLING','SSN-HAYSTACK','SSN-MILLSTONE',
+                 'SSN-CAPE','SSN-CAVALIER','SSN-BEALE','SSN-VANDENBERG',
+                 'SSN-GEODSS-NM','SSN-GEODSS-HI','SSN-GEODSS-DG','SSN-FENCE','SSN-ALTAIR',
+                 'ALLIED-GRAVES','ALLIED-TIRA','ALLIED-EISCAT'].includes(s.id) ||
+                (s.network === 'LeoLabs') ||
+                (s.network === 'ExoAnalytic' && s.type === 'optical')
+            );
+        } else if(c.id === 'EVT-2042') {
+            // Starlink conjunction — LeoLabs radars (LEO specialists) + Slingshot optical
+            siteFilter = s => (
+                s.network === 'LeoLabs' ||
+                (s.network === 'Slingshot' && s.status === 'active') ||
+                ['SSN-FENCE','SSN-COBRADANE','LL-PFISR','LL-MBAR','LL-WARK'].includes(s.id)
+            );
+        } else if(c.id === 'EVT-2043') {
+            // NOAA-20 EMERGENCY — task EVERYTHING: all USSF radars, all LeoLabs, all ExoAnalytic
+            siteFilter = s => (
+                s.network === 'USSF-SSN' ||
+                s.network === 'LeoLabs' ||
+                s.network === 'ExoAnalytic' ||
+                s.network === 'Slingshot' ||
+                s.network === 'ESA-SST' ||
+                ['ALLIED-GRAVES','ALLIED-TIRA','ALLIED-EISCAT','ALLIED-CHILBOLTON'].includes(s.id)
+            );
+        } else {
+            siteFilter = s => false;
+        }
+        const tierColor = c.tier === 'EMERGENCY' ? '#ff1744' : c.tier === 'RED' ? '#ff6d00' : '#ffd740';
+        const sites = STATE.sites.filter(siteFilter);
+        sites.forEach(s => {
+            assignments.push({ siteId: s.id, lat: s.lat, lon: s.lon, evtId: c.id, tier: c.tier, color: tierColor });
+        });
+    });
+    return assignments;
+}
+
+// Animation state
+let _blinkAssignments = [];
+let _blinkAnimId = null;
+let _blinkStartTime = 0;
+
+function startBlinkAnimation() {
+    if(_blinkAnimId) cancelAnimationFrame(_blinkAnimId);
+    _blinkAssignments = getConjTrackingSites();
+    _blinkStartTime = performance.now();
+
+    const overlay = document.getElementById('mapOverlay');
+    const baseCanvas = document.getElementById('mapCanvas');
+    if(!overlay || !baseCanvas) return;
+
+    function animate(now) {
+        // Sync overlay size with base canvas
+        overlay.width = baseCanvas.width;
+        overlay.height = baseCanvas.height;
+        const ctx = overlay.getContext('2d');
+        const W = overlay.width, H = overlay.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const toXY = (lat,lon) => ({ x: (lon+180)/360*W, y: (90-lat)/180*H });
+        const elapsed = (now - _blinkStartTime) / 1000; // seconds
+
+        // Group by site to avoid double-drawing (a site may track multiple events)
+        const siteMap = {};
+        _blinkAssignments.forEach(a => {
+            if(!siteMap[a.siteId]) siteMap[a.siteId] = a;
+            // Prefer higher tier (EMERGENCY > RED > YELLOW)
+            else if(a.tier === 'EMERGENCY') siteMap[a.siteId] = a;
+            else if(a.tier === 'RED' && siteMap[a.siteId].tier !== 'EMERGENCY') siteMap[a.siteId] = a;
+        });
+
+        Object.values(siteMap).forEach(a => {
+            const p = toXY(a.lat, a.lon);
+            const hex = a.color;
+            const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+
+            // Pulse parameters — different speed by tier
+            const speed = a.tier === 'EMERGENCY' ? 2.0 : a.tier === 'RED' ? 1.4 : 1.0;
+            const phase = (elapsed * speed) % 1.0; // 0-1 normalized
+
+            // Expanding ring 1
+            const ringRadius = 6 + phase * 18;
+            const ringAlpha = (1 - phase) * 0.7;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, ringRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(${r},${g},${b},${ringAlpha})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Expanding ring 2 (offset by 0.5 phase)
+            const phase2 = ((elapsed * speed) + 0.5) % 1.0;
+            const ringRadius2 = 6 + phase2 * 18;
+            const ringAlpha2 = (1 - phase2) * 0.5;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, ringRadius2, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(${r},${g},${b},${ringAlpha2})`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Pulsing glow center
+            const pulseAlpha = 0.15 + Math.sin(elapsed * speed * Math.PI * 2) * 0.15;
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 14);
+            grad.addColorStop(0, `rgba(${r},${g},${b},${pulseAlpha + 0.2})`);
+            grad.addColorStop(0.6, `rgba(${r},${g},${b},${pulseAlpha * 0.5})`);
+            grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Event ID label (small, near the dot)
+            if(a.tier === 'EMERGENCY' || a.tier === 'RED') {
+                ctx.font = 'bold 7px Inter';
+                ctx.fillStyle = `rgba(${r},${g},${b},${0.5 + Math.sin(elapsed * speed * Math.PI * 2) * 0.3})`;
+                ctx.textAlign = 'left';
+                ctx.fillText(a.evtId, p.x + 10, p.y - 3);
+            }
+        });
+
+        // Active tracking count badge
+        const trackCount = Object.keys(siteMap).length;
+        if(trackCount > 0) {
+            ctx.font = 'bold 9px Inter';
+            const badgeText = `⚡ ${trackCount} SITES TRACKING`;
+            const tw = ctx.measureText(badgeText).width;
+            ctx.fillStyle = 'rgba(255,23,68,0.12)';
+            ctx.fillRect(4, 4, tw + 16, 18);
+            ctx.strokeStyle = 'rgba(255,23,68,0.3)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(4, 4, tw + 16, 18);
+            ctx.fillStyle = '#ff1744';
+            ctx.textAlign = 'left';
+            ctx.fillText(badgeText, 12, 16);
+        }
+
+        _blinkAnimId = requestAnimationFrame(animate);
+    }
+
+    _blinkAnimId = requestAnimationFrame(animate);
+}
+
+// Start animation after sites are loaded (deferred)
+const _origStartBlink = () => { if(STATE.sites.length > 0) startBlinkAnimation(); };
+setTimeout(_origStartBlink, 3000);
+// Re-start when map resizes
+const _origRenderMapBlink = renderMap;
+const _hookedRenderMap = renderMap;
+window.addEventListener('resize', () => { setTimeout(() => { if(STATE.sites.length > 0) startBlinkAnimation(); }, 200); });
 // Maps site types/networks to installed equipment
 const TECH_CATALOG = {
     optical: [
