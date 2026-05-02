@@ -413,5 +413,149 @@ const _patchInterval = setInterval(() => {
     if (activeTab) renderInventory(activeTab.dataset.tab);
 }, 200);
 
-console.log('[DRILLDOWN] Row drill-down system loaded. Click any table row for details.');
+// ── Network Drill-Down Data ──
+const NETWORK_DETAILS = {
+    'ExoAnalytic': {
+        img: 'img/exoanalytic.png',
+        description: 'ExoAnalytic Solutions operates the world\'s largest commercial space surveillance telescope network with 350+ sensors across six continents. Specializing in geosynchronous orbit characterization, their Electro-Optical Global Telescope Network (EGTN) delivers near-real-time astrometry and photometry for deep-space objects. Each telescope runs automated acquisition sequences, capturing light curves that reveal satellite attitude, spin state, and anomalous behavior. Their AI-driven pipeline detects maneuvers within minutes of execution, enabling rapid conjunction re-screening. ExoAnalytic\'s unique value is persistent GEO stare coverage — maintaining custody of high-value assets that optical-only LEO networks cannot track during daylight hours.',
+        hq: 'Los Angeles, California',
+        founded: '2014',
+        sensors: '350+ optical telescopes',
+        coverage: 'GEO, MEO, deep space (>2,000 km)',
+        keyCapability: 'Photometric characterization — determines satellite attitude, spin, and anomalies from light curves',
+        integration: 'REST API → SentinelForge fusion pipeline. Obs fed to Module A (streak classifier) and Module D (conjunction screener).',
+    },
+    'USSF-SSN': {
+        img: 'img/ussf_ssn.png',
+        description: 'The US Space Force Space Surveillance Network is the backbone of global space domain awareness, operating 29 radar and optical sensors worldwide under the 18th Space Defense Squadron. Its crown jewel is the Space Fence on Kwajalein Atoll — an S-band phased-array radar capable of tracking objects as small as 5cm in LEO. The SSN maintains the authoritative space catalog of 46,000+ objects, generating General Perturbations (GP) element sets distributed via Space-Track.org. The network provides Conjunction Data Messages (CDMs) for all trackable objects, serving as the primary warning system for collision avoidance across all orbital regimes.',
+        hq: 'Vandenberg SFB, California (18th SDS)',
+        founded: '1957 (NORAD era)',
+        sensors: '29 sites: phased-array radars (Space Fence, PAVE PAWS), mechanical trackers (GEODSS), ground-based electro-optical deep space surveillance',
+        coverage: 'All orbital regimes — LEO through cislunar',
+        keyCapability: 'Authoritative catalog maintenance — only entity providing full-catalog conjunction screening for all 46K objects',
+        integration: 'Space-Track.org REST API (8h cycle) + CDM webhook push for conjunction events.',
+    },
+    'Slingshot': {
+        img: 'img/slingshot.png',
+        description: 'Slingshot Aerospace combines 130+ commercial optical sensors with the Numerica orbit determination engine to deliver high-accuracy space domain awareness. Their differentiator is daylight tracking — using narrow-band optical filters to observe satellites against the sunlit sky, eliminating the dawn/dusk gap that limits traditional optical networks. Slingshot\'s Beacon platform fuses observations from proprietary and third-party sensors with AI-driven analytics, providing satellite operators with actionable maneuver recommendations. Their Seradata SpaceTrak integration adds comprehensive launch and deorbit intelligence. Founded in Austin, TX, Slingshot serves both commercial operators and Department of Defense customers.',
+        hq: 'Austin, Texas',
+        founded: '2017',
+        sensors: '130+ optical sensors with narrow-band daylight tracking filters',
+        coverage: 'LEO, MEO, GEO — including daylight passes',
+        keyCapability: 'Daylight satellite tracking — eliminates the traditional optical observation gap during daytime hours',
+        integration: 'REST API → SentinelForge multi-sensor fusion. 19 active Slingshot stations contribute to the SentinelForge observation pipeline.',
+    },
+    'Contributing': {
+        img: 'img/contributing.png',
+        description: 'The Contributing Sensor Network aggregates observations from 20+ independent academic, amateur, and government observatories worldwide that share data under bilateral SSA agreements. Contributors range from university research telescopes to citizen-science programs like the ISON-affiliated observers. Each contributing site operates autonomously but feeds standardized TDM (Tracking Data Messages) to the SentinelForge cloud pipeline via secure uplink. While individual sites have limited aperture and coverage, collectively they fill critical geographic gaps — particularly in the Southern Hemisphere and equatorial regions where major networks have sparse presence. Data quality varies; SentinelForge applies automated outlier rejection and cross-validation.',
+        hq: 'Distributed (no central HQ)',
+        founded: 'Various (aggregated by SentinelForge)',
+        sensors: '20+ independent observatories: university domes, robotic telescopes, amateur stations',
+        coverage: 'Gap-filling — Southern Hemisphere, equatorial, polar regions',
+        keyCapability: 'Geographic diversity — fills coverage holes left by major commercial and government networks',
+        integration: 'CCSDS TDM format over secure HTTPS. Automated quality scoring and outlier rejection applied at ingest.',
+    },
+    'ESA-SST': {
+        img: 'img/esa_sst.png',
+        description: 'The European Space Agency\'s Space Surveillance and Tracking (SST) programme operates 12 sensors across EU member states, anchored by the GRAVES bistatic radar in France and the Optical Ground Station (OGS) on Tenerife, Canary Islands. ESA-SST provides independent European capability for tracking objects in all orbital regimes, reducing dependency on US Space Force data. Their Fly-Eye telescope — with its novel multi-aperture design — achieves wide-field survey coverage for NEO and debris detection simultaneously. ESA-SST data is exchanged via CCSDS Navigation Data Messages (NDM) and is shared with SentinelForge under the EU SST Consortium framework.',
+        hq: 'ESA/ESOC, Darmstadt, Germany',
+        founded: '2014 (EU SST Framework)',
+        sensors: '12 sensors: GRAVES radar (France), OGS Tenerife (Spain), Fly-Eye (Italy), TIRA radar (Germany), plus optical sites across EU',
+        coverage: 'LEO primary (GRAVES radar), GEO (OGS Tenerife), survey (Fly-Eye)',
+        keyCapability: 'Independent European SSA — sovereign catalog capability not dependent on US data',
+        integration: 'CCSDS NDM format, hourly batch exchange under EU SST Consortium data-sharing agreement.',
+    },
+    'LeoLabs': {
+        img: 'img/leolabs.png',
+        description: 'LeoLabs operates 11 phased-array radar installations purpose-built for tracking low-Earth orbit debris down to 2cm — far below the detection threshold of traditional optical sensors. Their radars in Midland TX, Kiwi NZ, Costa Rica, Alaska, and Western Australia provide persistent rain-or-shine coverage unaffected by weather, daylight, or atmospheric seeing. LeoLabs\' differentiator is small-debris detection: their S-band radars resolve fragments from breakup events that optical networks miss entirely. Their automated conjunction screening service provides Pc and miss-distance estimates within minutes of each radar pass, enabling rapid response to emerging collision threats.',
+        hq: 'Menlo Park, California',
+        founded: '2016',
+        sensors: '11 phased-array S-band radars: Midland TX, Kiwi NZ, Costa Rica, Poker Flat AK, Western Australia + 6 more',
+        coverage: 'LEO exclusively (200-2,000 km) — all inclinations',
+        keyCapability: 'Small debris detection — tracks objects down to 2cm, far below optical detection limits',
+        integration: 'REST API → SentinelForge fusion pipeline. Radar data used for sub-10cm objects invisible to optical sensors.',
+    },
+};
+
+window.openNetworkDrilldown = function(networkName) {
+    const detail = NETWORK_DETAILS[networkName];
+    if (!detail) return;
+    const modal = document.getElementById('siteModal');
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    title.textContent = networkName + ' Sensor Network';
+    const sites = STATE.sites.filter(s => s.network === networkName);
+    const active = sites.filter(s => s.status==='active').length;
+    const deg = sites.filter(s => s.status==='degraded').length;
+    const off = sites.filter(s => s.status==='offline').length;
+    body.innerHTML = `
+        <img src="${detail.img}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:220px;object-fit:cover" alt="${networkName}">
+        <h3>📖 Overview</h3><p style="line-height:1.7">${detail.description}</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">
+            <div style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:20px;font-weight:700;color:#00e5ff">${sites.length}</div><div style="font-size:9px;color:#78909c">Total Sites</div>
+            </div>
+            <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.15);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:20px;font-weight:700;color:#00e676">${active}</div><div style="font-size:9px;color:#78909c">Active</div>
+            </div>
+        </div>
+        <table><tbody>
+            <tr><td style="color:#78909c;font-weight:600;padding-right:16px">Headquarters</td><td>${detail.hq}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Founded</td><td>${detail.founded}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Sensors</td><td>${detail.sensors}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Coverage</td><td>${detail.coverage}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Key Capability</td><td style="color:#00e5ff">${detail.keyCapability}</td></tr>
+        </tbody></table>
+        <h3>🔗 SentinelForge Integration</h3><p style="font-size:10px;line-height:1.6;color:#b0bec5">${detail.integration}</p>
+        <h3>📡 Network Status</h3>
+        <div style="font-size:10px;margin-top:4px">
+            <span style="color:#00e676">🟢 ${active} Active</span> · 
+            <span style="color:#ffab00">🟡 ${deg} Degraded</span> · 
+            <span style="color:#ff1744">🔴 ${off} Offline</span>
+        </div>
+        <div style="margin-top:8px;max-height:200px;overflow-y:auto">
+            <table><thead><tr><th>Site</th><th>Location</th><th>Type</th><th>Status</th></tr></thead><tbody>` +
+            sites.map(s => {
+                const badge = s.status==='active'?'badge-green':s.status==='degraded'?'badge-yellow':'badge-red';
+                return `<tr style="cursor:pointer" onclick="openSiteDetail('${s.id}')">
+                    <td style="color:#e8eaf6;font-weight:600">${s.id}</td>
+                    <td style="font-size:9px">${s.lat.toFixed(1)}°N, ${s.lon.toFixed(1)}°E</td>
+                    <td>${s.type}</td>
+                    <td><span class="badge ${badge}">${s.status}</span></td></tr>`;
+            }).join('') +
+        `</tbody></table></div>`;
+    modal.style.display = 'flex';
+};
+
+// Patch renderSites to make network NAME clickable (not entire card)
+const _sitesPatchInterval = setInterval(() => {
+    if (typeof renderSites !== 'function') return;
+    clearInterval(_sitesPatchInterval);
+    const _origRS = renderSites;
+    renderSites = function() {
+        _origRS();
+        document.querySelectorAll('.site-card').forEach(card => {
+            const nameEl = card.querySelector('.site-name');
+            if (!nameEl) return;
+            const net = nameEl.textContent.trim();
+            if (!NETWORK_DETAILS[net]) return;
+            // Style the name as a link
+            nameEl.style.cursor = 'pointer';
+            nameEl.style.textDecoration = 'underline';
+            nameEl.style.textDecorationColor = 'rgba(124,77,255,0.4)';
+            nameEl.style.textUnderlineOffset = '2px';
+            nameEl.title = `Click for ${net} deep dive — 100-word overview, image, sites, integration`;
+            nameEl.innerHTML = net + ' <span style="font-size:8px;color:#7c4dff;margin-left:2px">▸</span>';
+            nameEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openNetworkDrilldown(net);
+            });
+            nameEl.addEventListener('mouseover', () => { nameEl.style.color = '#b388ff'; });
+            nameEl.addEventListener('mouseout', () => { nameEl.style.color = ''; });
+        });
+    };
+    renderSites();
+}, 200);
+
+console.log('[DRILLDOWN] Row + network drill-down system loaded.');
 })();
