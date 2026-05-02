@@ -518,138 +518,108 @@ function addChatMsg(text, cls) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// NL query processor — maps natural language to system data
+// NL query processor — maps natural language to system data + ACTIONS
+function navigateTab(tab) {
+    document.querySelectorAll('.inv-tab').forEach(t => t.classList.remove('active'));
+    const target = document.querySelector(`.inv-tab[data-tab="${tab}"]`);
+    if(target) { target.classList.add('active'); renderInventory(tab); }
+}
 function processQuery(query) {
     const q = query.toLowerCase();
-    // Conjunction queries
+    // ── ACTION: Show maneuvers ──
+    if(q.match(/show.*(maneuver|burn|delta|avoid)/)) {
+        navigateTab('maneuver');
+        return `<b>Navigated → Maneuver Decision Panel</b><br>${STATE.maneuvers.length} active assessments:<br>` +
+            STATE.maneuvers.map(m => `• <b>${m.conjId}</b> — ${m.asset}: ${m.dv_options.length} options, fuel ${m.fuelPct}%`).join('<br>');
+    }
+    // ── ACTION: Show problems ──
+    if(q.match(/show.*(problem|issue|degrad|offline|error|fail|alert|critical|warning)/)) {
+        const deg = STATE.sites.filter(s => s.status==='degraded');
+        const off = STATE.sites.filter(s => s.status==='offline');
+        const emConj = STATE.conjunctions.filter(c => c.tier==='EMERGENCY'||c.tier==='RED');
+        const highRe = STATE.reentries.filter(r => r.risk==='HIGH');
+        let r = `<b>Current Problems & Alerts:</b><br><br><b style="color:#ff1744">EMERGENCY/RED Conjunctions (${emConj.length}):</b><br>`;
+        emConj.forEach(c => { r += `• ${c.id}: ${c.priName} vs ${c.secName} — Pc=${c.pc.toExponential(1)}<br>`; });
+        r += `<br><b style="color:#ffab00">Degraded Sites (${deg.length}):</b><br>`;
+        deg.slice(0,5).forEach(s => { r += `• ${s.name} (${s.network})<br>`; });
+        if(highRe.length) { r += `<br><b style="color:#ff9100">High-Risk Reentries:</b><br>`; highRe.forEach(x => { r += `• ${x.name} — ${x.mass}kg<br>`; }); }
+        return r;
+    }
+    // ── ACTION: Show military satellites ──
+    if(q.match(/show.*(mil|military|defense|classified|recon|spy|intel|weapon)/)) {
+        const mil = [
+            {n:'USA-326 (KH-11)',t:'Imaging Recon',o:'LEO SSO 260km',f:'🇺🇸 NRO'},
+            {n:'USA-338 (SBIRS GEO-6)',t:'Missile Warning',o:'GEO 75W',f:'🇺🇸 USSF'},
+            {n:'USA-314 (GPS III-5)',t:'Navigation',o:'MEO 20200km',f:'🇺🇸 USSF'},
+            {n:'GSSAP-5/6',t:'GEO Inspector/RPO',o:'Near-GEO',f:'🇺🇸 USSF'},
+            {n:'X-37B (OTV-7)',t:'Classified Spaceplane',o:'LEO/MEO var',f:'🇺🇸 USSF'},
+            {n:'Yaogan-39A/B/C',t:'SIGINT/ELINT Triplet',o:'LEO 1100km 63°',f:'🇨🇳 PLA/SSF'},
+            {n:'SJ-21',t:'GEO RPO/Debris',o:'GEO',f:'🇨🇳 PLA/SSF'},
+            {n:'Kosmos 2569 (Liana)',t:'SIGINT',o:'LEO 900km 67°',f:'🇷🇺 MoD'},
+            {n:'Kosmos 2558',t:'ASAT Inspector',o:'LEO ~550km',f:'🇷🇺 MoD'},
+            {n:'IGS Radar-7',t:'SAR Recon',o:'SSO 500km',f:'🇯🇵 CSICE'},
+            {n:'Syracuse 4B',t:'Mil-SATCOM',o:'GEO 47E',f:'🇫🇷 DGA'},
+            {n:'Meridian-M No.20',t:'Mil-SATCOM',o:'HEO Molniya',f:'🇷🇺 MoD'},
+        ];
+        let r = `<b>Military/Defense Satellites (${mil.length} key assets):</b><br><br>`;
+        mil.forEach(s => { r += `${s.f.slice(0,4)} <b>${s.n}</b> — ${s.t}<br><span style="color:var(--text-secondary);font-size:10px">${s.o} | ${s.f}</span><br>`; });
+        r += `<br>~450 known mil assets in full catalog. Classified payloads tracked by orbit only.`;
+        return r;
+    }
+    // ── ACTION: Show launches ──
+    if(q.match(/show.*(launch|upcoming|rocket|manifest)/)) {
+        navigateTab('launches');
+        return `<b>Navigated → Launch Timeline</b><br>${STATE.launches.length} launches in next 7 days. Next: ${STATE.launches[0].vehicle} — ${STATE.launches[0].payload}`;
+    }
+    // ── ACTION: Show debris ──
+    if(q.match(/show.*(debris|fragment|cloud|asat|breakup)/)) {
+        navigateTab('debris');
+        return `<b>Navigated → Debris Events</b><br>${STATE.debrisEvents.length} major events. ${STATE.debrisEvents.reduce((s,d)=>s+d.tracked,0).toLocaleString()} fragments tracked.`;
+    }
+    // ── ACTION: Show reentries ──
+    if(q.match(/show.*(reent|decay|deorbit|burn.?up)/)) { navigateTab('reentries'); return `<b>Navigated → Reentry Predictions</b><br>${STATE.reentries.length} objects. Next: ${STATE.reentries[0].name}`; }
+    // ── ACTION: Show trends ──
+    if(q.match(/show.*(trend|growth|histor|chart|graph)/)) { navigateTab('trending'); return `<b>Navigated → Trending</b><br>Catalog: 22,300 (2020) → ${STATE.catalog.total.toLocaleString()} today.`; }
+    // ── ACTION: Show Pc timeline ──
+    if(q.match(/show.*(pc|probability|timeline)/)) { navigateTab('pcTimeline'); return `<b>Navigated → Pc Timeline</b><br>${Object.keys(STATE.pcTimeline).length} conjunctions tracked. Worst: EVT-2043 Pc=4.1e-2 RISING.`; }
+    // ── ACTION: Show escalation ──
+    if(q.match(/show.*(escalat|notify|roster|who.*call)/)) { navigateTab('escalation'); return `<b>Navigated → Escalation Roster</b><br>4 tiers, ${STATE.escalation.channels.length} channels.`; }
+    // ── ACTION: Show conjunctions ──
+    if(q.match(/show.*(conj|close.?approach)/)) { navigateTab('conj'); return `<b>Navigated → Conjunctions</b><br>${STATE.conjunctions.length} active.`; }
+    // ── ACTION: Show feeds ──
+    if(q.match(/show.*(feed|data.*source|pipeline)/)) { navigateTab('feeds'); return `<b>Navigated → Data Feeds</b><br>${STATE.telemetry.length} feeds active.`; }
+    // ── ACTION: Show overview ──
+    if(q.match(/show.*(overview|summary|dashboard|status|everything)/)) { navigateTab('overview'); return `<b>Dashboard Overview</b><br>Catalog: ${STATE.catalog.total.toLocaleString()} | Conj: ${STATE.conjunctions.length} | UCTs: ${STATE.ucts.length} | Sites: ${STATE.sites.length}`; }
+    // ── KNOWLEDGE QUERIES ──
     if(q.includes('conjunction') || q.includes('collision') || q.includes(' pc ') || q.includes('highest risk')) {
-        const worst = STATE.conjunctions.reduce((a,b) => a.pc > b.pc ? a : b);
-        return `<b>Highest-risk conjunction:</b> ${worst.id}<br>
-            <b>Primary:</b> ${worst.priName} (NORAD ${worst.pri})<br>
-            <b>Secondary:</b> ${worst.secName} (NORAD ${worst.sec})<br>
-            <b>TCA:</b> ${worst.tca}<br>
-            <b>Miss Distance:</b> ${worst.miss} km<br>
-            <b>Pc:</b> ${worst.pc.toExponential(2)} — <span style="color:var(--status-critical)">${worst.tier}</span><br>
-            <b>Source:</b> conjunction_decision.py → DecisionEngine.evaluate()<br>
-            <b>Recommendation:</b> ${worst.tier==='EMERGENCY' ? 'MANEUVER CRITICAL — convene assessment team immediately' : 'Monitor and request additional tracking'}`;
+        const w = STATE.conjunctions.reduce((a,b) => a.pc > b.pc ? a : b);
+        return `<b>Highest-risk:</b> ${w.id} — ${w.priName} vs ${w.secName}<br>Miss: ${w.miss}km | Pc: ${w.pc.toExponential(2)} | <span style="color:var(--status-critical)">${w.tier}</span><br>${w.tier==='EMERGENCY'?'MANEUVER CRITICAL':'Monitor'}`;
     }
-    // UCT queries
-    if(q.includes('uct') || q.includes('uncorrelated') || q.includes('new object')) {
-        const count = STATE.ucts.length;
-        const tent = STATE.ucts.filter(u => u.state==='tentative').length;
-        let resp = `<b>UCT Pipeline Status:</b> ${count} active tracks<br>• ${tent} tentative (near promotion)<br>• ${count-tent} raw UCTs<br><br>`;
-        STATE.ucts.forEach(u => { resp += `<b>${u.id}</b>: ${u.passes} passes, ${u.sma} km SMA, ${u.inc}° inc, ${u.material}<br>`; });
-        resp += `<br><b>Source:</b> catalog_lifecycle.py → CatalogLifecycleManager<br><b>Promotion threshold:</b> 7 passes for CATALOGED`;
-        return resp;
+    if(q.includes('uct') || q.includes('uncorrelated')) {
+        let r = `<b>UCT Pipeline:</b> ${STATE.ucts.length} tracks<br>`;
+        STATE.ucts.forEach(u => { r += `• <b>${u.id}</b>: ${u.passes} passes, ${u.sma}km, ${u.inc}°<br>`; });
+        return r;
     }
-    // Site queries
-    if(q.includes('site') || q.includes('ground') || q.includes('observatory') || q.includes('telescope') || q.includes('network') || q.includes('sensor')) {
-        const total = STATE.sites.length;
-        const active = STATE.sites.filter(s => s.status==='active').length;
-        const deg = STATE.sites.filter(s => s.status==='degraded').length;
-        const off = STATE.sites.filter(s => s.status==='offline').length;
-        const radar = STATE.sites.filter(s => s.type==='radar').length;
-        const nets = {};
-        STATE.sites.forEach(s => { nets[s.network] = (nets[s.network]||0)+1; });
-        const sorted = Object.entries(nets).sort((a,b) => b[1]-a[1]);
-        let resp = `<b>Global Sensor Network:</b> ${total} sites across ${sorted.length} networks<br>
-            🟢 Active: ${active} | 🟡 Degraded: ${deg} | 🔴 Offline: ${off}<br>
-            Radar: ${radar} | Optical: ${total-radar}<br><br><b>Networks:</b><br>`;
-        sorted.forEach(([n,c]) => { resp += `• <b>${n}</b>: ${c} sites<br>`; });
-        resp += `<br><b>Source:</b> site_registry.json → 172-site global constellation`;
-        return resp;
+    if(q.includes('site') || q.includes('ground') || q.includes('network') || q.includes('sensor')) {
+        return `<b>Ground Network:</b> ${STATE.sites.length} sites | Active: ${STATE.sites.filter(s=>s.status==='active').length} | Degraded: ${STATE.sites.filter(s=>s.status==='degraded').length}`;
     }
-    // Telemetry / data feeds
-    if(q.includes('telemetry') || q.includes('feed') || q.includes('pipeline') || q.includes('data source') || q.includes('kafka') || q.includes('spacetrack') || q.includes('celestrak')) {
-        const t = STATE.telemetry;
-        const active = t.filter(f => f.status==='active').length;
-        const groups = {};
-        t.forEach(f => { groups[f.type] = (groups[f.type]||0)+1; });
-        let resp = `<b>Telemetry Network Status:</b> ${t.length} feeds, ${active} active<br><br>`;
-        Object.entries(groups).forEach(([type, count]) => {
-            const label = {external:'Government/Public',commercial:'Commercial',allied:'Allied',internal:'Internal',edge:'Edge Compute'}[type];
-            resp += `<b>${label}:</b> ${count} feeds<br>`;
-        });
-        resp += `<br><b>Key Feeds:</b><br>`;
-        t.slice(0,6).forEach(f => { resp += `• <b>${f.name}</b>: ${f.throughput}, ${f.latency} latency<br>`; });
-        resp += `<br><b>Source:</b> cloud/kafka_transport.py, cloud/schemas.py`;
-        return resp;
+    if(q.includes('weather') || q.includes('solar') || q.includes('kp')) {
+        return `<b>Space Weather:</b> F10.7=${STATE.weather.f107} | Kp=${STATE.weather.kp} | Dst=${STATE.weather.dst}nT<br>${STATE.weather.kp>=5?'STORM':'Quiet — nominal'}`;
     }
-    // Covariance / NEES
-    if(q.includes('covariance') || q.includes('nees') || q.includes('filter') || q.includes('calibrat')) {
-        const nees = STATE.gauges.find(g => g.key==='nees');
-        return `<b>Covariance Realism Status:</b><br>
-            <b>NEES:</b> ${nees.value} (expected: 3.0 for 3D state)<br>
-            <b>Assessment:</b> <span style="color:var(--status-nominal)">CALIBRATED</span><br>
-            <b>CCR:</b> ~1.0 (predicted σ matches observed error)<br>
-            <b>Flagged Objects:</b> 0 overconfident<br><br>
-            <b>Source:</b> covariance_realism.py → CovarianceRealism.nees_test()<br>
-            <b>Interpretation:</b> The filter's uncertainty estimates are accurate. All downstream Pc calculations are reliable.`;
-    }
-    // Detection / performance
-    if(q.includes('detection') || q.includes('performance') || q.includes('benchmark') || q.includes('throughput')) {
-        const det = STATE.gauges.find(g => g.key==='detection');
-        const thr = STATE.gauges.find(g => g.key==='throughput');
-        return `<b>Detection Pipeline Performance:</b><br>
-            <b>Detection Rate (mag 18):</b> ${det.value}%<br>
-            <b>Edge Throughput:</b> ${thr.value} fps<br>
-            <b>False Positive Rate:</b> 0.23%<br>
-            <b>Detection Latency:</b> 42.1 ms<br>
-            <b>Data Reduction:</b> 533:1 (32MB → 10KB)<br><br>
-            <b>Source:</b> streak_detect.cu → StreakDetector.detect() (J2-J6 PINN + matched filter bank)`;
-    }
-    // Catalog
-    if(q.includes('catalog') || q.includes('how many') || q.includes('inventory') || q.includes('tracking')) {
+    if(q.includes('catalog') || q.includes('how many') || q.includes('tracking')) {
         const c = STATE.catalog;
-        return `<b>Space Object Catalog:</b><br>
-            <b>Total:</b> ${c.total.toLocaleString()} objects<br>
-            <b>LEO:</b> ${c.leo.toLocaleString()} | <b>MEO:</b> ${c.meo.toLocaleString()} | <b>GEO:</b> ${c.geo.toLocaleString()}<br>
-            <b>HEO:</b> ${c.heo} | <b>Cislunar:</b> ${c.cislunar}<br><br>
-            <b>Lifecycle States:</b><br>
-            Cataloged: ~${(c.total - 142 - 87).toLocaleString()} | Tentative: 142 | UCT: 87 | Stale: 312 | Lost: 48<br><br>
-            <b>Source:</b> catalog_lifecycle.py → CatalogLifecycleManager.get_statistics()`;
+        return `<b>Catalog:</b> ${c.total.toLocaleString()} | LEO: ${c.leo.toLocaleString()} | MEO: ${c.meo.toLocaleString()} | GEO: ${c.geo.toLocaleString()} | HEO: ${c.heo}`;
     }
-    // Weather / space environment
-    if(q.includes('weather') || q.includes('solar') || q.includes('storm') || q.includes('f10') || q.includes('kp') || q.includes('density')) {
-        return `<b>Space Weather Environment:</b><br>
-            <b>F10.7:</b> ${STATE.weather.f107} sfu (moderate solar activity)<br>
-            <b>Kp Index:</b> ${STATE.weather.kp} (quiet geomagnetic)<br>
-            <b>Dst:</b> ${STATE.weather.dst} nT (no storm)<br><br>
-            <b>Thermospheric Impact:</b> Nominal density. No drag model adjustment needed.<br>
-            <b>Source:</b> thermospheric_model.py → ThermosphericDensityModel.predict()`;
+    if(q.includes('owner') || q.includes('who owns')) {
+        let r = `<b>Owner Registry:</b><br>`;
+        Object.entries(STATE.owners).forEach(([n,o]) => { r += `• ${o.name}: ${o.owner} (${o.country})<br>`; });
+        return r;
     }
-    // Maneuver
-    if(q.includes('maneuver') || q.includes('delta-v') || q.includes('avoid') || q.includes('burn')) {
-        const worst = STATE.conjunctions.reduce((a,b) => a.pc > b.pc ? a : b);
-        return `<b>Maneuver Options for ${worst.id}:</b><br>
-            <b>Option 1 — In-track burn:</b> Δv = 0.8 m/s, fuel = 0.18 kg, new miss = 5.0 km<br>
-            <b>Option 2 — Cross-track:</b> Δv = 1.3 m/s, fuel = 0.30 kg, new miss = 5.0 km<br>
-            <b>Option 3 — Radial:</b> Δv = 2.7 m/s, fuel = 0.62 kg, new miss = 5.0 km<br><br>
-            <b>Screening:</b> No secondary conjunctions created by Option 1.<br>
-            <b>Recommendation:</b> Execute in-track burn 24h before TCA.<br>
-            <b>Source:</b> conjunction_decision.py → ManeuverPlanner.plan_avoidance()`;
+    if(q.includes('maneuver') || q.includes('delta-v') || q.includes('burn')) { navigateTab('maneuver'); return `<b>Maneuver panel opened.</b>`; }
+    if(q.includes('system') || q.includes('architecture') || q.includes('agent')) {
+        return `<b>SentinelForge:</b> ~14,500 LOC, 20 agents (5 tiers), PINN J2-J6 + FNO + Koopman science stack, Orin edge → Kafka → PostGIS → FastAPI`;
     }
-    // System / architecture
-    if(q.includes('system') || q.includes('architecture') || q.includes('module') || q.includes('agent') || q.includes('how does')) {
-        return `<b>SentinelForge Architecture:</b><br>
-            <b>Total Codebase:</b> ~14,500 lines across 18 SOTA modules<br>
-            <b>Agent System:</b> 20 agents (5 tiers: Edge → Pipeline → Cloud → Deploy → Mgmt)<br>
-            <b>Science Stack:</b> PINN J2-J6, FNO propagation, Koopman linearization, Bayesian IOD, RCS fusion, spectral characterization<br>
-            <b>Ops Stack:</b> Catalog lifecycle, conjunction decision support, covariance realism<br>
-            <b>Infra:</b> Jetson Orin edge → Kafka → PostGIS → FastAPI WebSocket<br><br>
-            All 38 sprint tasks completed. 12 benchmarks PASS.`;
-    }
-    // Default
-    return `I can answer questions about:<br>
-        • <b>Conjunctions</b> — "What's the highest Pc right now?"<br>
-        • <b>UCTs</b> — "How many uncorrelated tracks?"<br>
-        • <b>Sites</b> — "Ground station status?"<br>
-        • <b>Performance</b> — "Detection rate and throughput?"<br>
-        • <b>Catalog</b> — "How many objects are we tracking?"<br>
-        • <b>Covariance</b> — "Is the filter calibrated?"<br>
-        • <b>Maneuvers</b> — "What avoidance options exist?"<br>
-        • <b>Weather</b> — "Space weather conditions?"<br>
-        • <b>System</b> — "Architecture overview?"`;
+    return `Try: "<b>show me problems</b>", "<b>show military satellites</b>", "<b>show maneuvers</b>", "<b>show launches</b>", "<b>show debris</b>", "<b>show reentries</b>", "<b>show trends</b>", "<b>show Pc timeline</b>", "<b>show escalation</b>"<br>Or ask about conjunctions, UCTs, sites, weather, catalog, owners.`;
 }
 
 function handleChat() {
