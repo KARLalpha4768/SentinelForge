@@ -585,6 +585,60 @@ function showDetections(siteId, count, seed) {
 }
 var _lastModalSite = null;
 
+// ── Ops Tempo Detail Modals ─────────────────────────
+const FUNNEL_DETAILS = [
+    {title:'Close Approach Screening',desc:'18th SDS performs all-on-all conjunction screening of the full 46K+ catalog against itself using SP (Special Perturbations) propagation. Each object is propagated forward 7 days and checked against every other cataloged object. This produces ~1.5M close approach pairs per week that fall within a 5 km screening volume.',sources:'18th SDS (Vandenberg SFB), Space Fence (Kwajalein), GEODSS, Contributing Sensors'},
+    {title:'CDM Generation (Pc > 1e-7)',desc:'Close approaches exceeding the minimum probability threshold generate a Conjunction Data Message (CDM) per CCSDS 508.0-B-1 standard. CDMs include state vectors, covariance matrices, TCA, miss distance, and probability of collision for both objects. Distributed via Space-Track.org to registered owner/operators.',sources:'Space-Track CDM distribution, CARA (NASA), ESA Space Debris Office'},
+    {title:'YELLOW Screening Events',desc:'Events with Pc exceeding 1e-5 require analyst review and are added to the conjunction watch list. Sensor tasking priority is elevated to gather fresh observations for orbit refinement. Owner/operators receive automated CDM updates.',sources:'Conjunction watch list, Automated CDM push, Sensor tasking queue'},
+    {title:'RED Events — Active Monitoring',desc:'Events with Pc > 1e-3 trigger the RED escalation protocol. Dedicated analysts monitor 24/7. Rapid orbit determination cycles (new obs every 2-4 hours). Owner/operator direct communication initiated. Maneuver planning begins if assets have propulsion capability.',sources:'24/7 watch floor, Direct O/O coordination, FDO maneuver planning tools'},
+    {title:'EMERGENCY — Imminent Collision Risk',desc:'Pc > 1e-2 or miss < 0.5 km triggers EMERGENCY protocol. All hands on deck. Mission Director notified via FLASH message. Maneuver decision gate at TCA-6h. If national security asset: USSPACECOM commander briefed. Historical rate: ~18/week globally, most resolve as Pc drops with better observations.',sources:'FLASH notification chain, Mission Director, CSpOC, NASA CARA, Owner/Operator'},
+    {title:'Executed Maneuvers',desc:'Only ~4 maneuvers per week are actually executed (excluding Starlink). Most events self-resolve as better observations refine the orbit estimate and Pc drops below thresholds. The decision to maneuver considers: fuel cost, mission impact, Pc trend, secondary debris risk, and whether the maneuver itself creates new conjunction risks.',sources:'Flight Dynamics teams, Propulsion budgets, Mission planning'},
+];
+
+function openFunnelDetail(idx) {
+    const f = FUNNEL_DETAILS[idx];
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    title.textContent = `Screening Funnel — ${f.title}`;
+    body.innerHTML = `
+        <h3>📊 ${f.title}</h3>
+        <div style="font-size:11px;color:#b0bec5;line-height:1.7;margin-bottom:12px">${f.desc}</div>
+        <h3>📡 Data Sources</h3>
+        <div style="font-size:11px;color:#e8eaf6">${f.sources}</div>
+        <div style="margin-top:12px;padding:8px;background:rgba(100,160,255,0.06);border:1px solid rgba(100,160,255,0.12);border-radius:8px;font-size:10px;color:#78909c">
+            <a href="#" onclick="renderInventory('opsTempo');document.getElementById('siteModal').style.display='none';return false" style="color:#00e5ff">← Back to Ops Tempo</a>
+        </div>`;
+    document.getElementById('siteModal').style.display = 'flex';
+}
+
+const OPERATOR_DETAILS = {
+    'SpaceX (Starlink)': {fleet:'~6,200 active (V2 Mini), 12,000 approved',orbit:'LEO 550 km, 53°/70°/97.6° shells',propulsion:'Hall-effect krypton EP (Starlink V2), cold-gas (V1)',avoidance:'Fully autonomous AI-driven. Onboard GPS + TLE cross-check. ~25 maneuvers/week across constellation. No human in loop for routine avoidance. 18 SDS coordination for deconfliction.',fuel:'Krypton ion: ~5 year operational life with margin for disposal'},
+    'ESA (Sentinel, Aeolus)': {fleet:'12+ active EO missions (Sentinel-1/2/3/5P/6, Aeolus-2, SWARM)',orbit:'LEO 693-814 km SSO',propulsion:'Hydrazine monoprop (most Sentinel), cold-gas (small sats)',avoidance:'Dedicated Collision Avoidance office at ESOC (Darmstadt). 48h decision cycle. Manual review of every RED event. ~1-2 maneuvers/week across fleet.',fuel:'Hydrazine: mission-dependent, typically 10-15% mass budget'},
+    'NASA (ISS, HST, Terra)': {fleet:'ISS + HST + 25+ science missions (Terra, Aqua, Aura, PACE, etc.)',orbit:'LEO 408 km (ISS) to 705 km (Terra)',propulsion:'ISS: Russian Progress thrusters. HST: none (relies on avoidance only). Science fleet: hydrazine',avoidance:'CARA (Conjunction Assessment & Risk Analysis) at GSFC. Full committee review for ISS. ISS performs 2-3 avoidance maneuvers per year. Debris Avoidance Maneuver (DAM) criteria: Pc > 1e-5 within 72h.',fuel:'ISS reboosted by Progress/Cygnus. Science fleet: limited budgets'},
+    'OneWeb': {fleet:'~634 active in LEO constellation',orbit:'LEO 1,200 km, 87.9° polar',propulsion:'Xenon ion thrusters',avoidance:'Semi-automated with ground team review. Coordinates with 18 SDS. ~3 maneuvers/week. Higher altitude = more debris exposure from historical events.',fuel:'Xenon ion: designed for 5+ year constellation life'},
+    'ISRO': {fleet:'50+ active (Cartosat, RISAT, Oceansat, Chandrayaan relay, etc.)',orbit:'LEO to GEO',propulsion:'Bipropellant (NTO/MMH) for large sats, hydrazine for small',avoidance:'ISTRAC operations center (Bangalore). Manual decision process. Increased awareness post-2019 ASAT test debris exposure. ~0.5 maneuvers/week.',fuel:'Mission-dependent, typically conservative with reserves'},
+    'Planet Labs': {fleet:'~200 Dove cubesats (SuperDove/Pelican)',orbit:'LEO 475-525 km, SSO',propulsion:'Most have no propulsion — passive drag disposal',avoidance:'Minimal active avoidance. LEO flock strategy: lose one, replace one. Orbital lifetime ~3-5 years with natural decay. ~1 propulsive maneuver/week across fleet for those with green propulsion.',fuel:'N/A for most — designed as disposable'},
+    'DOD/NRO': {fleet:'Classified constellation size',orbit:'Classified (known LEO, MEO, GEO, HEO assets)',propulsion:'Classified (hydrazine, biprop, EP confirmed on some)',avoidance:'Classified decision process. Known to maneuver based on orbital element changes. Coordination with CSpOC. Some assets have autonomous avoidance capability.',fuel:'Classified'},
+};
+
+function openOperatorDetail(name) {
+    const op = OPERATOR_DETAILS[name];
+    if(!op) return;
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    title.textContent = `Operator Profile — ${name}`;
+    body.innerHTML = `
+        <h3>🛰️ Fleet</h3><div style="font-size:11px;color:#b0bec5;margin-bottom:8px">${op.fleet}</div>
+        <h3>🌍 Orbit Regime</h3><div style="font-size:11px;color:#b0bec5;margin-bottom:8px">${op.orbit}</div>
+        <h3>🔥 Propulsion</h3><div style="font-size:11px;color:#b0bec5;margin-bottom:8px">${op.propulsion}</div>
+        <h3>🛡️ Collision Avoidance Process</h3><div style="font-size:11px;color:#b0bec5;line-height:1.7;margin-bottom:8px">${op.avoidance}</div>
+        <h3>⛽ Fuel Budget</h3><div style="font-size:11px;color:#b0bec5;margin-bottom:8px">${op.fuel}</div>
+        <div style="margin-top:12px;padding:8px;background:rgba(100,160,255,0.06);border:1px solid rgba(100,160,255,0.12);border-radius:8px;font-size:10px;color:#78909c">
+            <a href="#" onclick="renderInventory('opsTempo');document.getElementById('siteModal').style.display='none';return false" style="color:#00e5ff">← Back to Ops Tempo</a>
+        </div>`;
+    document.getElementById('siteModal').style.display = 'flex';
+}
+
 // ── Inventory Tabs ──────────────────────────────────
 function renderInventory(tab) {
     const el = document.getElementById('invContent');
@@ -892,6 +946,62 @@ function renderInventory(tab) {
                     <span style="color:#00e676">✓ 20:15 UTC</span> — Kafka consumer lag spike resolved (was 47 → now 1.89 msgs)<br>
                     <span style="color:#ff1744">✗ 19:30 UTC</span> — EUR-07 Starlink uplink packet loss 2.3% (investigating)<br>
                     <span style="color:#00e676">✓ 18:00 UTC</span> — Software deploy: streak_detect.cu v3.2.1 → 172 nodes (100% success)
+                </div>
+            </div>`;
+    } else if(tab === 'opsTempo') {
+        // ── Ops Tempo: Screening Funnel + Maneuver Stats ──
+        const funnel = [
+            {label:'Close Approaches Screened',count:'1,487,320',rate:'/week',color:'#78909c',pct:100},
+            {label:'CDMs Generated (Pc > 1e-7)',count:'12,841',rate:'/week',color:'#448aff',pct:0.86},
+            {label:'YELLOW Events (Pc > 1e-5)',count:'1,247',rate:'/week',color:'#ffd740',pct:0.084},
+            {label:'RED Events (Pc > 1e-3)',count:'214',rate:'/week',color:'#ff5252',pct:0.014},
+            {label:'EMERGENCY (Pc > 1e-2)',count:'18',rate:'/week',color:'#ff1744',pct:0.0012},
+            {label:'Maneuvers Executed',count:'4.2',rate:'/week avg',color:'#00e676',pct:0.0003},
+        ];
+        const operators = [
+            {name:'SpaceX (Starlink)',maneuvers:'~25/wk',method:'Autonomous AI',loop:'No human',note:'Hall-effect EP + cold-gas'},
+            {name:'ESA (Sentinel, Aeolus)',maneuvers:'~1.5/wk',method:'Manual review',loop:'48h decision cycle',note:'Dedicated CA office'},
+            {name:'NASA (ISS, HST, Terra)',maneuvers:'~0.3/wk',method:'CARA screening',loop:'Full committee review',note:'ISS: ~2-3 avoidance/yr'},
+            {name:'OneWeb',maneuvers:'~3/wk',method:'Semi-auto',loop:'Ground team + algo',note:'Coordinated with 18 SDS'},
+            {name:'ISRO',maneuvers:'~0.5/wk',method:'Manual',loop:'ISTRAC ops center',note:'Post-ASAT increased'},
+            {name:'Planet Labs',maneuvers:'~1/wk',method:'Passive decay',loop:'Minimal — LEO flock',note:'Disposable sats'},
+            {name:'DOD/NRO',maneuvers:'Classified',method:'Classified',loop:'Classified',note:'Known to maneuver'},
+        ];
+        el.innerHTML = `
+            <div style="padding:4px 8px;font-size:11px;color:var(--text-secondary);margin-bottom:8px">
+                <b style="color:var(--text-primary)">Operational Tempo</b> — Global conjunction screening funnel & maneuver rates
+            </div>
+            <div style="padding:0 8px">
+                ${funnel.map((f,i) => {
+                    const w = Math.max(4, Math.min(100, i===0?100:i===1?65:i===2?35:i===3?18:i===4?8:4));
+                    return `<div style="margin-bottom:6px;cursor:pointer" onclick="openFunnelDetail(${i})">
+                        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+                            <span style="color:#e8eaf6">${f.label}</span>
+                            <span style="color:${f.color};font-weight:700;font-family:JetBrains Mono,mono">${f.count} <span style="color:#78909c;font-weight:400">${f.rate}</span></span>
+                        </div>
+                        <div style="height:16px;background:rgba(255,255,255,0.04);border-radius:4px;overflow:hidden;position:relative">
+                            <div style="height:100%;width:${w}%;background:${f.color};border-radius:4px;opacity:0.7;transition:width 0.5s"></div>
+                            ${i>0?`<span style="position:absolute;right:6px;top:1px;font-size:8px;color:#78909c">${f.pct}% of screened</span>`:''}
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+            <h3 style="color:var(--text-primary);font-size:12px;margin:12px 8px 6px;border-bottom:1px solid rgba(100,160,255,0.08);padding-bottom:4px">🚀 Operator Maneuver Rates (Weekly Average)</h3>
+            <table class="inv-table" style="font-size:10px">
+                <thead><tr><th>Operator</th><th>Rate</th><th>Decision Method</th><th>Loop</th><th>Notes</th></tr></thead>
+                <tbody>${operators.map(o => `<tr style="cursor:pointer" onclick="openOperatorDetail('${o.name}')">
+                    <td style="color:var(--text-primary);font-weight:600">${o.name}</td>
+                    <td style="font-family:JetBrains Mono,mono;color:#00e5ff">${o.maneuvers}</td>
+                    <td>${o.method}</td>
+                    <td style="font-size:9px;color:var(--text-secondary)">${o.loop}</td>
+                    <td style="font-size:9px;color:var(--text-secondary)">${o.note}</td>
+                </tr>`).join('')}</tbody>
+            </table>
+            <div style="padding:8px;margin-top:8px;border-top:1px solid rgba(255,255,255,0.05)">
+                <div style="font-size:10px;color:var(--text-secondary);margin-bottom:4px"><b style="color:var(--text-primary)">Key Insight</b></div>
+                <div style="font-size:10px;color:#b0bec5;line-height:1.6">
+                    The funnel is <b style="color:#00e5ff">extreme</b>: ~1.5M screenings → ~12.8K CDMs → ~214 RED → <b style="color:#00e676">~4 actual burns/week</b> (excluding Starlink autonomous moves).
+                    If counting Starlink, the global total is <b style="color:#ffd740">~30 maneuvers/week</b> across LEO. Better observations = fewer false alarms = fewer unnecessary maneuvers — this is why the <b style="color:#e040fb">sensor network</b> and <b style="color:#e040fb">rapid OD pipeline</b> matter.
                 </div>
             </div>`;
     }
