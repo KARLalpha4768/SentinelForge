@@ -4,6 +4,8 @@
 let viewer;
 const globeLayers = { leo: [], meo: [], geo: [], conj: [], uct: [], sites: [] };
 
+Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3Mzk4OWZlMi04ZGUyLTQ3MDgtOGEzZC0yYzdkNjgyZmIxMTkiLCJpZCI6NDI2NTE3LCJzdWIiOiJLYXJsIERhdmlkIiwiaXNzIjoiaHR0cHM6Ly9pb24uY2VzaXVtLmNvbSIsImF1ZCI6IlNlbnRpbmVsRm9yZ2UiLCJpYXQiOjE3Nzc3NTMzNDN9.udSF503y9Gx_AAARTqrbAgQ81N5gMRZIwWe4Cj77UJo';
+
 try {
     viewer = new Cesium.Viewer('cesiumContainer', {
         baseLayerPicker: false, geocoder: false, homeButton: false,
