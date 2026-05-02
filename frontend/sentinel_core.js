@@ -348,7 +348,7 @@ _worldMapImg.src = 'world_map.png';
 let _worldMapLoaded = false;
 _worldMapImg.onload = () => { _worldMapLoaded = true; renderMap(); };
 
-function renderMap() {
+function renderMap(now) {
     const canvas = document.getElementById('mapCanvas');
     if(!canvas) return;
     const rect = canvas.parentElement.getBoundingClientRect();
@@ -448,6 +448,11 @@ function renderMap() {
         ctx.fillStyle = '#78909c'; ctx.fillText(name, lx+8, ly+1);
         lx += ctx.measureText(name).width + 14;
     });
+
+    // Draw conjunction tracking blink effects
+    if(now && typeof drawBlinkEffects === 'function') {
+        drawBlinkEffects(ctx, W, H, now);
+    }
 }
 
 // ── Conjunction Detection Blink Animation ───────────
@@ -455,10 +460,8 @@ function renderMap() {
 function getConjTrackingSites() {
     const assignments = [];
     STATE.conjunctions.forEach(c => {
-        // Determine which sites are involved based on conjunction tier + orbital regime
         let siteFilter;
         if(c.id === 'EVT-2041') {
-            // ISS conjunction — task USSF radars + all available optical for ISS-altitude passes
             siteFilter = s => (
                 ['SSN-EGLIN','SSN-CLEAR','SSN-FYLING','SSN-HAYSTACK','SSN-MILLSTONE',
                  'SSN-CAPE','SSN-CAVALIER','SSN-BEALE','SSN-VANDENBERG',
@@ -468,14 +471,12 @@ function getConjTrackingSites() {
                 (s.network === 'ExoAnalytic' && s.type === 'optical')
             );
         } else if(c.id === 'EVT-2042') {
-            // Starlink conjunction — LeoLabs radars (LEO specialists) + Slingshot optical
             siteFilter = s => (
                 s.network === 'LeoLabs' ||
                 (s.network === 'Slingshot' && s.status === 'active') ||
                 ['SSN-FENCE','SSN-COBRADANE','LL-PFISR','LL-MBAR','LL-WARK'].includes(s.id)
             );
         } else if(c.id === 'EVT-2043') {
-            // NOAA-20 EMERGENCY — task EVERYTHING: all USSF radars, all LeoLabs, all ExoAnalytic
             siteFilter = s => (
                 s.network === 'USSF-SSN' ||
                 s.network === 'LeoLabs' ||
@@ -496,117 +497,115 @@ function getConjTrackingSites() {
     return assignments;
 }
 
+// Build a deduped site→assignment map (highest tier wins)
+function buildTrackingMap(assignments) {
+    const siteMap = {};
+    assignments.forEach(a => {
+        if(!siteMap[a.siteId]) siteMap[a.siteId] = a;
+        else if(a.tier === 'EMERGENCY') siteMap[a.siteId] = a;
+        else if(a.tier === 'RED' && siteMap[a.siteId].tier !== 'EMERGENCY') siteMap[a.siteId] = a;
+    });
+    return siteMap;
+}
+
 // Animation state
-let _blinkAssignments = [];
+let _blinkTrackingMap = {};
 let _blinkAnimId = null;
 let _blinkStartTime = 0;
 
-function startBlinkAnimation() {
-    if(_blinkAnimId) cancelAnimationFrame(_blinkAnimId);
-    _blinkAssignments = getConjTrackingSites();
-    _blinkStartTime = performance.now();
+// Draw blink effects directly onto the map canvas
+function drawBlinkEffects(ctx, W, H, now) {
+    if(Object.keys(_blinkTrackingMap).length === 0) return;
+    const toXY = (lat,lon) => ({ x: (lon+180)/360*W, y: (90-lat)/180*H });
+    const elapsed = (now - _blinkStartTime) / 1000;
 
-    const overlay = document.getElementById('mapOverlay');
-    const baseCanvas = document.getElementById('mapCanvas');
-    if(!overlay || !baseCanvas) return;
+    Object.values(_blinkTrackingMap).forEach(a => {
+        const p = toXY(a.lat, a.lon);
+        const hex = a.color;
+        const rr = parseInt(hex.slice(1,3),16), gg = parseInt(hex.slice(3,5),16), bb = parseInt(hex.slice(5,7),16);
 
-    function animate(now) {
-        // Sync overlay size with base canvas
-        overlay.width = baseCanvas.width;
-        overlay.height = baseCanvas.height;
-        const ctx = overlay.getContext('2d');
-        const W = overlay.width, H = overlay.height;
-        ctx.clearRect(0, 0, W, H);
+        // Pulse speed varies by tier
+        const speed = a.tier === 'EMERGENCY' ? 2.0 : a.tier === 'RED' ? 1.4 : 1.0;
 
-        const toXY = (lat,lon) => ({ x: (lon+180)/360*W, y: (90-lat)/180*H });
-        const elapsed = (now - _blinkStartTime) / 1000; // seconds
+        // Ring 1 — expanding outward
+        const phase1 = (elapsed * speed) % 1.0;
+        const r1 = 8 + phase1 * 20;
+        const a1 = (1 - phase1) * 0.8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r1, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${rr},${gg},${bb},${a1})`;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
 
-        // Group by site to avoid double-drawing (a site may track multiple events)
-        const siteMap = {};
-        _blinkAssignments.forEach(a => {
-            if(!siteMap[a.siteId]) siteMap[a.siteId] = a;
-            // Prefer higher tier (EMERGENCY > RED > YELLOW)
-            else if(a.tier === 'EMERGENCY') siteMap[a.siteId] = a;
-            else if(a.tier === 'RED' && siteMap[a.siteId].tier !== 'EMERGENCY') siteMap[a.siteId] = a;
-        });
+        // Ring 2 — offset phase
+        const phase2 = ((elapsed * speed) + 0.5) % 1.0;
+        const r2 = 8 + phase2 * 20;
+        const a2 = (1 - phase2) * 0.6;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r2, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${rr},${gg},${bb},${a2})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
-        Object.values(siteMap).forEach(a => {
-            const p = toXY(a.lat, a.lon);
-            const hex = a.color;
-            const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+        // Pulsing glow
+        const pulseA = 0.2 + Math.sin(elapsed * speed * Math.PI * 2) * 0.2;
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 16);
+        grad.addColorStop(0, `rgba(${rr},${gg},${bb},${pulseA + 0.25})`);
+        grad.addColorStop(0.5, `rgba(${rr},${gg},${bb},${pulseA * 0.4})`);
+        grad.addColorStop(1, `rgba(${rr},${gg},${bb},0)`);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 16, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
 
-            // Pulse parameters — different speed by tier
-            const speed = a.tier === 'EMERGENCY' ? 2.0 : a.tier === 'RED' ? 1.4 : 1.0;
-            const phase = (elapsed * speed) % 1.0; // 0-1 normalized
-
-            // Expanding ring 1
-            const ringRadius = 6 + phase * 18;
-            const ringAlpha = (1 - phase) * 0.7;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, ringRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(${r},${g},${b},${ringAlpha})`;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Expanding ring 2 (offset by 0.5 phase)
-            const phase2 = ((elapsed * speed) + 0.5) % 1.0;
-            const ringRadius2 = 6 + phase2 * 18;
-            const ringAlpha2 = (1 - phase2) * 0.5;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, ringRadius2, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(${r},${g},${b},${ringAlpha2})`;
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-
-            // Pulsing glow center
-            const pulseAlpha = 0.15 + Math.sin(elapsed * speed * Math.PI * 2) * 0.15;
-            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 14);
-            grad.addColorStop(0, `rgba(${r},${g},${b},${pulseAlpha + 0.2})`);
-            grad.addColorStop(0.6, `rgba(${r},${g},${b},${pulseAlpha * 0.5})`);
-            grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
-            ctx.fillStyle = grad;
-            ctx.fill();
-
-            // Event ID label (small, near the dot)
-            if(a.tier === 'EMERGENCY' || a.tier === 'RED') {
-                ctx.font = 'bold 7px Inter';
-                ctx.fillStyle = `rgba(${r},${g},${b},${0.5 + Math.sin(elapsed * speed * Math.PI * 2) * 0.3})`;
-                ctx.textAlign = 'left';
-                ctx.fillText(a.evtId, p.x + 10, p.y - 3);
-            }
-        });
-
-        // Active tracking count badge
-        const trackCount = Object.keys(siteMap).length;
-        if(trackCount > 0) {
-            ctx.font = 'bold 9px Inter';
-            const badgeText = `⚡ ${trackCount} SITES TRACKING`;
-            const tw = ctx.measureText(badgeText).width;
-            ctx.fillStyle = 'rgba(255,23,68,0.12)';
-            ctx.fillRect(4, 4, tw + 16, 18);
-            ctx.strokeStyle = 'rgba(255,23,68,0.3)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(4, 4, tw + 16, 18);
-            ctx.fillStyle = '#ff1744';
+        // Event label for EMERGENCY/RED
+        if(a.tier === 'EMERGENCY' || a.tier === 'RED') {
+            const labelA = 0.6 + Math.sin(elapsed * speed * Math.PI * 2) * 0.35;
+            ctx.font = 'bold 8px Inter';
+            ctx.fillStyle = `rgba(${rr},${gg},${bb},${labelA})`;
             ctx.textAlign = 'left';
-            ctx.fillText(badgeText, 12, 16);
+            ctx.fillText(a.evtId, p.x + 12, p.y - 4);
         }
+    });
 
-        _blinkAnimId = requestAnimationFrame(animate);
-    }
-
-    _blinkAnimId = requestAnimationFrame(animate);
+    // Tracking count badge
+    const trackCount = Object.keys(_blinkTrackingMap).length;
+    ctx.font = 'bold 10px Inter';
+    const badgeText = `⚡ ${trackCount} SITES TRACKING`;
+    const tw = ctx.measureText(badgeText).width;
+    ctx.fillStyle = 'rgba(255,23,68,0.15)';
+    const bx = 4, by = 4, bw = tw + 20, bh = 20;
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = 'rgba(255,23,68,0.4)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, bw, bh);
+    ctx.fillStyle = '#ff5252';
+    ctx.textAlign = 'left';
+    ctx.fillText(badgeText, bx + 8, by + 14);
 }
 
-// Start animation after sites are loaded (deferred)
-const _origStartBlink = () => { if(STATE.sites.length > 0) startBlinkAnimation(); };
-setTimeout(_origStartBlink, 3000);
-// Re-start when map resizes
-const _origRenderMapBlink = renderMap;
-const _hookedRenderMap = renderMap;
-window.addEventListener('resize', () => { setTimeout(() => { if(STATE.sites.length > 0) startBlinkAnimation(); }, 200); });
+// Animation loop — re-renders the map with blink effects at ~30fps
+function startBlinkAnimation() {
+    if(_blinkAnimId) cancelAnimationFrame(_blinkAnimId);
+    const assignments = getConjTrackingSites();
+    _blinkTrackingMap = buildTrackingMap(assignments);
+    _blinkStartTime = performance.now();
+    let lastFrame = 0;
+
+    function tick(now) {
+        // Throttle to ~30fps (33ms)
+        if(now - lastFrame > 33) {
+            lastFrame = now;
+            renderMap(now); // re-render base map + blink effects
+        }
+        _blinkAnimId = requestAnimationFrame(tick);
+    }
+    _blinkAnimId = requestAnimationFrame(tick);
+}
+
+// Start after sites are loaded
+setTimeout(() => { if(STATE.sites.length > 0) startBlinkAnimation(); }, 3000);
+window.addEventListener('resize', () => { setTimeout(() => { if(STATE.sites.length > 0) startBlinkAnimation(); }, 300); });
 // Maps site types/networks to installed equipment
 const TECH_CATALOG = {
     optical: [
@@ -650,8 +649,8 @@ let _sitePositions = []; // cached pixel positions
 
 // Store site positions during render for hit-testing
 const _origRenderMap = renderMap;
-renderMap = function() {
-    _origRenderMap();
+renderMap = function(now) {
+    _origRenderMap(now);
     // Cache positions for hit testing
     const canvas = document.getElementById('mapCanvas');
     if(!canvas) return;
