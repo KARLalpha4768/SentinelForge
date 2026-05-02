@@ -442,6 +442,7 @@ if(siteModalClose) siteModalClose.addEventListener('click', () => { siteModal.st
 if(siteModal) siteModal.addEventListener('click', (e) => { if(e.target === siteModal) siteModal.style.display = 'none'; });
 
 function openSiteModal(site) {
+    _lastModalSite = site;
     const title = document.getElementById('siteModalTitle');
     const body = document.getElementById('siteModalBody');
     title.textContent = `${site.id} — ${site.name}`;
@@ -462,57 +463,127 @@ function openSiteModal(site) {
             <tr><td style="color:#78909c">Sensor</td><td>${site.sensor}</td></tr>
             <tr><td style="color:#78909c">Status</td><td><span style="color:${statusColor};font-weight:700">${site.status.toUpperCase()}</span></td></tr>
             <tr><td style="color:#78909c">GPU Load</td><td>${site.gpu}%</td></tr>
-            <tr><td style="color:#78909c">Detections (24h)</td><td>${site.detections_24h}</td></tr>
+            <tr><td style="color:#78909c">Detections (24h)</td><td><a href="#" onclick="showDetections('${site.id}',${site.detections_24h},${seed});return false" style="color:#00e5ff;text-decoration:underline;cursor:pointer;font-weight:700">${site.detections_24h} — View Inventory →</a></td></tr>
             <tr><td style="color:#78909c">Tasking Queue</td><td>${site.queue} pending</td></tr>
             ${site.seeing ? `<tr><td style="color:#78909c">Seeing</td><td>${site.seeing}"</td></tr>` : ''}
         </table>
-
         <h3>🔭 ${site.type === 'radar' ? 'Radar' : 'Optical'} Equipment Catalog</h3>
-        <table>
-            <tr><th>Component</th><th>Model</th><th>Role</th><th>Power</th><th>Status</th></tr>
-            ${sensorEquip.map((t,i) => `<tr>
-                <td style="color:#e8eaf6">${t.name}</td><td>${t.model}</td><td style="color:#78909c">${t.role}</td>
-                <td>${t.power}</td>
-                <td><span style="color:${jitter(i)>75?'#00e676':'#ffab00'}">${jitter(i)>75?'✓ Operational':'⚠ Check'}</span></td>
-            </tr>`).join('')}
+        <table><tr><th>Component</th><th>Model</th><th>Role</th><th>Power</th><th>Status</th></tr>
+            ${sensorEquip.map((t,i) => `<tr><td style="color:#e8eaf6">${t.name}</td><td>${t.model}</td><td style="color:#78909c">${t.role}</td><td>${t.power}</td><td><span style="color:${jitter(i)>75?'#00e676':'#ffab00'}">${jitter(i)>75?'✓ OK':'⚠ Check'}</span></td></tr>`).join('')}
         </table>
-
         <h3>🖥️ Edge Compute Stack</h3>
-        <table>
-            <tr><th>Component</th><th>Model</th><th>Role</th><th>Power</th><th>Health</th></tr>
-            ${edgeEquip.map((t,i) => {
-                const h = jitter(i+10);
-                const col = h > 80 ? '#00e676' : h > 60 ? '#ffab00' : '#ff1744';
-                return `<tr>
-                    <td style="color:#e8eaf6">${t.name}</td><td>${t.model}</td><td style="color:#78909c">${t.role}</td>
-                    <td>${t.power}</td>
-                    <td><div class="diag-bar"><div class="diag-fill" style="width:${h}%;background:${col}"></div></div> ${h}%</td>
-                </tr>`;
-            }).join('')}
+        <table><tr><th>Component</th><th>Model</th><th>Role</th><th>Power</th><th>Health</th></tr>
+            ${edgeEquip.map((t,i) => { const h=jitter(i+10); const col=h>80?'#00e676':h>60?'#ffab00':'#ff1744'; return `<tr><td style="color:#e8eaf6">${t.name}</td><td>${t.model}</td><td style="color:#78909c">${t.role}</td><td>${t.power}</td><td><div class="diag-bar"><div class="diag-fill" style="width:${h}%;background:${col}"></div></div> ${h}%</td></tr>`; }).join('')}
         </table>
-
         <h3>💻 Software Stack</h3>
-        <table>
-            <tr><th>Module</th><th>Version</th><th>Role</th><th>Status</th></tr>
-            ${swEquip.map(t => `<tr>
-                <td style="color:#e8eaf6">${t.name}</td><td style="font-family:JetBrains Mono,mono;color:#76ff03">${t.version}</td>
-                <td style="color:#78909c">${t.role}</td>
-                <td><span style="color:#00e676">● Running</span></td>
-            </tr>`).join('')}
+        <table><tr><th>Module</th><th>Version</th><th>Role</th><th>Status</th></tr>
+            ${swEquip.map(t => `<tr><td style="color:#e8eaf6">${t.name}</td><td style="font-family:JetBrains Mono,mono;color:#76ff03">${t.version}</td><td style="color:#78909c">${t.role}</td><td><span style="color:#00e676">● Running</span></td></tr>`).join('')}
         </table>
-
-        <h3>📊 24h Performance Summary</h3>
+        <h3>📊 24h Performance</h3>
         <table>
-            <tr><td style="color:#78909c;width:180px">Detections</td><td><b>${site.detections_24h}</b></td></tr>
-            <tr><td style="color:#78909c">False Positive Rate</td><td>${(0.15 + (seed%10)*0.03).toFixed(2)}%</td></tr>
-            <tr><td style="color:#78909c">Data Reduction Ratio</td><td>${(400 + (seed%200))}:1</td></tr>
-            <tr><td style="color:#78909c">Uplink Throughput</td><td>${(45 + (seed%50)).toFixed(0)} Mbps</td></tr>
-            <tr><td style="color:#78909c">Mean Track Duration</td><td>${(12 + (seed%20)).toFixed(1)}s</td></tr>
-            <tr><td style="color:#78909c">Uptime (30d)</td><td>${(96 + Math.random()*3.5).toFixed(1)}%</td></tr>
+            <tr><td style="color:#78909c;width:180px">False Positive Rate</td><td>${(0.15+(seed%10)*0.03).toFixed(2)}%</td></tr>
+            <tr><td style="color:#78909c">Data Reduction</td><td>${(400+(seed%200))}:1</td></tr>
+            <tr><td style="color:#78909c">Uplink</td><td>${(45+(seed%50)).toFixed(0)} Mbps</td></tr>
+            <tr><td style="color:#78909c">Mean Track</td><td>${(12+(seed%20)).toFixed(1)}s</td></tr>
+            <tr><td style="color:#78909c">Uptime (30d)</td><td>${(96+Math.random()*3.5).toFixed(1)}%</td></tr>
         </table>
     `;
     siteModal.style.display = 'flex';
 }
+
+// ── Detection Inventory Generator ───────────────────
+const DET_OBJECTS = [
+    {norad:25544,name:'ISS (ZARYA)',orbit:'LEO',owner:'ISS Partners',rcs:'large'},
+    {norad:48274,name:'STARLINK-2395',orbit:'LEO',owner:'SpaceX',rcs:'small'},
+    {norad:43013,name:'USA-276 (NROL-47)',orbit:'LEO',owner:'NRO/USA',rcs:'medium'},
+    {norad:25994,name:'TERRA',orbit:'LEO',owner:'NASA',rcs:'large'},
+    {norad:27424,name:'XMM-NEWTON',orbit:'HEO',owner:'ESA',rcs:'large'},
+    {norad:39084,name:'YAOGAN-17A',orbit:'LEO',owner:'PRC/PLA',rcs:'medium'},
+    {norad:41335,name:'GAOFEN-4',orbit:'GEO',owner:'CNSA',rcs:'large'},
+    {norad:43235,name:'COSMOS 2535',orbit:'LEO',owner:'Russia/VKS',rcs:'medium'},
+    {norad:49445,name:'STARLINK-3271',orbit:'LEO',owner:'SpaceX',rcs:'small'},
+    {norad:44238,name:'ONEWEB-0012',orbit:'LEO',owner:'OneWeb',rcs:'small'},
+    {norad:28884,name:'USA-193 DEBRIS',orbit:'LEO',owner:'Debris',rcs:'tiny'},
+    {norad:37348,name:'TIANGONG CZ-5B DEB',orbit:'LEO',owner:'Debris',rcs:'medium'},
+    {norad:40258,name:'COSMOS 1408 DEB',orbit:'LEO',owner:'Debris',rcs:'tiny'},
+    {norad:43602,name:'BEIDOU-3 M13',orbit:'MEO',owner:'PRC/BDS',rcs:'medium'},
+    {norad:28868,name:'GALAXY 15',orbit:'GEO',owner:'Intelsat',rcs:'large'},
+    {norad:44713,name:'STARLINK-1007',orbit:'LEO',owner:'SpaceX',rcs:'small'},
+    {norad:26038,name:'FENGYUN 1C DEB',orbit:'LEO',owner:'Debris',rcs:'tiny'},
+    {norad:43689,name:'LEMUR-2-ALEXANDER',orbit:'LEO',owner:'Spire',rcs:'tiny'},
+    {norad:46114,name:'USA-310 (GSSAP-5)',orbit:'GEO',owner:'USSF',rcs:'small'},
+    {norad:38755,name:'INTELSAT 22',orbit:'GEO',owner:'Intelsat',rcs:'large'},
+    {norad:41862,name:'MUOS-5',orbit:'GEO',owner:'USN',rcs:'large'},
+    {norad:28492,name:'ALOS (DAICHI)',orbit:'LEO',owner:'JAXA',rcs:'large'},
+    {norad:99901,name:'UCT-2026-0471',orbit:'Unknown',owner:'UCT',rcs:'unknown'},
+    {norad:99902,name:'UCT-2026-0472',orbit:'Unknown',owner:'UCT',rcs:'unknown'},
+];
+const DET_STATUS = ['CATALOGED','CATALOGED','CATALOGED','CATALOGED','TENTATIVE','CATALOGED','UCT','CATALOGED'];
+
+function generateDetections(siteId, count, seed) {
+    const dets = [];
+    const now = Date.now();
+    for(let i = 0; i < Math.min(count, 60); i++) {
+        const hash = (seed*31 + i*17) % DET_OBJECTS.length;
+        const obj = DET_OBJECTS[hash];
+        const status = DET_STATUS[(seed+i)%DET_STATUS.length];
+        const tOff = Math.floor(((seed*7+i*13)%1440)); // minutes ago
+        const t = new Date(now - tOff*60000);
+        const snr = (8 + ((seed+i*3)%25)).toFixed(1);
+        const mag = obj.rcs==='large' ? (4+((seed+i)%4)).toFixed(1) : obj.rcs==='medium' ? (8+((seed+i)%5)).toFixed(1) : obj.rcs==='small' ? (12+((seed+i)%4)).toFixed(1) : (15+((seed+i)%3)).toFixed(1);
+        const el = (15+((seed*3+i*7)%65)).toFixed(0);
+        const az = ((seed*11+i*29)%360).toFixed(0);
+        dets.push({...obj, status, time:t, snr, mag, el, az, passId:`${siteId}-P${String(i+1).padStart(3,'0')}`});
+    }
+    return dets.sort((a,b) => b.time - a.time);
+}
+
+function showDetections(siteId, count, seed) {
+    const dets = generateDetections(siteId, count, seed);
+    const body = document.getElementById('siteModalBody');
+    const title = document.getElementById('siteModalTitle');
+    title.textContent = `${siteId} — Detection Inventory (${count} objects, 24h)`;
+    const cats = dets.filter(d=>d.status==='CATALOGED').length;
+    const tent = dets.filter(d=>d.status==='TENTATIVE').length;
+    const ucts = dets.filter(d=>d.status==='UCT').length;
+    const debris = dets.filter(d=>d.owner==='Debris').length;
+    body.innerHTML = `
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.15);border-radius:6px;padding:6px 14px;text-align:center">
+                <div style="font-size:18px;font-weight:700;color:#00e676">${cats}</div><div style="font-size:8px;color:#78909c">Cataloged</div>
+            </div>
+            <div style="background:rgba(255,215,64,0.08);border:1px solid rgba(255,215,64,0.15);border-radius:6px;padding:6px 14px;text-align:center">
+                <div style="font-size:18px;font-weight:700;color:#ffd740">${tent}</div><div style="font-size:8px;color:#78909c">Tentative</div>
+            </div>
+            <div style="background:rgba(255,23,68,0.08);border:1px solid rgba(255,23,68,0.15);border-radius:6px;padding:6px 14px;text-align:center">
+                <div style="font-size:18px;font-weight:700;color:#ff1744">${ucts}</div><div style="font-size:8px;color:#78909c">UCT</div>
+            </div>
+            <div style="background:rgba(224,64,251,0.08);border:1px solid rgba(224,64,251,0.15);border-radius:6px;padding:6px 14px;text-align:center">
+                <div style="font-size:18px;font-weight:700;color:#e040fb">${debris}</div><div style="font-size:8px;color:#78909c">Debris</div>
+            </div>
+            <div style="flex:1"></div>
+            <div style="align-self:center;font-size:9px;color:#78909c">Showing top ${dets.length} of ${count} | <a href="#" onclick="openSiteModal(_lastModalSite);return false" style="color:#00e5ff">← Back to Site</a></div>
+        </div>
+        <table style="font-size:10px">
+            <tr><th>Pass ID</th><th>NORAD</th><th>Object</th><th>Orbit</th><th>Owner</th><th>Time (UTC)</th><th>El°</th><th>Az°</th><th>Mag</th><th>SNR</th><th>Status</th></tr>
+            ${dets.map(d => {
+                const sc = d.status==='CATALOGED'?'#00e676':d.status==='TENTATIVE'?'#ffd740':'#ff1744';
+                const oc = d.owner.includes('PRC')||d.owner.includes('Russia')?'#ff5252':d.owner.includes('USA')||d.owner==='USSF'||d.owner==='NRO/USA'||d.owner==='USN'?'#448aff':'#b0bec5';
+                return `<tr>
+                    <td style="font-family:JetBrains Mono,mono;color:#78909c">${d.passId}</td>
+                    <td style="font-family:JetBrains Mono,mono">${d.norad}</td>
+                    <td style="color:#e8eaf6;font-weight:600">${d.name}</td>
+                    <td>${d.orbit}</td>
+                    <td style="color:${oc}">${d.owner}</td>
+                    <td style="font-family:JetBrains Mono,mono">${d.time.toISOString().slice(11,19)}</td>
+                    <td>${d.el}°</td><td>${d.az}°</td>
+                    <td>${d.mag}</td><td>${d.snr}</td>
+                    <td><span style="color:${sc};font-weight:600">${d.status}</span></td>
+                </tr>`;
+            }).join('')}
+        </table>`;
+}
+var _lastModalSite = null;
 
 // ── Inventory Tabs ──────────────────────────────────
 function renderInventory(tab) {
