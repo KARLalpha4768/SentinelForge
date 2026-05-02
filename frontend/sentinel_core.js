@@ -371,30 +371,82 @@ function renderMap() {
     const netColors = {
         'USSF-SSN':'#ff1744','LeoLabs':'#00e5ff','Slingshot':'#ffd740',
         'ExoAnalytic':'#76ff03','ESA-SST':'#448aff','Contributing':'#e040fb',
+        // Allied/individual networks
+        'ESA':'#42a5f5','FR-DGA':'#26c6da','FR-CNES':'#29b6f6','FR-CNRS':'#4dd0e1',
+        'FR-OCA':'#80deea','DE-FHR':'#ffcc80','DE-DLR':'#ffab91','DE-MPIfR':'#bcaaa4',
+        'UK-RAL':'#ef5350','CH-AIUB':'#ce93d8','NO-EISCAT':'#80cbc4',
+        'IT-Sapienza':'#a5d6a7','JP-JAXA':'#fff176','RU-ISON':'#ef9a9a',
+        'AU-RAAF':'#ffab40','AU-DST':'#ffd54f',
     };
-    STATE.sites.forEach(s => {
-        const p = toXY(s.lat, s.lon);
-        const col = netColors[s.network] || '#00e676';
-        const r = s.type === 'radar' ? 4 : 2.5;
-        if(s.status !== 'offline') {
-            // Glow halo
-            const grad = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*3);
-            grad.addColorStop(0, col.replace(')',',0.3)').replace('#','rgba(').replace(/([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i, (m,r,g,b)=>`${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)},0.25)`));
-            ctx.beginPath(); ctx.arc(p.x,p.y,r*3,0,Math.PI*2);
-            ctx.fillStyle = `${col}15`; ctx.fill();
-        }
-        // Dot
-        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
-        ctx.fillStyle = s.status==='offline' ? '#444' : col;
-        ctx.globalAlpha = s.status==='offline' ? 0.3 : 0.95;
-        ctx.fill(); ctx.globalAlpha = 1;
+
+    // Hex to rgba helper
+    function hexToRgba(hex, alpha) {
+        const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+        return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    // Sort: offline first (drawn behind), then active on top; radar before optical
+    const sortedSites = [...STATE.sites].sort((a,b) => {
+        if(a.status === 'offline' && b.status !== 'offline') return -1;
+        if(a.status !== 'offline' && b.status === 'offline') return 1;
+        return 0;
     });
-    // Legend
+
+    sortedSites.forEach(s => {
+        const p = toXY(s.lat, s.lon);
+        const col = netColors[s.network] || '#b0bec5';
+        // Bigger dots: radar=6, optical=4 (was 4/2.5 — too small)
+        const r = s.type === 'radar' ? 6 : 4;
+        if(s.status !== 'offline') {
+            // Glow halo — fixed gradient
+            const grad = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*3.5);
+            grad.addColorStop(0, hexToRgba(col, 0.35));
+            grad.addColorStop(0.5, hexToRgba(col, 0.10));
+            grad.addColorStop(1, hexToRgba(col, 0));
+            ctx.beginPath(); ctx.arc(p.x,p.y,r*3.5,0,Math.PI*2);
+            ctx.fillStyle = grad; ctx.fill();
+        }
+        // Dot with outline
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+        ctx.fillStyle = s.status==='offline' ? '#333' : col;
+        ctx.globalAlpha = s.status==='offline' ? 0.25 : 0.95;
+        ctx.fill();
+        // White outline for active sites
+        if(s.status !== 'offline') {
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        // Degraded sites get a yellow ring
+        if(s.status === 'degraded') {
+            ctx.beginPath(); ctx.arc(p.x,p.y,r+2,0,Math.PI*2);
+            ctx.strokeStyle = '#ffab00'; ctx.lineWidth = 1.5; ctx.setLineDash([2,2]); ctx.stroke(); ctx.setLineDash([]);
+        }
+    });
+
+    // Site count badge
+    ctx.font = 'bold 10px Inter';
+    ctx.fillStyle = 'rgba(10,14,26,0.75)'; ctx.fillRect(W-110, 4, 106, 20); ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1; ctx.strokeRect(W-110,4,106,20);
+    ctx.fillStyle = '#b0bec5'; ctx.textAlign = 'right'; ctx.fillText(`${STATE.sites.length} STATIONS`, W-8, 18); ctx.textAlign = 'left';
+
+    // Legend — all major networks
     ctx.font = '9px Inter'; let lx = 10, ly = H - 6;
-    Object.entries(netColors).forEach(([name, col]) => {
+    const legendNets = ['USSF-SSN','LeoLabs','Slingshot','ExoAnalytic','ESA-SST','Contributing'];
+    legendNets.forEach(name => {
+        const col = netColors[name];
         ctx.fillStyle = col; ctx.fillRect(lx, ly-6, 8, 8);
         ctx.fillStyle = '#b0bec5'; ctx.fillText(name, lx+11, ly+1);
         lx += ctx.measureText(name).width + 22;
+    });
+    // Allied networks legend (second row)
+    ctx.font = '8px Inter'; lx = 10; ly = H - 18;
+    const alliedNets = ['ESA','FR-DGA','DE-FHR','UK-RAL','JP-JAXA','NO-EISCAT','AU-RAAF','CH-AIUB'];
+    alliedNets.forEach(name => {
+        const col = netColors[name] || '#b0bec5';
+        ctx.fillStyle = col; ctx.fillRect(lx, ly-5, 6, 6);
+        ctx.fillStyle = '#78909c'; ctx.fillText(name, lx+8, ly+1);
+        lx += ctx.measureText(name).width + 14;
     });
 }
 
@@ -453,7 +505,7 @@ renderMap = function() {
 };
 
 function findSiteAtPoint(mx, my) {
-    const threshold = 8;
+    const threshold = 12;
     for(let i = _sitePositions.length-1; i>=0; i--) {
         const s = _sitePositions[i];
         const dx = mx - s.px.x, dy = my - s.px.y;
