@@ -151,20 +151,28 @@ const liveMapFrame = document.getElementById('liveMapFrame');
 const cesiumEl = document.getElementById('cesiumContainer');
 let liveMapActive = false;
 
-if(liveMapBtn && liveMapFrame) {
+if(liveMapBtn) {
     liveMapBtn.addEventListener('click', () => {
         liveMapActive = !liveMapActive;
         if(liveMapActive) {
-            // Lazy load iframe on first toggle
-            if(!liveMapFrame.src || liveMapFrame.src === '' || liveMapFrame.src === window.location.href) {
-                liveMapFrame.src = 'https://satellitemap.space/';
+            // Open satellitemap.space in new tab
+            window.open('https://satellitemap.space/', '_blank', 'noopener');
+            // Show info overlay on globe
+            if(liveMapFrame) {
+                liveMapFrame.style.display = 'flex';
+                liveMapFrame.removeAttribute('src');
+                liveMapFrame.outerHTML = `<div id="liveMapFrame" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;position:absolute;top:32px;left:0;right:0;bottom:0;z-index:5;background:rgba(6,8,16,0.92);backdrop-filter:blur(12px)">
+                    <div style="font-size:14px;color:var(--text-primary);font-weight:600">satellitemap.space opened in new tab</div>
+                    <div style="font-size:12px;color:var(--text-secondary);max-width:400px;text-align:center">30,000+ satellites tracked in real-time. Use alongside SentinelForge for cross-reference.</div>
+                    <a href="https://satellitemap.space/" target="_blank" style="padding:8px 20px;background:var(--accent);border-radius:8px;color:white;text-decoration:none;font-size:12px;font-weight:600">Open Again ↗</a>
+                </div>`;
             }
-            liveMapFrame.style.display = 'block';
             cesiumEl.style.display = 'none';
             liveMapBtn.classList.add('active');
             liveMapBtn.textContent = 'SentinelForge Globe';
         } else {
-            liveMapFrame.style.display = 'none';
+            const overlay = document.getElementById('liveMapFrame');
+            if(overlay) overlay.style.display = 'none';
             cesiumEl.style.display = 'block';
             liveMapBtn.classList.remove('active');
             liveMapBtn.textContent = 'Live Map ↗';
