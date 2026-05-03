@@ -375,15 +375,21 @@ const _patchInterval = setInterval(() => {
             });
         }
 
-        // Make debris rows clickable
+        // Make debris rows clickable with rich drilldown
         if (tab === 'debris') {
             el.querySelectorAll('.inv-table tbody tr').forEach(row => {
                 const name = row.querySelector('td')?.textContent?.trim();
                 row.style.cursor = 'pointer';
-                row.addEventListener('click', () => openDrilldown(null, name, 'debris'));
+                row.title = name + ' — Click for image, threat assessment, and impact analysis';
+                row.addEventListener('click', () => openDebrisDrilldown(name));
                 row.addEventListener('mouseover', () => { row.style.background = 'rgba(124,77,255,0.08)'; });
                 row.addEventListener('mouseout', () => { row.style.background = ''; });
             });
+            // Add hint
+            const hint = document.createElement('div');
+            hint.style.cssText = 'font-size:9px;color:#546e7a;padding:4px 8px;margin-top:4px';
+            hint.textContent = '💡 Click any debris event for image, threat assessment, and impact on active space assets';
+            el.appendChild(hint);
         }
 
         // Make diagnostics subsystem rows clickable
@@ -557,5 +563,125 @@ const _sitesPatchInterval = setInterval(() => {
     renderSites();
 }, 200);
 
-console.log('[DRILLDOWN] Row + network drill-down system loaded.');
+// ── Debris Event Drill-Down ──
+const DEBRIS_DETAILS = {
+    'FY-1C ASAT (2007)': {
+        img: 'img/debris_asat.png',
+        threat: 'China\'s kinetic-kill ASAT test created 3,528 fragments at 865 km — the single worst debris-generating event in history. Fragments will persist for decades in sun-synchronous orbit, threatening Earth observation satellites, weather platforms, and ISS resupply vehicles transiting through this altitude band.',
+        date: 'January 11, 2007',
+        nation: 'People\'s Republic of China',
+        weapon: 'SC-19 kinetic kill vehicle (ground-launched)',
+        target: 'Fengyun 1C — defunct weather satellite (958 kg)',
+        impactSpeed: '~8 km/s (head-on)',
+        assetsAtRisk: 'Sentinel-6, NOAA-20, Landsat 9, CryoSat-2, Terra, Aqua — all sun-synchronous LEO',
+        longevity: '50-100+ years (high altitude, minimal drag)',
+    },
+    'Cosmos-Iridium (2009)': {
+        img: 'img/debris_collision.png',
+        threat: 'The first accidental hypervelocity collision between two intact satellites. Cosmos 2251 (defunct) struck Iridium 33 (active) at 11.7 km/s, producing 2,296 trackable fragments. This event proved the Kessler Syndrome is not theoretical — uncontrolled objects will eventually collide, creating cascading debris fields.',
+        date: 'February 10, 2009',
+        nation: 'Russia (Cosmos 2251) / USA (Iridium 33)',
+        weapon: 'N/A — accidental collision',
+        target: 'Cosmos 2251 (defunct, 950 kg) vs Iridium 33 (active, 560 kg)',
+        impactSpeed: '11.7 km/s (nearly head-on, crossing orbits)',
+        assetsAtRisk: 'Iridium constellation, ISS (required avoidance maneuver), Hubble Space Telescope',
+        longevity: '30-80 years (fragments spread across 700-900 km band)',
+    },
+    'Cosmos 1408 ASAT (2021)': {
+        img: 'img/debris_asat.png',
+        threat: 'Russia\'s direct-ascent ASAT test destroyed Cosmos 1408 at 480 km, forcing ISS astronauts into emergency shelter. At this altitude, fragments cross the ISS orbit every 90 minutes. Lower altitude means faster decay, but the immediate threat to crewed spaceflight was the most severe of any debris event.',
+        date: 'November 15, 2021',
+        nation: 'Russian Federation',
+        weapon: 'PL-19 Nudol direct-ascent ASAT (Plesetsk launch)',
+        target: 'Cosmos 1408 — defunct ELINT satellite (2,200 kg)',
+        impactSpeed: '~7 km/s',
+        assetsAtRisk: 'ISS (crew sheltered), Chinese Space Station (Tiangong), Starlink, OneWeb — all LEO below 600 km',
+        longevity: '5-15 years (lower altitude = faster drag decay)',
+    },
+    'USA-193 Shootdown (2008)': {
+        img: 'img/debris_asat.png',
+        threat: 'The US Navy intercepted a failing spy satellite carrying toxic hydrazine propellant before reentry. Unlike other ASAT tests, the low intercept altitude (247 km) ensured all 174 fragments decayed within weeks. This demonstrated responsible debris mitigation — but also confirmed US ASAT capability.',
+        date: 'February 21, 2008',
+        nation: 'United States of America',
+        weapon: 'SM-3 Block IA (RIM-161) from USS Lake Erie (Aegis cruiser)',
+        target: 'USA 193 — NRO reconnaissance satellite (failed, 2,300 kg)',
+        impactSpeed: '~9.8 km/s',
+        assetsAtRisk: 'Minimal — all debris decayed within 40 days due to low altitude intercept',
+        longevity: '<40 days (all fragments decayed by April 2008)',
+    },
+    'India Shakti (2019)': {
+        img: 'img/debris_asat.png',
+        threat: 'India\'s Mission Shakti demonstrated ASAT capability against a purpose-launched target at 283 km. While the low altitude minimized long-term debris, the test created a brief but real hazard to ISS operations. NASA called it "terrible" — fragments briefly rose above 400 km into ISS altitude.',
+        date: 'March 27, 2019',
+        nation: 'Republic of India',
+        weapon: 'PDV Mk-II kinetic kill vehicle (modified ABM interceptor)',
+        target: 'Microsat-R — purpose-launched target (740 kg)',
+        impactSpeed: '~10 km/s',
+        assetsAtRisk: 'ISS (temporary increased risk), LEO constellations below 400 km',
+        longevity: '<1 year (most fragments decayed within months)',
+    },
+    'Fengyun 4A Breakup (2025)': {
+        img: 'img/debris_breakup.png',
+        threat: 'An unexplained breakup of Fengyun 4A generated 412 fragments at 720 km — cause remains under investigation (battery failure, propellant leak, or possible micrometeoroid impact). This is SentinelForge\'s most active tracking event, with 389 fragments still being cataloged and correlated. The sun-synchronous altitude threatens critical Earth observation assets.',
+        date: 'August 14, 2025',
+        nation: 'People\'s Republic of China',
+        weapon: 'N/A — cause under investigation',
+        target: 'Fengyun 4A — active weather satellite (breakup origin unknown)',
+        impactSpeed: 'N/A (spontaneous fragmentation)',
+        assetsAtRisk: 'Sun-synchronous constellation: Sentinel-2, Landsat 9, WorldView, NOAA polar orbiters',
+        longevity: '20-50 years (similar altitude to FY-1C, long-lived orbital band)',
+    },
+};
+
+window.openDebrisDrilldown = function(eventName) {
+    const detail = DEBRIS_DETAILS[eventName];
+    const event = STATE.debrisEvents.find(d => d.name === eventName);
+    if (!detail || !event) return;
+    const modal = document.getElementById('siteModal');
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    title.textContent = eventName;
+    const decayPct = Math.round(event.decayed / event.fragments * 100);
+    const activePct = Math.round(event.tracked / event.fragments * 100);
+    body.innerHTML = `
+        <img src="${detail.img}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:220px;object-fit:cover" alt="${eventName}">
+        <div style="font-size:11px;line-height:1.7;color:#e8eaf6;padding:0 4px 12px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:12px">
+            <span style="color:${event.color};font-weight:700">⚠ THREAT ASSESSMENT:</span> ${detail.threat}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <div style="background:rgba(255,23,68,0.08);border:1px solid rgba(255,23,68,0.15);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:18px;font-weight:700;color:#ff1744">${event.fragments.toLocaleString()}</div>
+                <div style="font-size:8px;color:#78909c">Total Fragments</div>
+            </div>
+            <div style="background:rgba(255,171,0,0.08);border:1px solid rgba(255,171,0,0.15);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:18px;font-weight:700;color:#ffab00">${event.tracked.toLocaleString()}</div>
+                <div style="font-size:8px;color:#78909c">Still Tracked (${activePct}%)</div>
+            </div>
+            <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.15);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:18px;font-weight:700;color:#00e676">${event.decayed.toLocaleString()}</div>
+                <div style="font-size:8px;color:#78909c">Decayed (${decayPct}%)</div>
+            </div>
+        </div>
+        <table><tbody>
+            <tr><td style="color:#78909c;font-weight:600;width:130px">Date</td><td>${detail.date}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Nation</td><td>${detail.nation}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Weapon/Cause</td><td>${detail.weapon}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Target</td><td>${detail.target}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Impact Speed</td><td style="color:#ff5252;font-weight:600">${detail.impactSpeed}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Altitude</td><td>${event.alt} km (${event.inc}° inclination)</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Debris Longevity</td><td style="color:#ffab00">${detail.longevity}</td></tr>
+        </tbody></table>
+        <h3 style="margin-top:12px">🎯 Assets at Risk</h3>
+        <p style="font-size:10px;line-height:1.6;color:#ff8a80">${detail.assetsAtRisk}</p>
+        <div style="margin-top:8px;padding:8px;background:rgba(255,23,68,0.05);border:1px solid rgba(255,23,68,0.1);border-radius:6px">
+            <div style="font-size:9px;color:#78909c;margin-bottom:4px">DEBRIS DECAY PROGRESS</div>
+            <div style="height:14px;background:rgba(255,255,255,0.04);border-radius:4px;overflow:hidden;position:relative">
+                <div style="height:100%;width:${decayPct}%;background:linear-gradient(90deg,#00e676,#76ff03);border-radius:4px;transition:width 0.5s"></div>
+                <span style="position:absolute;right:6px;top:0;font-size:8px;color:#b0bec5;line-height:14px">${decayPct}% decayed</span>
+            </div>
+        </div>`;
+    modal.style.display = 'flex';
+};
+
+console.log('[DRILLDOWN] Row + network + debris drill-down system loaded.');
 })();
