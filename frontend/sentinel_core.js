@@ -432,14 +432,14 @@ function renderSites() {
     html += SLING.map(s => {
         const icon = s.st==='active'?'🟢':s.st==='degraded'?'🟡':'🔴';
         const gpuCol = s.gpu>70?'#ff9100':s.gpu>50?'#ffd740':'#00e676';
-        return `<div class="sling-station-card site-card" style="border-left:2px solid ${s.st==='active'?'#ffd740':s.st==='degraded'?'#ffab00':'#ff1744'}44;cursor:pointer" title="${s.ops} | GPU: ${s.gpu}% | Seeing: ${s.see}&quot; | Queue: ${s.q}" onclick="event.stopPropagation();openSlingshotDetail('SLING-NUM-${s.id}')">
-            <div class="site-header">
+        return `<div class="sling-card" style="border-left:2px solid ${s.st==='active'?'#ffd740':s.st==='degraded'?'#ffab00':'#ff1744'}44;cursor:pointer;padding:6px 10px;background:rgba(255,215,64,0.03);border-bottom:1px solid rgba(255,255,255,0.04)" title="${s.ops} | GPU: ${s.gpu}% | Seeing: ${s.see}&quot; | Queue: ${s.q}" onclick="event.stopPropagation();openSlingshotDetail('SLING-NUM-${s.id}')">
+            <div style="display:flex;align-items:center;gap:6px">
                 <span style="font-size:8px">${icon}</span>
-                <span class="site-name" style="font-size:11px;color:#e8eaf6">${s.name}</span>
+                <span style="font-size:11px;color:#e8eaf6">${s.name}</span>
                 <span style="flex:1"></span>
                 <span style="font-family:JetBrains Mono,mono;font-size:9px;color:#ffd740">NUM-${s.id}</span>
             </div>
-            <div class="site-stats" style="gap:8px;font-size:9px">
+            <div style="display:flex;gap:8px;font-size:9px;margin-top:2px">
                 <span style="color:${gpuCol}">GPU ${s.gpu}%</span>
                 <span>See ${s.see}&quot;</span>
                 <span>Q:${s.q}</span>
