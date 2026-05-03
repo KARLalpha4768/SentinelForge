@@ -2162,6 +2162,8 @@ function openSlingshotDetail(stationId) {
             <a href="#" onclick="renderInventory('slingshot');document.getElementById('siteModal').style.display='none';return false" style="color:#b388ff;text-decoration:none;padding:3px 10px;border:1px solid rgba(179,136,255,0.2);border-radius:4px;transition:all .2s" onmouseover="this.style.background='rgba(179,136,255,0.1)';this.style.borderColor='rgba(179,136,255,0.4)'" onmouseout="this.style.background='';this.style.borderColor='rgba(179,136,255,0.2)'">← Slingshot Catalog</a>
         </div>`;
     modal.style.display = 'flex';
+    body.scrollTop = 0;
+    modal.scrollTop = 0;
 }
 
 // ── Push Alerts ─────────────────────────────────────
