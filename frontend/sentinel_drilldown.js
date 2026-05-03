@@ -1,4 +1,4 @@
-/* SentinelForge â€” Row Drilldown System
+/* SentinelForge — Row Drilldown System
  * Makes every table row clickable to show detailed sub-information.
  */
 (function(){
@@ -7,7 +7,7 @@
 // Deep detail data keyed by feed/item ID
 const FEED_DETAILS = {
     SPACETRACK: {
-        fullName: 'Space-Track.org â€” 18th Space Defense Squadron',
+        fullName: 'Space-Track.org — 18th Space Defense Squadron',
         operator: 'US Space Force / Combined Space Operations Center (CSpOC)',
         url: 'https://www.space-track.org',
         dataProducts: [
@@ -24,7 +24,7 @@ const FEED_DETAILS = {
         reliability: '99.7% uptime (2025). Planned maintenance windows: Tuesday 0200-0400 UTC.',
     },
     CELESTRAK: {
-        fullName: 'CelesTrak â€” Dr. T.S. Kelso',
+        fullName: 'CelesTrak — Dr. T.S. Kelso',
         operator: 'CelesTrak.org (independent, formerly AGI/Analytical Graphics)',
         url: 'https://celestrak.org',
         dataProducts: [
@@ -52,7 +52,7 @@ const FEED_DETAILS = {
             {name:'CME/Flare Alerts', format:'JSON/email', records:'Event-driven', refresh:'On event'},
             {name:'Ap Index (daily)', format:'JSON', records:'Daily', refresh:'Daily'},
         ],
-        auth: 'Public API â€” no authentication required',
+        auth: 'Public API — no authentication required',
         rateLimit: 'None (reasonable use policy)',
         integration: 'SentinelForge polls every 60s for F10.7/Kp/Dst. These indices feed directly into the PINN thermospheric density corrector (Module G) for drag estimation. CME alerts trigger automatic conjunction re-screening.',
         notes: 'Critical for LEO drag prediction accuracy. F10.7 spike of +50 sfu can increase drag by 20-40% at ISS altitude, causing significant TLE prediction errors within 24h.',
@@ -67,8 +67,8 @@ const FEED_DETAILS = {
             {name:'Bulletin B (final)', format:'CSV/text', records:'Definitive EOP', refresh:'Monthly'},
             {name:'Finals2000A', format:'CSV', records:'1973-present', refresh:'Daily'},
         ],
-        auth: 'Public FTP â€” no authentication',
-        integration: 'SentinelForge eop_loader.py fetches daily. Polar motion (xp, yp) corrections applied to ITRFâ†’GCRF frame transformation. UT1-UTC correction critical for sidereal time computation. Without EOP: ~4.5m position error at ISS altitude.',
+        auth: 'Public FTP — no authentication',
+        integration: 'SentinelForge eop_loader.py fetches daily. Polar motion (xp, yp) corrections applied to ITRF→GCRF frame transformation. UT1-UTC correction critical for sidereal time computation. Without EOP: ~4.5m position error at ISS altitude.',
         notes: 'Built-in fallback data covers 2024-2026 if IERS FTP is unreachable. Binary-search interpolation for sub-arcsecond accuracy.',
     },
     'GNSS-TIME': {
@@ -79,7 +79,7 @@ const FEED_DETAILS = {
             {name:'NMEA Time Messages', format:'ASCII serial', records:'Date/time/position', refresh:'1 Hz'},
             {name:'NTP Stratum-1', format:'NTP protocol', records:'UTC sync', refresh:'Continuous'},
         ],
-        integration: 'Each edge node has a GPS-disciplined oscillator (u-blox ZED-F9T). Time-tags all observations to <100ns accuracy. Critical for IOD (Initial Orbit Determination) â€” 1Î¼s timing error = ~7m along-track at LEO speeds.',
+        integration: 'Each edge node has a GPS-disciplined oscillator (u-blox ZED-F9T). Time-tags all observations to <100ns accuracy. Critical for IOD (Initial Orbit Determination) — 1μs timing error = ~7m along-track at LEO speeds.',
         notes: 'Dual-frequency (L1/L5) receivers for ionospheric correction. Anti-jamming: CRPA antenna + inertial holdover (Rb oscillator backup).',
     },
     ILRS: {
@@ -89,11 +89,11 @@ const FEED_DETAILS = {
             {name:'SLR Normal Points', format:'CRD (Consolidated Ranging Data)', records:'~200 passes/day', refresh:'Daily'},
             {name:'Station Coordinates', format:'SINEX', records:'~40 stations', refresh:'Annual'},
         ],
-        integration: 'SLR provides sub-cm accuracy positions for calibration satellites (LAGEOS, Starlette). Used to validate SentinelForge orbit determination accuracy â€” comparison reveals systematic biases in the optical pipeline.',
+        integration: 'SLR provides sub-cm accuracy positions for calibration satellites (LAGEOS, Starlette). Used to validate SentinelForge orbit determination accuracy — comparison reveals systematic biases in the optical pipeline.',
         notes: 'SLR is the "ground truth" for orbit determination. LAGEOS residuals < 2cm = healthy OD pipeline.',
     },
     EXOANALYTIC: {
-        fullName: 'ExoAnalytic Solutions â€” Electro-Optical Global Telescope Network',
+        fullName: 'ExoAnalytic Solutions — Electro-Optical Global Telescope Network',
         operator: 'ExoAnalytic Solutions (Los Angeles, CA)',
         dataProducts: [
             {name:'GEO/Deep-Space Astrometry', format:'REST API (JSON)', records:'~12K obs/night', refresh:'Near real-time'},
@@ -103,7 +103,7 @@ const FEED_DETAILS = {
         ],
         auth: 'Commercial API key + contract',
         integration: 'SentinelForge fuses ExoAnalytic obs with USSF catalog for improved GEO state estimation. Light curve data feeds Module A (streak/object classification). Maneuver alerts trigger immediate re-screening.',
-        notes: '350+ telescopes across 6 continents. Specializes in GEO characterization â€” can determine satellite attitude, spin state, and anomalous behavior from photometric signatures.',
+        notes: '350+ telescopes across 6 continents. Specializes in GEO characterization — can determine satellite attitude, spin state, and anomalous behavior from photometric signatures.',
     },
     LEOLABS: {
         fullName: 'LeoLabs Phased-Array Radar Network',
@@ -115,7 +115,7 @@ const FEED_DETAILS = {
             {name:'Fragmentation Alerts', format:'Webhook', records:'Event-driven', refresh:'On detection'},
         ],
         auth: 'Commercial API key + contract',
-        integration: 'LeoLabs radar data provides rain-or-shine, day-or-night LEO coverage â€” complementing SentinelForge optical pipeline. Radar tracks used for objects below optical detection threshold (< 10cm).',
+        integration: 'LeoLabs radar data provides rain-or-shine, day-or-night LEO coverage — complementing SentinelForge optical pipeline. Radar tracks used for objects below optical detection threshold (< 10cm).',
         notes: '11 phased-array radars: Midland TX, Kiwi NZ, Costa Rica, Alaska, Western Australia + 6 more. Can track objects down to 2cm in LEO.',
     },
     SLINGSHOT: {
@@ -132,7 +132,7 @@ const FEED_DETAILS = {
     },
     KAFKA: {
         fullName: 'Apache Kafka Message Bus (SentinelForge Internal)',
-        operator: 'SentinelForge Ops â€” Kubernetes Cluster',
+        operator: 'SentinelForge Ops — Kubernetes Cluster',
         dataProducts: [
             {name:'sf.observations', format:'Avro', records:'Raw obs from edge nodes', refresh:'Continuous'},
             {name:'sf.alerts.conjunction', format:'Avro', records:'CDM-equivalent alerts', refresh:'On event'},
@@ -147,12 +147,12 @@ const FEED_DETAILS = {
     },
     POSTGIS: {
         fullName: 'PostGIS Spatial Catalog Database',
-        operator: 'SentinelForge Ops â€” PostgreSQL 16 + PostGIS 3.4',
+        operator: 'SentinelForge Ops — PostgreSQL 16 + PostGIS 3.4',
         dataProducts: [
             {name:'catalog.objects', format:'Table', records:'46,238 tracked objects', refresh:'Continuous'},
             {name:'catalog.observations', format:'Table (partitioned by date)', records:'~2M/week', refresh:'Continuous'},
             {name:'catalog.conjunctions', format:'Table', records:'Active + historical', refresh:'On event'},
-            {name:'catalog.covariance', format:'Table', records:'6Ã—6 matrices per object', refresh:'Per OD solution'},
+            {name:'catalog.covariance', format:'Table', records:'6×6 matrices per object', refresh:'Per OD solution'},
         ],
         integration: 'GIST spatial indexes for fast conjunction screening queries. Materialized views for dashboard aggregations. Logical replication to read replicas for analytics.',
         notes: 'Primary persistence layer. pg_partman manages monthly observation partitions. Vacuum tuned for high-write workload.',
@@ -169,9 +169,9 @@ const FEED_DETAILS = {
     },
     REDIS: {
         fullName: 'Redis In-Memory Cache',
-        operator: 'SentinelForge Ops â€” Redis 7.2 (Cluster mode)',
+        operator: 'SentinelForge Ops — Redis 7.2 (Cluster mode)',
         dataProducts: [
-            {name:'Propagated States', format:'Binary (MessagePack)', records:'46K objects Ã— 6 time steps', refresh:'Every propagation cycle'},
+            {name:'Propagated States', format:'Binary (MessagePack)', records:'46K objects × 6 time steps', refresh:'Every propagation cycle'},
             {name:'Conjunction Screening Results', format:'JSON', records:'Active pairs', refresh:'On screening'},
             {name:'Session Cache', format:'JSON', records:'Dashboard state', refresh:'On interaction'},
         ],
@@ -186,7 +186,7 @@ const FEED_DETAILS = {
             {name:'TLE History', format:'Parquet', records:'All TLEs since ingest start', refresh:'Daily'},
             {name:'Model Artifacts', format:'.pt / .onnx', records:'Trained ML models', refresh:'On training'},
         ],
-        integration: 'Lifecycle policy: S3 Standard (30d) â†’ S3-IA (90d) â†’ Glacier (1yr+). Athena queries for ad-hoc historical analysis.',
+        integration: 'Lifecycle policy: S3 Standard (30d) → S3-IA (90d) → Glacier (1yr+). Athena queries for ad-hoc historical analysis.',
     },
 };
 
@@ -207,12 +207,12 @@ const SUBSYSTEM_DETAILS = {
     'Orbit Determination': {
         description: 'Bayesian Initial Orbit Determination (IOD) using Gauss/Herrick-Gibbs methods with extended Kalman filtering.',
         components: ['Gauss IOD (3-observation)', 'Herrick-Gibbs (close observations)', 'Extended Kalman Filter with J2-J6 gravity', 'PINN-accelerated propagation'],
-        metrics: ['IOD convergence: 42ms', 'Position accuracy: <500m (LEO, 24h predict)', 'Velocity accuracy: <0.5 m/s', 'Covariance realism: NEES â‰ˆ 3.0'],
-        technology: 'Python + C++ (Eigen library), EGM2008 10Ã—10 gravity field, IERS EOP corrections',
+        metrics: ['IOD convergence: 42ms', 'Position accuracy: <500m (LEO, 24h predict)', 'Velocity accuracy: <0.5 m/s', 'Covariance realism: NEES ≈ 3.0'],
+        technology: 'Python + C++ (Eigen library), EGM2008 10×10 gravity field, IERS EOP corrections',
     },
 };
 
-/* â”€â”€â”€â”€â”€â”€ Open Drilldown Modal â”€â”€â”€â”€â”€â”€ */
+/* ────── Open Drilldown Modal ────── */
 window.openDrilldown = function(itemId, itemName, category) {
     const detail = FEED_DETAILS[itemId] || SUBSYSTEM_DETAILS[itemName];
     if (!detail) {
@@ -230,17 +230,17 @@ window.openDrilldown = function(itemId, itemName, category) {
     let html = '';
 
     if (detail.operator) {
-        html += `<h3>ðŸ“‹ Operator</h3><p>${detail.operator}</p>`;
+        html += `<h3>📋 Operator</h3><p>${detail.operator}</p>`;
     }
     if (detail.url) {
         html += `<p style="font-size:10px;color:#448aff">${detail.url}</p>`;
     }
     if (detail.description) {
-        html += `<h3>ðŸ“– Description</h3><p>${detail.description}</p>`;
+        html += `<h3>📖 Description</h3><p>${detail.description}</p>`;
     }
 
     if (detail.dataProducts) {
-        html += `<h3>ðŸ“¦ Data Products (${detail.dataProducts.length})</h3>
+        html += `<h3>📦 Data Products (${detail.dataProducts.length})</h3>
         <table><thead><tr><th>Product</th><th>Format</th><th>Volume</th><th>Refresh</th></tr></thead><tbody>` +
         detail.dataProducts.map(p => `<tr>
             <td style="color:#e8eaf6;font-weight:600">${p.name}</td>
@@ -251,31 +251,31 @@ window.openDrilldown = function(itemId, itemName, category) {
     }
 
     if (detail.components) {
-        html += `<h3>ðŸ”§ Components</h3><ul style="padding-left:16px">` +
+        html += `<h3>🔧 Components</h3><ul style="padding-left:16px">` +
             detail.components.map(c => `<li style="margin:2px 0;font-size:10px">${c}</li>`).join('') + '</ul>';
     }
     if (detail.metrics) {
-        html += `<h3>ðŸ“Š Key Metrics</h3><ul style="padding-left:16px">` +
+        html += `<h3>📊 Key Metrics</h3><ul style="padding-left:16px">` +
             detail.metrics.map(m => `<li style="margin:2px 0;font-size:10px;color:#00e5ff">${m}</li>`).join('') + '</ul>';
     }
     if (detail.technology) {
-        html += `<h3>ðŸ’» Technology</h3><p style="font-size:10px">${detail.technology}</p>`;
+        html += `<h3>💻 Technology</h3><p style="font-size:10px">${detail.technology}</p>`;
     }
 
     if (detail.auth) {
-        html += `<h3>ðŸ” Authentication</h3><p style="font-size:10px">${detail.auth}</p>`;
+        html += `<h3>🔐 Authentication</h3><p style="font-size:10px">${detail.auth}</p>`;
     }
     if (detail.rateLimit) {
-        html += `<h3>â±ï¸ Rate Limit</h3><p style="font-size:10px">${detail.rateLimit}</p>`;
+        html += `<h3>⏱️ Rate Limit</h3><p style="font-size:10px">${detail.rateLimit}</p>`;
     }
     if (detail.integration) {
-        html += `<h3>ðŸ”— SentinelForge Integration</h3><p style="font-size:10px;line-height:1.6;color:#b0bec5">${detail.integration}</p>`;
+        html += `<h3>🔗 SentinelForge Integration</h3><p style="font-size:10px;line-height:1.6;color:#b0bec5">${detail.integration}</p>`;
     }
     if (detail.reliability) {
-        html += `<h3>ðŸ“¡ Reliability</h3><p style="font-size:10px">${detail.reliability}</p>`;
+        html += `<h3>📡 Reliability</h3><p style="font-size:10px">${detail.reliability}</p>`;
     }
     if (detail.notes) {
-        html += `<h3>ðŸ“ Notes</h3><p style="font-size:10px;line-height:1.6;color:#b0bec5">${detail.notes}</p>`;
+        html += `<h3>📝 Notes</h3><p style="font-size:10px;line-height:1.6;color:#b0bec5">${detail.notes}</p>`;
     }
 
     body.innerHTML = html;
@@ -309,7 +309,7 @@ function openGenericDrilldown(id, name, category) {
     modal.style.display = 'flex';
 }
 
-/* â”€â”€â”€â”€â”€â”€ Patch renderInventory to add click handlers â”€â”€â”€â”€â”€â”€ */
+/* ────── Patch renderInventory to add click handlers ────── */
 const _patchInterval = setInterval(() => {
     if (typeof renderInventory !== 'function') return;
     clearInterval(_patchInterval);
@@ -328,7 +328,7 @@ const _patchInterval = setInterval(() => {
                 const feed = STATE.telemetry.find(t => t.name === name);
                 if (!feed) return;
                 row.style.cursor = 'pointer';
-                row.title = feed.desc + ' â€” Click for deep dive';
+                row.title = feed.desc + ' — Click for deep dive';
                 row.addEventListener('click', () => openDrilldown(feed.id, feed.name, 'feed'));
                 // Hover effect
                 row.addEventListener('mouseover', () => { row.style.background = 'rgba(124,77,255,0.08)'; });
@@ -337,7 +337,7 @@ const _patchInterval = setInterval(() => {
             // Add hint
             const hint = document.createElement('div');
             hint.style.cssText = 'font-size:9px;color:#546e7a;padding:4px 8px;margin-top:4px';
-            hint.textContent = 'ðŸ’¡ Click any feed row for detailed data products, authentication, rate limits, and integration notes';
+            hint.textContent = '💡 Click any feed row for detailed data products, authentication, rate limits, and integration notes';
             el.appendChild(hint);
         }
 
@@ -380,7 +380,7 @@ const _patchInterval = setInterval(() => {
             el.querySelectorAll('.inv-table tbody tr').forEach(row => {
                 const name = row.querySelector('td')?.textContent?.trim();
                 row.style.cursor = 'pointer';
-                row.title = name + ' â€” Click for image, threat assessment, and impact analysis';
+                row.title = name + ' — Click for image, threat assessment, and impact analysis';
                 row.addEventListener('click', () => openDebrisDrilldown(name));
                 row.addEventListener('mouseover', () => { row.style.background = 'rgba(124,77,255,0.08)'; });
                 row.addEventListener('mouseout', () => { row.style.background = ''; });
@@ -388,7 +388,7 @@ const _patchInterval = setInterval(() => {
             // Add hint
             const hint = document.createElement('div');
             hint.style.cssText = 'font-size:9px;color:#546e7a;padding:4px 8px;margin-top:4px';
-            hint.textContent = 'ðŸ’¡ Click any debris event for image, threat assessment, and impact on active space assets';
+            hint.textContent = '💡 Click any debris event for image, threat assessment, and impact on active space assets';
             el.appendChild(hint);
         }
 
@@ -441,67 +441,67 @@ const _patchInterval = setInterval(() => {
     if (activeTab) renderInventory(activeTab.dataset.tab);
 }, 200);
 
-// â”€â”€ Network Drill-Down Data â”€â”€
+// ── Network Drill-Down Data ──
 const NETWORK_DETAILS = {
     'ExoAnalytic': {
         img: 'img/exoanalytic.png',
-        description: 'ExoAnalytic Solutions operates the world\'s largest commercial space surveillance telescope network with 350+ sensors across six continents. Specializing in geosynchronous orbit characterization, their Electro-Optical Global Telescope Network (EGTN) delivers near-real-time astrometry and photometry for deep-space objects. Each telescope runs automated acquisition sequences, capturing light curves that reveal satellite attitude, spin state, and anomalous behavior. Their AI-driven pipeline detects maneuvers within minutes of execution, enabling rapid conjunction re-screening. ExoAnalytic\'s unique value is persistent GEO stare coverage â€” maintaining custody of high-value assets that optical-only LEO networks cannot track during daylight hours.',
+        description: 'ExoAnalytic Solutions operates the world\'s largest commercial space surveillance telescope network with 350+ sensors across six continents. Specializing in geosynchronous orbit characterization, their Electro-Optical Global Telescope Network (EGTN) delivers near-real-time astrometry and photometry for deep-space objects. Each telescope runs automated acquisition sequences, capturing light curves that reveal satellite attitude, spin state, and anomalous behavior. Their AI-driven pipeline detects maneuvers within minutes of execution, enabling rapid conjunction re-screening. ExoAnalytic\'s unique value is persistent GEO stare coverage — maintaining custody of high-value assets that optical-only LEO networks cannot track during daylight hours.',
         hq: 'Los Angeles, California',
         founded: '2014',
         sensors: '350+ optical telescopes',
         coverage: 'GEO, MEO, deep space (>2,000 km)',
-        keyCapability: 'Photometric characterization â€” determines satellite attitude, spin, and anomalies from light curves',
-        integration: 'REST API â†’ SentinelForge fusion pipeline. Obs fed to Module A (streak classifier) and Module D (conjunction screener).',
+        keyCapability: 'Photometric characterization — determines satellite attitude, spin, and anomalies from light curves',
+        integration: 'REST API → SentinelForge fusion pipeline. Obs fed to Module A (streak classifier) and Module D (conjunction screener).',
     },
     'USSF-SSN': {
         img: 'img/ussf_ssn.png',
-        description: 'The US Space Force Space Surveillance Network is the backbone of global space domain awareness, operating 29 radar and optical sensors worldwide under the 18th Space Defense Squadron. Its crown jewel is the Space Fence on Kwajalein Atoll â€” an S-band phased-array radar capable of tracking objects as small as 5cm in LEO. The SSN maintains the authoritative space catalog of 46,000+ objects, generating General Perturbations (GP) element sets distributed via Space-Track.org. The network provides Conjunction Data Messages (CDMs) for all trackable objects, serving as the primary warning system for collision avoidance across all orbital regimes.',
+        description: 'The US Space Force Space Surveillance Network is the backbone of global space domain awareness, operating 29 radar and optical sensors worldwide under the 18th Space Defense Squadron. Its crown jewel is the Space Fence on Kwajalein Atoll — an S-band phased-array radar capable of tracking objects as small as 5cm in LEO. The SSN maintains the authoritative space catalog of 46,000+ objects, generating General Perturbations (GP) element sets distributed via Space-Track.org. The network provides Conjunction Data Messages (CDMs) for all trackable objects, serving as the primary warning system for collision avoidance across all orbital regimes.',
         hq: 'Vandenberg SFB, California (18th SDS)',
         founded: '1957 (NORAD era)',
         sensors: '29 sites: phased-array radars (Space Fence, PAVE PAWS), mechanical trackers (GEODSS), ground-based electro-optical deep space surveillance',
-        coverage: 'All orbital regimes â€” LEO through cislunar',
-        keyCapability: 'Authoritative catalog maintenance â€” only entity providing full-catalog conjunction screening for all 46K objects',
+        coverage: 'All orbital regimes — LEO through cislunar',
+        keyCapability: 'Authoritative catalog maintenance — only entity providing full-catalog conjunction screening for all 46K objects',
         integration: 'Space-Track.org REST API (8h cycle) + CDM webhook push for conjunction events.',
     },
     'Slingshot': {
         img: 'img/slingshot.png',
-        description: 'Slingshot Aerospace combines 130+ commercial optical sensors with the Numerica orbit determination engine to deliver high-accuracy space domain awareness. Their differentiator is daylight tracking â€” using narrow-band optical filters to observe satellites against the sunlit sky, eliminating the dawn/dusk gap that limits traditional optical networks. Slingshot\'s Beacon platform fuses observations from proprietary and third-party sensors with AI-driven analytics, providing satellite operators with actionable maneuver recommendations. Their Seradata SpaceTrak integration adds comprehensive launch and deorbit intelligence. Founded in Austin, TX, Slingshot serves both commercial operators and Department of Defense customers.',
+        description: 'Slingshot Aerospace combines 130+ commercial optical sensors with the Numerica orbit determination engine to deliver high-accuracy space domain awareness. Their differentiator is daylight tracking — using narrow-band optical filters to observe satellites against the sunlit sky, eliminating the dawn/dusk gap that limits traditional optical networks. Slingshot\'s Beacon platform fuses observations from proprietary and third-party sensors with AI-driven analytics, providing satellite operators with actionable maneuver recommendations. Their Seradata SpaceTrak integration adds comprehensive launch and deorbit intelligence. Founded in Austin, TX, Slingshot serves both commercial operators and Department of Defense customers.',
         hq: 'Austin, Texas',
         founded: '2017',
         sensors: '130+ optical sensors with narrow-band daylight tracking filters',
-        coverage: 'LEO, MEO, GEO â€” including daylight passes',
-        keyCapability: 'Daylight satellite tracking â€” eliminates the traditional optical observation gap during daytime hours',
-        integration: 'REST API â†’ SentinelForge multi-sensor fusion. 19 active Slingshot stations contribute to the SentinelForge observation pipeline.',
+        coverage: 'LEO, MEO, GEO — including daylight passes',
+        keyCapability: 'Daylight satellite tracking — eliminates the traditional optical observation gap during daytime hours',
+        integration: 'REST API → SentinelForge multi-sensor fusion. 19 active Slingshot stations contribute to the SentinelForge observation pipeline.',
     },
     'Contributing': {
         img: 'img/contributing.png',
-        description: 'The Contributing Sensor Network aggregates observations from 20+ independent academic, amateur, and government observatories worldwide that share data under bilateral SSA agreements. Contributors range from university research telescopes to citizen-science programs like the ISON-affiliated observers. Each contributing site operates autonomously but feeds standardized TDM (Tracking Data Messages) to the SentinelForge cloud pipeline via secure uplink. While individual sites have limited aperture and coverage, collectively they fill critical geographic gaps â€” particularly in the Southern Hemisphere and equatorial regions where major networks have sparse presence. Data quality varies; SentinelForge applies automated outlier rejection and cross-validation.',
+        description: 'The Contributing Sensor Network aggregates observations from 20+ independent academic, amateur, and government observatories worldwide that share data under bilateral SSA agreements. Contributors range from university research telescopes to citizen-science programs like the ISON-affiliated observers. Each contributing site operates autonomously but feeds standardized TDM (Tracking Data Messages) to the SentinelForge cloud pipeline via secure uplink. While individual sites have limited aperture and coverage, collectively they fill critical geographic gaps — particularly in the Southern Hemisphere and equatorial regions where major networks have sparse presence. Data quality varies; SentinelForge applies automated outlier rejection and cross-validation.',
         hq: 'Distributed (no central HQ)',
         founded: 'Various (aggregated by SentinelForge)',
         sensors: '20+ independent observatories: university domes, robotic telescopes, amateur stations',
-        coverage: 'Gap-filling â€” Southern Hemisphere, equatorial, polar regions',
-        keyCapability: 'Geographic diversity â€” fills coverage holes left by major commercial and government networks',
+        coverage: 'Gap-filling — Southern Hemisphere, equatorial, polar regions',
+        keyCapability: 'Geographic diversity — fills coverage holes left by major commercial and government networks',
         integration: 'CCSDS TDM format over secure HTTPS. Automated quality scoring and outlier rejection applied at ingest.',
     },
     'ESA-SST': {
         img: 'img/esa_sst.png',
-        description: 'The European Space Agency\'s Space Surveillance and Tracking (SST) programme operates 12 sensors across EU member states, anchored by the GRAVES bistatic radar in France and the Optical Ground Station (OGS) on Tenerife, Canary Islands. ESA-SST provides independent European capability for tracking objects in all orbital regimes, reducing dependency on US Space Force data. Their Fly-Eye telescope â€” with its novel multi-aperture design â€” achieves wide-field survey coverage for NEO and debris detection simultaneously. ESA-SST data is exchanged via CCSDS Navigation Data Messages (NDM) and is shared with SentinelForge under the EU SST Consortium framework.',
+        description: 'The European Space Agency\'s Space Surveillance and Tracking (SST) programme operates 12 sensors across EU member states, anchored by the GRAVES bistatic radar in France and the Optical Ground Station (OGS) on Tenerife, Canary Islands. ESA-SST provides independent European capability for tracking objects in all orbital regimes, reducing dependency on US Space Force data. Their Fly-Eye telescope — with its novel multi-aperture design — achieves wide-field survey coverage for NEO and debris detection simultaneously. ESA-SST data is exchanged via CCSDS Navigation Data Messages (NDM) and is shared with SentinelForge under the EU SST Consortium framework.',
         hq: 'ESA/ESOC, Darmstadt, Germany',
         founded: '2014 (EU SST Framework)',
         sensors: '12 sensors: GRAVES radar (France), OGS Tenerife (Spain), Fly-Eye (Italy), TIRA radar (Germany), plus optical sites across EU',
         coverage: 'LEO primary (GRAVES radar), GEO (OGS Tenerife), survey (Fly-Eye)',
-        keyCapability: 'Independent European SSA â€” sovereign catalog capability not dependent on US data',
+        keyCapability: 'Independent European SSA — sovereign catalog capability not dependent on US data',
         integration: 'CCSDS NDM format, hourly batch exchange under EU SST Consortium data-sharing agreement.',
     },
     'LeoLabs': {
         img: 'img/leolabs.png',
-        description: 'LeoLabs operates 11 phased-array radar installations purpose-built for tracking low-Earth orbit debris down to 2cm â€” far below the detection threshold of traditional optical sensors. Their radars in Midland TX, Kiwi NZ, Costa Rica, Alaska, and Western Australia provide persistent rain-or-shine coverage unaffected by weather, daylight, or atmospheric seeing. LeoLabs\' differentiator is small-debris detection: their S-band radars resolve fragments from breakup events that optical networks miss entirely. Their automated conjunction screening service provides Pc and miss-distance estimates within minutes of each radar pass, enabling rapid response to emerging collision threats.',
+        description: 'LeoLabs operates 11 phased-array radar installations purpose-built for tracking low-Earth orbit debris down to 2cm — far below the detection threshold of traditional optical sensors. Their radars in Midland TX, Kiwi NZ, Costa Rica, Alaska, and Western Australia provide persistent rain-or-shine coverage unaffected by weather, daylight, or atmospheric seeing. LeoLabs\' differentiator is small-debris detection: their S-band radars resolve fragments from breakup events that optical networks miss entirely. Their automated conjunction screening service provides Pc and miss-distance estimates within minutes of each radar pass, enabling rapid response to emerging collision threats.',
         hq: 'Menlo Park, California',
         founded: '2016',
         sensors: '11 phased-array S-band radars: Midland TX, Kiwi NZ, Costa Rica, Poker Flat AK, Western Australia + 6 more',
-        coverage: 'LEO exclusively (200-2,000 km) â€” all inclinations',
-        keyCapability: 'Small debris detection â€” tracks objects down to 2cm, far below optical detection limits',
-        integration: 'REST API â†’ SentinelForge fusion pipeline. Radar data used for sub-10cm objects invisible to optical sensors.',
+        coverage: 'LEO exclusively (200-2,000 km) — all inclinations',
+        keyCapability: 'Small debris detection — tracks objects down to 2cm, far below optical detection limits',
+        integration: 'REST API → SentinelForge fusion pipeline. Radar data used for sub-10cm objects invisible to optical sensors.',
     },
 };
 
@@ -518,7 +518,7 @@ window.openNetworkDrilldown = function(networkName) {
     const off = sites.filter(s => s.status==='offline').length;
     body.innerHTML = `
         <img src="${detail.img}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:220px;object-fit:cover" alt="${networkName}">
-        <h3>ðŸ“– Overview</h3><p style="line-height:1.7">${detail.description}</p>
+        <h3>📖 Overview</h3><p style="line-height:1.7">${detail.description}</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">
             <div style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);border-radius:6px;padding:8px;text-align:center">
                 <div style="font-size:20px;font-weight:700;color:#00e5ff">${sites.length}</div><div style="font-size:9px;color:#78909c">Total Sites</div>
@@ -534,18 +534,18 @@ window.openNetworkDrilldown = function(networkName) {
             <tr><td style="color:#78909c;font-weight:600">Coverage</td><td>${detail.coverage}</td></tr>
             <tr><td style="color:#78909c;font-weight:600">Key Capability</td><td style="color:#00e5ff">${detail.keyCapability}</td></tr>
         </tbody></table>
-        <h3>ðŸ”— SentinelForge Integration</h3><p style="font-size:10px;line-height:1.6;color:#b0bec5">${detail.integration}</p>
-        <h3>ðŸ“¡ Network Status</h3>
+        <h3>🔗 SentinelForge Integration</h3><p style="font-size:10px;line-height:1.6;color:#b0bec5">${detail.integration}</p>
+        <h3>📡 Network Status</h3>
         <div style="font-size:10px;margin-top:4px">
-            <span style="color:#00e676">ðŸŸ¢ ${active} Active</span> Â· 
-            <span style="color:#ffab00">ðŸŸ¡ ${deg} Degraded</span> Â· 
-            <span style="color:#ff1744">ðŸ”´ ${off} Offline</span>
+            <span style="color:#00e676">🟢 ${active} Active</span> · 
+            <span style="color:#ffab00">🟡 ${deg} Degraded</span> · 
+            <span style="color:#ff1744">🔴 ${off} Offline</span>
         </div>
         <div style="margin-top:8px;max-height:200px;overflow-y:auto">
             <table><thead><tr><th>Site</th><th>Location</th><th>Type</th><th>Status</th></tr></thead><tbody>` +
             sites.map(s => {
                 const badge = s.status==='active'?'badge-green':s.status==='degraded'?'badge-yellow':'badge-red';
-                const _clickFn = s.id.startsWith('SLING-NUM') ? `openSlingshotDetail('${s.id}')` : `openSiteDetail('${s.id}')`; return `<tr style="cursor:pointer" onclick="${_clickFn}" title="Click for detailed site profile">
+                return `<tr style="cursor:pointer" onclick="${s.id.startsWith('SLING-NUM') ? 'openSlingshotDetail' : 'openSiteDetail'}('${s.id}')" title="Click for site profile">
                     <td style="color:#e8eaf6;font-weight:600">${s.id}</td>
                     <td style="font-size:9px">${s.lat.toFixed(1)}°N, ${s.lon.toFixed(1)}°E</td>
                     <td>${s.type}</td>
@@ -572,8 +572,8 @@ const _sitesPatchInterval = setInterval(() => {
             nameEl.style.textDecoration = 'underline';
             nameEl.style.textDecorationColor = 'rgba(124,77,255,0.4)';
             nameEl.style.textUnderlineOffset = '2px';
-            nameEl.title = `Click for ${net} deep dive â€” 100-word overview, image, sites, integration`;
-            nameEl.innerHTML = net + ' <span style="font-size:8px;color:#7c4dff;margin-left:2px">â–¸</span>';
+            nameEl.title = `Click for ${net} deep dive — 100-word overview, image, sites, integration`;
+            nameEl.innerHTML = net + ' <span style="font-size:8px;color:#7c4dff;margin-left:2px">▸</span>';
             nameEl.addEventListener('click', (e) => {
                 e.stopPropagation();
                 openNetworkDrilldown(net);
@@ -585,25 +585,25 @@ const _sitesPatchInterval = setInterval(() => {
     renderSites();
 }, 200);
 
-// â”€â”€ Debris Event Drill-Down â”€â”€
+// ── Debris Event Drill-Down ──
 const DEBRIS_DETAILS = {
     'FY-1C ASAT (2007)': {
         img: 'img/debris_asat.png',
-        threat: 'China\'s kinetic-kill ASAT test created 3,528 fragments at 865 km â€” the single worst debris-generating event in history. Fragments will persist for decades in sun-synchronous orbit, threatening Earth observation satellites, weather platforms, and ISS resupply vehicles transiting through this altitude band.',
+        threat: 'China\'s kinetic-kill ASAT test created 3,528 fragments at 865 km — the single worst debris-generating event in history. Fragments will persist for decades in sun-synchronous orbit, threatening Earth observation satellites, weather platforms, and ISS resupply vehicles transiting through this altitude band.',
         date: 'January 11, 2007',
         nation: 'People\'s Republic of China',
         weapon: 'SC-19 kinetic kill vehicle (ground-launched)',
-        target: 'Fengyun 1C â€” defunct weather satellite (958 kg)',
+        target: 'Fengyun 1C — defunct weather satellite (958 kg)',
         impactSpeed: '~8 km/s (head-on)',
-        assetsAtRisk: 'Sentinel-6, NOAA-20, Landsat 9, CryoSat-2, Terra, Aqua â€” all sun-synchronous LEO',
+        assetsAtRisk: 'Sentinel-6, NOAA-20, Landsat 9, CryoSat-2, Terra, Aqua — all sun-synchronous LEO',
         longevity: '50-100+ years (high altitude, minimal drag)',
     },
     'Cosmos-Iridium (2009)': {
         img: 'img/debris_collision.png',
-        threat: 'The first accidental hypervelocity collision between two intact satellites. Cosmos 2251 (defunct) struck Iridium 33 (active) at 11.7 km/s, producing 2,296 trackable fragments. This event proved the Kessler Syndrome is not theoretical â€” uncontrolled objects will eventually collide, creating cascading debris fields.',
+        threat: 'The first accidental hypervelocity collision between two intact satellites. Cosmos 2251 (defunct) struck Iridium 33 (active) at 11.7 km/s, producing 2,296 trackable fragments. This event proved the Kessler Syndrome is not theoretical — uncontrolled objects will eventually collide, creating cascading debris fields.',
         date: 'February 10, 2009',
         nation: 'Russia (Cosmos 2251) / USA (Iridium 33)',
-        weapon: 'N/A â€” accidental collision',
+        weapon: 'N/A — accidental collision',
         target: 'Cosmos 2251 (defunct, 950 kg) vs Iridium 33 (active, 560 kg)',
         impactSpeed: '11.7 km/s (nearly head-on, crossing orbits)',
         assetsAtRisk: 'Iridium constellation, ISS (required avoidance maneuver), Hubble Space Telescope',
@@ -615,40 +615,40 @@ const DEBRIS_DETAILS = {
         date: 'November 15, 2021',
         nation: 'Russian Federation',
         weapon: 'PL-19 Nudol direct-ascent ASAT (Plesetsk launch)',
-        target: 'Cosmos 1408 â€” defunct ELINT satellite (2,200 kg)',
+        target: 'Cosmos 1408 — defunct ELINT satellite (2,200 kg)',
         impactSpeed: '~7 km/s',
-        assetsAtRisk: 'ISS (crew sheltered), Chinese Space Station (Tiangong), Starlink, OneWeb â€” all LEO below 600 km',
+        assetsAtRisk: 'ISS (crew sheltered), Chinese Space Station (Tiangong), Starlink, OneWeb — all LEO below 600 km',
         longevity: '5-15 years (lower altitude = faster drag decay)',
     },
     'USA-193 Shootdown (2008)': {
         img: 'img/debris_asat.png',
-        threat: 'The US Navy intercepted a failing spy satellite carrying toxic hydrazine propellant before reentry. Unlike other ASAT tests, the low intercept altitude (247 km) ensured all 174 fragments decayed within weeks. This demonstrated responsible debris mitigation â€” but also confirmed US ASAT capability.',
+        threat: 'The US Navy intercepted a failing spy satellite carrying toxic hydrazine propellant before reentry. Unlike other ASAT tests, the low intercept altitude (247 km) ensured all 174 fragments decayed within weeks. This demonstrated responsible debris mitigation — but also confirmed US ASAT capability.',
         date: 'February 21, 2008',
         nation: 'United States of America',
         weapon: 'SM-3 Block IA (RIM-161) from USS Lake Erie (Aegis cruiser)',
-        target: 'USA 193 â€” NRO reconnaissance satellite (failed, 2,300 kg)',
+        target: 'USA 193 — NRO reconnaissance satellite (failed, 2,300 kg)',
         impactSpeed: '~9.8 km/s',
-        assetsAtRisk: 'Minimal â€” all debris decayed within 40 days due to low altitude intercept',
+        assetsAtRisk: 'Minimal — all debris decayed within 40 days due to low altitude intercept',
         longevity: '<40 days (all fragments decayed by April 2008)',
     },
     'India Shakti (2019)': {
         img: 'img/debris_asat.png',
-        threat: 'India\'s Mission Shakti demonstrated ASAT capability against a purpose-launched target at 283 km. While the low altitude minimized long-term debris, the test created a brief but real hazard to ISS operations. NASA called it "terrible" â€” fragments briefly rose above 400 km into ISS altitude.',
+        threat: 'India\'s Mission Shakti demonstrated ASAT capability against a purpose-launched target at 283 km. While the low altitude minimized long-term debris, the test created a brief but real hazard to ISS operations. NASA called it "terrible" — fragments briefly rose above 400 km into ISS altitude.',
         date: 'March 27, 2019',
         nation: 'Republic of India',
         weapon: 'PDV Mk-II kinetic kill vehicle (modified ABM interceptor)',
-        target: 'Microsat-R â€” purpose-launched target (740 kg)',
+        target: 'Microsat-R — purpose-launched target (740 kg)',
         impactSpeed: '~10 km/s',
         assetsAtRisk: 'ISS (temporary increased risk), LEO constellations below 400 km',
         longevity: '<1 year (most fragments decayed within months)',
     },
     'Fengyun 4A Breakup (2025)': {
         img: 'img/debris_breakup.png',
-        threat: 'An unexplained breakup of Fengyun 4A generated 412 fragments at 720 km â€” cause remains under investigation (battery failure, propellant leak, or possible micrometeoroid impact). This is SentinelForge\'s most active tracking event, with 389 fragments still being cataloged and correlated. The sun-synchronous altitude threatens critical Earth observation assets.',
+        threat: 'An unexplained breakup of Fengyun 4A generated 412 fragments at 720 km — cause remains under investigation (battery failure, propellant leak, or possible micrometeoroid impact). This is SentinelForge\'s most active tracking event, with 389 fragments still being cataloged and correlated. The sun-synchronous altitude threatens critical Earth observation assets.',
         date: 'August 14, 2025',
         nation: 'People\'s Republic of China',
-        weapon: 'N/A â€” cause under investigation',
-        target: 'Fengyun 4A â€” active weather satellite (breakup origin unknown)',
+        weapon: 'N/A — cause under investigation',
+        target: 'Fengyun 4A — active weather satellite (breakup origin unknown)',
         impactSpeed: 'N/A (spontaneous fragmentation)',
         assetsAtRisk: 'Sun-synchronous constellation: Sentinel-2, Landsat 9, WorldView, NOAA polar orbiters',
         longevity: '20-50 years (similar altitude to FY-1C, long-lived orbital band)',
@@ -668,7 +668,7 @@ window.openDebrisDrilldown = function(eventName) {
     body.innerHTML = `
         <img src="${detail.img}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:220px;object-fit:cover" alt="${eventName}">
         <div style="font-size:11px;line-height:1.7;color:#e8eaf6;padding:0 4px 12px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:12px">
-            <span style="color:${event.color};font-weight:700">âš  THREAT ASSESSMENT:</span> ${detail.threat}
+            <span style="color:${event.color};font-weight:700">⚠ THREAT ASSESSMENT:</span> ${detail.threat}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
             <div style="background:rgba(255,23,68,0.08);border:1px solid rgba(255,23,68,0.15);border-radius:6px;padding:8px;text-align:center">
@@ -693,7 +693,7 @@ window.openDebrisDrilldown = function(eventName) {
             <tr><td style="color:#78909c;font-weight:600">Altitude</td><td>${event.alt} km (${event.inc}° inclination)</td></tr>
             <tr><td style="color:#78909c;font-weight:600">Debris Longevity</td><td style="color:#ffab00">${detail.longevity}</td></tr>
         </tbody></table>
-        <h3 style="margin-top:12px">ðŸŽ¯ Assets at Risk</h3>
+        <h3 style="margin-top:12px">🎯 Assets at Risk</h3>
         <p style="font-size:10px;line-height:1.6;color:#ff8a80">${detail.assetsAtRisk}</p>
         <div style="margin-top:8px;padding:8px;background:rgba(255,23,68,0.05);border:1px solid rgba(255,23,68,0.1);border-radius:6px">
             <div style="font-size:9px;color:#78909c;margin-bottom:4px">DEBRIS DECAY PROGRESS</div>
@@ -706,37 +706,37 @@ window.openDebrisDrilldown = function(eventName) {
     modal.style.display = 'flex';
 };
 
-// â”€â”€ Launch Vehicle Drill-Down â”€â”€
+// ── Launch Vehicle Drill-Down ──
 const LAUNCH_DETAILS = {
     'Falcon 9': {
         img: 'img/lv_falcon9.png',
-        desc: 'SpaceX\'s workhorse medium-lift rocket â€” the most-flown orbital vehicle in history. Reusable first stage lands on drone ships, cutting launch costs to ~$2,700/kg. Merlin 1D engines burn RP-1/LOX. Each Starlink mission deploys 23 flat-packed satellites that autonomously raise orbit using krypton ion thrusters.',
-        specs: { height:'70 m', diameter:'3.7 m', mass:'549,054 kg', thrust:'7,607 kN (sea level)', stages:'2', propellant:'RP-1 / LOX', reusability:'First stage â€” RTLS or ASDS', successRate:'99.3% (300+ flights)' },
+        desc: 'SpaceX\'s workhorse medium-lift rocket — the most-flown orbital vehicle in history. Reusable first stage lands on drone ships, cutting launch costs to ~$2,700/kg. Merlin 1D engines burn RP-1/LOX. Each Starlink mission deploys 23 flat-packed satellites that autonomously raise orbit using krypton ion thrusters.',
+        specs: { height:'70 m', diameter:'3.7 m', mass:'549,054 kg', thrust:'7,607 kN (sea level)', stages:'2', propellant:'RP-1 / LOX', reusability:'First stage — RTLS or ASDS', successRate:'99.3% (300+ flights)' },
     },
     'Soyuz-2.1b': {
         img: 'img/lv_soyuz.png',
-        desc: 'Russia\'s modernized Soyuz â€” descendant of Korolev\'s R-7 ICBM, the rocket that launched Sputnik. Digital flight computer replaced analog systems. The four-booster "Korolev Cross" separation is iconic. Fregat upper stage enables complex multi-burn insertion to MEO for GLONASS navigation constellation.',
+        desc: 'Russia\'s modernized Soyuz — descendant of Korolev\'s R-7 ICBM, the rocket that launched Sputnik. Digital flight computer replaced analog systems. The four-booster "Korolev Cross" separation is iconic. Fregat upper stage enables complex multi-burn insertion to MEO for GLONASS navigation constellation.',
         specs: { height:'46.3 m', diameter:'2.95 m (core)', mass:'312,000 kg', thrust:'4,147 kN', stages:'3 + Fregat', propellant:'RP-1 / LOX', reusability:'Expendable', successRate:'97.8% (1,900+ R-7 family)' },
     },
     'CZ-5B': {
         img: 'img/lv_cz5b.png',
-        desc: 'China\'s heavy-lift rocket for space station modules â€” the core stage reaches orbit and reenters uncontrolled. At 21 metric tons, it\'s the largest object to regularly make uncontrolled reentry. SSA must track the core stage post-launch for reentry prediction. Each flight generates a major reentry hazard event.',
-        specs: { height:'53.7 m', diameter:'5.0 m', mass:'849,000 kg', thrust:'10,565 kN', stages:'1.5 (core + 4 boosters)', propellant:'LH2/LOX (core) + RP-1/LOX (boosters)', reusability:'Expendable â€” core reaches orbit', successRate:'85.7% (7 flights)' },
+        desc: 'China\'s heavy-lift rocket for space station modules — the core stage reaches orbit and reenters uncontrolled. At 21 metric tons, it\'s the largest object to regularly make uncontrolled reentry. SSA must track the core stage post-launch for reentry prediction. Each flight generates a major reentry hazard event.',
+        specs: { height:'53.7 m', diameter:'5.0 m', mass:'849,000 kg', thrust:'10,565 kN', stages:'1.5 (core + 4 boosters)', propellant:'LH2/LOX (core) + RP-1/LOX (boosters)', reusability:'Expendable — core reaches orbit', successRate:'85.7% (7 flights)' },
     },
     'H3-24L': {
         img: 'img/lv_h3.png',
-        desc: 'Japan\'s next-generation launch vehicle replacing the H-IIA. LE-9 engine uses expander bleed cycle â€” no gas generator, improving reliability. The 24L configuration uses 2 SRBs and long fairing. Carries Japan\'s classified IGS reconnaissance satellites for the Cabinet Satellite Intelligence Center.',
-        specs: { height:'63 m', diameter:'5.2 m (fairing)', mass:'574,000 kg', thrust:'8,686 kN (with SRBs)', stages:'2 + 2 SRBs', propellant:'LH2 / LOX', reusability:'Expendable', successRate:'66.7% (3 flights â€” early program)' },
+        desc: 'Japan\'s next-generation launch vehicle replacing the H-IIA. LE-9 engine uses expander bleed cycle — no gas generator, improving reliability. The 24L configuration uses 2 SRBs and long fairing. Carries Japan\'s classified IGS reconnaissance satellites for the Cabinet Satellite Intelligence Center.',
+        specs: { height:'63 m', diameter:'5.2 m (fairing)', mass:'574,000 kg', thrust:'8,686 kN (with SRBs)', stages:'2 + 2 SRBs', propellant:'LH2 / LOX', reusability:'Expendable', successRate:'66.7% (3 flights — early program)' },
     },
     'Ariane 6': {
         img: 'img/lv_ariane6.png',
-        desc: 'Europe\'s newest launcher â€” replacing the Ariane 5 for independent European access to space. Vinci upper stage enables multi-burn GTO insertion and direct GEO placement. Launches from Kourou near the equator, maximizing GTO performance. Syracuse 4C is a French military communications satellite.',
-        specs: { height:'56 m (A62) / 63 m (A64)', diameter:'5.4 m', mass:'530,000 kg (A62)', thrust:'8,000 kN (with 2 SRBs)', stages:'2 + 2 or 4 P120C SRBs', propellant:'LH2/LOX (core) + solid (SRBs)', reusability:'Expendable', successRate:'100% (2 flights â€” new program)' },
+        desc: 'Europe\'s newest launcher — replacing the Ariane 5 for independent European access to space. Vinci upper stage enables multi-burn GTO insertion and direct GEO placement. Launches from Kourou near the equator, maximizing GTO performance. Syracuse 4C is a French military communications satellite.',
+        specs: { height:'56 m (A62) / 63 m (A64)', diameter:'5.4 m', mass:'530,000 kg (A62)', thrust:'8,000 kN (with 2 SRBs)', stages:'2 + 2 or 4 P120C SRBs', propellant:'LH2/LOX (core) + solid (SRBs)', reusability:'Expendable', successRate:'100% (2 flights — new program)' },
     },
     'PSLV-C62': {
         img: 'img/lv_pslv.png',
-        desc: 'India\'s reliable polar satellite launch vehicle â€” ISRO\'s proven workhorse with 50+ missions. Four-stage alternating solid/liquid design. The PS4 upper stage can serve as an orbital platform after payload deployment. PSLV launched India\'s Mars Orbiter Mission and Chandrayaan-1 lunar mission.',
-        specs: { height:'44 m', diameter:'2.8 m', mass:'320,000 kg', thrust:'4,860 kN (S139 first stage)', stages:'4 (solid-liquid-solid-liquid)', propellant:'HTPB solid + UDMH/Nâ‚‚Oâ‚„ liquid', reusability:'Expendable', successRate:'94.6% (56 flights)' },
+        desc: 'India\'s reliable polar satellite launch vehicle — ISRO\'s proven workhorse with 50+ missions. Four-stage alternating solid/liquid design. The PS4 upper stage can serve as an orbital platform after payload deployment. PSLV launched India\'s Mars Orbiter Mission and Chandrayaan-1 lunar mission.',
+        specs: { height:'44 m', diameter:'2.8 m', mass:'320,000 kg', thrust:'4,860 kN (S139 first stage)', stages:'4 (solid-liquid-solid-liquid)', propellant:'HTPB solid + UDMH/N₂O₄ liquid', reusability:'Expendable', successRate:'94.6% (56 flights)' },
     },
 };
 
@@ -754,20 +754,20 @@ window.openLaunchDrilldown = function(idx) {
 
     // Deep-dive data for every clickable field
     const FIELD_DEEP = {
-        'Falcon 9': 'First flew 2010. 300+ missions to date. Merlin 1D engines generate 845 kN each (Ã—9 = 7,607 kN). First stage lands vertically on drone ships "Just Read the Instructions" and "Of Course I Still Love You." Fairing halves recovered by net-equipped boats. Holds record for fastest turnaround: 21 days between flights on a single booster. B1062 has flown 19 times.',
-        'Soyuz-2.1b': 'Evolution of the R-7 ICBM that launched Sputnik (1957). The Soyuz family has over 1,900 flights â€” the most-launched rocket design in history. The 2.1b variant adds a digital flight computer and RD-0124 upper stage engine with 359s Isp. Fregat upper stage enables complex multi-burn profiles for MEO/HEO insertion.',
-        'CZ-5B': 'China\'s heaviest operational rocket. Unlike CZ-5 (with a restartable upper stage), the CZ-5B has NO upper stage â€” the core itself reaches orbital velocity, then reenters uncontrolled. This design choice has drawn international criticism. The 5m-diameter core uses YF-77 LH2/LOX engines (vacuum Isp: 430s). Four 3.35m boosters use YF-100 kerolox engines.',
-        'H3-24L': 'JAXA\'s next-gen launcher replacing H-IIA after 2001-2024 service. LE-9 engine uses an expander bleed cycle â€” coolant heated by the combustion chamber drives the turbopumps, eliminating the gas generator and reducing failure modes. First flight (2023) failed due to second-stage ignition issue. Configuration "24L" = 2 SRBs + 4m long fairing.',
+        'Falcon 9': 'First flew 2010. 300+ missions to date. Merlin 1D engines generate 845 kN each (×9 = 7,607 kN). First stage lands vertically on drone ships "Just Read the Instructions" and "Of Course I Still Love You." Fairing halves recovered by net-equipped boats. Holds record for fastest turnaround: 21 days between flights on a single booster. B1062 has flown 19 times.',
+        'Soyuz-2.1b': 'Evolution of the R-7 ICBM that launched Sputnik (1957). The Soyuz family has over 1,900 flights — the most-launched rocket design in history. The 2.1b variant adds a digital flight computer and RD-0124 upper stage engine with 359s Isp. Fregat upper stage enables complex multi-burn profiles for MEO/HEO insertion.',
+        'CZ-5B': 'China\'s heaviest operational rocket. Unlike CZ-5 (with a restartable upper stage), the CZ-5B has NO upper stage — the core itself reaches orbital velocity, then reenters uncontrolled. This design choice has drawn international criticism. The 5m-diameter core uses YF-77 LH2/LOX engines (vacuum Isp: 430s). Four 3.35m boosters use YF-100 kerolox engines.',
+        'H3-24L': 'JAXA\'s next-gen launcher replacing H-IIA after 2001-2024 service. LE-9 engine uses an expander bleed cycle — coolant heated by the combustion chamber drives the turbopumps, eliminating the gas generator and reducing failure modes. First flight (2023) failed due to second-stage ignition issue. Configuration "24L" = 2 SRBs + 4m long fairing.',
         'Ariane 6': 'Developed by ArianeGroup (Airbus/Safran JV) to restore European launch independence. A62 variant (2 SRBs) for government missions; A64 (4 SRBs) for heavy GTO payloads. Vinci upper stage engine restarts up to 4 times in flight, enabling direct GEO insertion and complex multi-manifest missions. First flight July 2024.',
-        'PSLV-C62': 'ISRO\'s most reliable vehicle â€” 53 of 56 missions successful. Unique 4-stage alternating design: S139 solid â†’ Vikas liquid â†’ S7 solid â†’ L-2-5 liquid. PS4 (4th stage) can operate as an orbital platform for months after payload separation. PSLV set the record: 104 satellites deployed on a single mission (PSLV-C37, 2017).',
+        'PSLV-C62': 'ISRO\'s most reliable vehicle — 53 of 56 missions successful. Unique 4-stage alternating design: S139 solid → Vikas liquid → S7 solid → L-2-5 liquid. PS4 (4th stage) can operate as an orbital platform for months after payload separation. PSLV set the record: 104 satellites deployed on a single mission (PSLV-C37, 2017).',
     };
     const PAYLOAD_DEEP = {
         'Starlink Group 12-8 (23 sats)': '23 Starlink v2-Mini satellites, each ~800 kg. Flat-pack deployed at 300 km, then autonomously raise orbit to 550 km using krypton Hall-effect thrusters over 3-4 weeks. Each sat provides ~20 Gbps throughput via Ka/Ku-band phased arrays. Laser inter-satellite links (ISL) enable mesh routing without ground relays. Constellation target: 12,000 operational satellites.',
         'GLONASS-K2 No.8': 'Next-generation Russian navigation satellite replacing aging GLONASS-M fleet. Unpressurized bus (vs pressurized GLONASS-M) extends design life to 10 years. Broadcasts L1, L2, L3 signals with CDMA modulation for improved accuracy (1.4m CEP). Mass: ~1,600 kg. Augments Russia\'s 24-satellite GLONASS constellation for global PNT capability.',
-        'Wentian-2 Lab Module': 'Second laboratory module for China\'s Tiangong space station. ~23 metric tons, 17.9m length. Contains experiment racks for materials science, fluid physics, and biotechnology. External payload platform for space exposure experiments. Docks to Tianhe core module via a Chinese Docking Mechanism (CDM). Pressurized volume: ~118 mÂ³.',
+        'Wentian-2 Lab Module': 'Second laboratory module for China\'s Tiangong space station. ~23 metric tons, 17.9m length. Contains experiment racks for materials science, fluid physics, and biotechnology. External payload platform for space exposure experiments. Docks to Tianhe core module via a Chinese Docking Mechanism (CDM). Pressurized volume: ~118 m³.',
         'Transporter-14 (rideshare)': 'SpaceX\'s dedicated smallsat rideshare mission. ~40 payloads from commercial, government, and academic customers. Uses ESPA Grande and Exolaunch deployers. SSO orbit enables Earth observation missions. Typical manifest includes 6U-12U CubeSats, microsats up to 300 kg, and hosted payloads. Price: ~$5,500/kg to SSO.',
-        'IGS Radar-8': 'Japan\'s classified Intelligence Gathering Satellite â€” synthetic aperture radar (SAR) reconnaissance. Operated by Cabinet Satellite Intelligence Center (CSICE), not JAXA. Resolution estimated at <1m. Provides all-weather, day/night imaging of North Korean missile sites and Chinese naval bases. Part of a 4+ satellite IGS constellation.',
-        'Syracuse 4C (mil-sat)': 'French military SATCOM satellite for the Direction GÃ©nÃ©rale de l\'Armement (DGA). Provides secure, jam-resistant X-band and Ka-band communications for French armed forces and NATO allies. Designed life: 15 years in GEO. Syracuse 4 system uses anti-jamming steerable spot beams and onboard processing for theater operations.',
+        'IGS Radar-8': 'Japan\'s classified Intelligence Gathering Satellite — synthetic aperture radar (SAR) reconnaissance. Operated by Cabinet Satellite Intelligence Center (CSICE), not JAXA. Resolution estimated at <1m. Provides all-weather, day/night imaging of North Korean missile sites and Chinese naval bases. Part of a 4+ satellite IGS constellation.',
+        'Syracuse 4C (mil-sat)': 'French military SATCOM satellite for the Direction Générale de l\'Armement (DGA). Provides secure, jam-resistant X-band and Ka-band communications for French armed forces and NATO allies. Designed life: 15 years in GEO. Syracuse 4 system uses anti-jamming steerable spot beams and onboard processing for theater operations.',
         'EOS-08 (Earth obs)': 'ISRO Earth Observation Satellite with electro-optical and thermal infrared payloads. Targets disaster monitoring, agriculture assessment, and urban heat island mapping. Uses ISRO\'s new Microsat-IMS bus platform (~180 kg). SSO orbit provides consistent solar illumination for calibrated imagery. Designed life: 5 years.',
     };
     const SITE_DEEP = {
@@ -776,7 +776,7 @@ window.openLaunchDrilldown = function(idx) {
         'Wenchang': 'Wenchang Spacecraft Launch Site, Hainan Island (19.61°N, 110.95°E). China\'s newest and most southerly spaceport, opened 2016. Low latitude (19°N) maximizes payload to GTO/GEO. Two launch pads support CZ-5, CZ-7, and CZ-8. Coastal location enables sea transport of large rocket stages. Adjacent commercial spaceport under construction.',
         'Vandenberg SLC-4E': 'Vandenberg Space Force Base, Space Launch Complex 4E (34.63°N, 120.61°W). Located on the California coast, supporting polar and sun-synchronous orbits southward over the Pacific. SpaceX\'s West Coast pad for SSO and national security missions. Originally built for Titan IIID reconnaissance satellite launches.',
         'Tanegashima': 'Tanegashima Space Center, Kagoshima Prefecture (30.37°N, 131.00°E). JAXA\'s primary launch facility on a subtropical island. Known as "the most beautiful rocket launch site in the world." Yoshinobu Launch Complex hosts H3 and H-IIA. Due to local fishing agreements, launches were historically restricted to two annual windows.',
-        'Kourou ELA-4': 'Guiana Space Centre, Ensemble de Lancement Ariane 4 (5.24°N, 52.77°W). Located in French Guiana near the equator â€” the lowest-latitude orbital launch site. Equatorial location provides maximum velocity boost (463 m/s) for GTO missions. ELA-4 is Ariane 6\'s dedicated pad, featuring a mobile gantry and cryogenic propellant systems.',
+        'Kourou ELA-4': 'Guiana Space Centre, Ensemble de Lancement Ariane 4 (5.24°N, 52.77°W). Located in French Guiana near the equator — the lowest-latitude orbital launch site. Equatorial location provides maximum velocity boost (463 m/s) for GTO missions. ELA-4 is Ariane 6\'s dedicated pad, featuring a mobile gantry and cryogenic propellant systems.',
         'Sriharikota': 'Satish Dhawan Space Centre, Sriharikota (13.72°N, 80.23°E). ISRO\'s primary launch complex on a barrier island in the Bay of Bengal, Andhra Pradesh. Two launch pads (FLP and SLP) support PSLV, GSLV, and LVM3. Eastern azimuth launches over the Bay of Bengal. Range includes India\'s only solid propellant plant.',
     };
     const OPERATOR_DEEP = {
@@ -784,25 +784,25 @@ window.openLaunchDrilldown = function(idx) {
         'Roscosmos': 'Russian Federal Space Agency. Successor to Soviet space program. Headquarters: Moscow. Operates Baikonur (Kazakhstan), Plesetsk, and Vostochny cosmodromes. Primary vehicles: Soyuz-2, Proton-M, Angara. Sole provider of ISS crew transport 2011-2020 (Soyuz). Sanctions since 2022 have reduced Western commercial launches to zero.',
         'CNSA': 'China National Space Administration. Government agency under SASTIND. Headquarters: Beijing. Operates Jiuquan, Taiyuan, Xichang, and Wenchang launch sites. Vehicles: CZ-2/3/4/5/6/7/8/11. Achieved: lunar sample return (Chang\'e 5), Mars rover (Zhurong), space station (Tiangong). Growing at ~50 launches/year.',
         'JAXA': 'Japan Aerospace Exploration Agency. Formed 2003 from merger of ISAS, NAL, and NASDA. Headquarters: Tsukuba. Vehicles: H3, Epsilon. Achievements: Hayabusa asteroid sample return, Kaguya lunar orbiter, SLIM precision lander. Budget: ~$1.5B/year. Developing HTV-X cargo vehicle for ISS and future lunar Gateway.',
-        'ArianeGroup': 'Joint venture of Airbus Defence & Space (50%) and Safran (50%). Headquarters: Paris. Prime contractor for Ariane 6 and support for Ariane 5 legacy. Also develops M51 submarine-launched ballistic missile for French nuclear deterrent. Annual revenue: ~â‚¬3.3B. ~8,300 employees across France and Germany.',
+        'ArianeGroup': 'Joint venture of Airbus Defence & Space (50%) and Safran (50%). Headquarters: Paris. Prime contractor for Ariane 6 and support for Ariane 5 legacy. Also develops M51 submarine-launched ballistic missile for French nuclear deterrent. Annual revenue: ~€3.3B. ~8,300 employees across France and Germany.',
         'ISRO': 'Indian Space Research Organisation. Government agency under Department of Space. Headquarters: Bengaluru. Vehicles: PSLV, GSLV Mk II, LVM3. Achievements: Mars Orbiter Mission (2014, first attempt), Chandrayaan-3 lunar landing (2023). Known for extreme cost efficiency: Mangalyaan cost $74M. ~16,000 employees.',
     };
     const ORBIT_DEEP = {
-        'LEO 550km 53°': 'Low Earth Orbit at 550 km altitude, 53° inclination. This is the primary Starlink shell â€” optimized for coverage of populated latitudes (53°N to 53°S). Orbital period: ~95.6 minutes. Velocity: ~7.59 km/s. At this altitude, atmospheric drag is minimal, providing ~5 year orbit lifetime without station-keeping.',
-        'MEO 19,100km 64.8°': 'Medium Earth Orbit at 19,100 km, 64.8° inclination. Standard GLONASS operational orbit â€” three orbital planes with 8 satellites each, ensuring 24/7 global navigation coverage. Orbital period: ~11.25 hours. Each satellite completes ~2.14 orbits per day. MEO provides optimal balance between coverage geometry and signal strength.',
+        'LEO 550km 53°': 'Low Earth Orbit at 550 km altitude, 53° inclination. This is the primary Starlink shell — optimized for coverage of populated latitudes (53°N to 53°S). Orbital period: ~95.6 minutes. Velocity: ~7.59 km/s. At this altitude, atmospheric drag is minimal, providing ~5 year orbit lifetime without station-keeping.',
+        'MEO 19,100km 64.8°': 'Medium Earth Orbit at 19,100 km, 64.8° inclination. Standard GLONASS operational orbit — three orbital planes with 8 satellites each, ensuring 24/7 global navigation coverage. Orbital period: ~11.25 hours. Each satellite completes ~2.14 orbits per day. MEO provides optimal balance between coverage geometry and signal strength.',
         'LEO 390km 41.5°': 'Low Earth Orbit at 390 km, 41.5° inclination. Chinese Space Station (Tiangong) operational orbit. Low inclination optimizes payload capacity from Wenchang (19°N). Orbital period: ~92.3 minutes. ISS orbits at similar altitude (408 km) but higher inclination (51.6°) to accommodate Russian launch sites.',
-        'SSO 525km 97.5°': 'Sun-Synchronous Orbit at 525 km, 97.5° inclination. The orbital plane precesses at exactly 1°/day to maintain constant sun angle â€” ideal for Earth observation and remote sensing payloads. The Transporter rideshare deploys dozens of small satellites into this highly popular orbit regime.',
-        'SSO 500km': 'Sun-Synchronous Orbit at 500 km. Classified IGS reconnaissance orbit â€” exact inclination undisclosed but approximately 97.4°. Lower altitude than typical SSO provides higher ground resolution for SAR imaging. Orbital period: ~94.6 minutes, providing ~15 ground tracks per day over target areas.',
-        'GTOâ†’GEO': 'Geostationary Transfer Orbit to Geostationary Orbit. Initial injection: ~250 Ã— 35,786 km. The satellite\'s own apogee motor circularizes at GEO (35,786 km). At GEO, the satellite orbits at exactly Earth\'s rotation rate, appearing stationary over one ground point. Ideal for communications, weather, and missile warning.',
-        'LEO 475km 97.4°': 'Sun-Synchronous Orbit at 475 km, 97.4° inclination. Standard Earth observation altitude â€” balances resolution, coverage swath, and orbit lifetime. ISRO\'s EOS satellites typically operate in 10:30 AM descending node SSO, providing consistent morning illumination for optical imaging.',
+        'SSO 525km 97.5°': 'Sun-Synchronous Orbit at 525 km, 97.5° inclination. The orbital plane precesses at exactly 1°/day to maintain constant sun angle — ideal for Earth observation and remote sensing payloads. The Transporter rideshare deploys dozens of small satellites into this highly popular orbit regime.',
+        'SSO 500km': 'Sun-Synchronous Orbit at 500 km. Classified IGS reconnaissance orbit — exact inclination undisclosed but approximately 97.4°. Lower altitude than typical SSO provides higher ground resolution for SAR imaging. Orbital period: ~94.6 minutes, providing ~15 ground tracks per day over target areas.',
+        'GTO→GEO': 'Geostationary Transfer Orbit to Geostationary Orbit. Initial injection: ~250 × 35,786 km. The satellite\'s own apogee motor circularizes at GEO (35,786 km). At GEO, the satellite orbits at exactly Earth\'s rotation rate, appearing stationary over one ground point. Ideal for communications, weather, and missile warning.',
+        'LEO 475km 97.4°': 'Sun-Synchronous Orbit at 475 km, 97.4° inclination. Standard Earth observation altitude — balances resolution, coverage swath, and orbit lifetime. ISRO\'s EOS satellites typically operate in 10:30 AM descending node SSO, providing consistent morning illumination for optical imaging.',
     };
     const SPEC_DEEP = {
-        'height': 'Total vehicle height from base of first stage to tip of payload fairing. Determines vertical clearance requirements at the launch pad and imposes structural stiffness constraints â€” taller rockets experience greater bending loads during max-Q (maximum aerodynamic pressure, typically 60-80 seconds after liftoff).',
-        'diameter': 'Core stage outer diameter. Constrained by manufacturing capability and ground transportation limits (US: 3.7m road/rail; China: 5.0m sea transport). Larger diameter enables higher propellant volume and thrust â€” CZ-5B\'s 5m core was China\'s breakthrough to heavy-lift capability.',
+        'height': 'Total vehicle height from base of first stage to tip of payload fairing. Determines vertical clearance requirements at the launch pad and imposes structural stiffness constraints — taller rockets experience greater bending loads during max-Q (maximum aerodynamic pressure, typically 60-80 seconds after liftoff).',
+        'diameter': 'Core stage outer diameter. Constrained by manufacturing capability and ground transportation limits (US: 3.7m road/rail; China: 5.0m sea transport). Larger diameter enables higher propellant volume and thrust — CZ-5B\'s 5m core was China\'s breakthrough to heavy-lift capability.',
         'mass': 'Gross liftoff mass including propellant, structure, and payload. Falcon 9 achieves ~22:1 mass ratio (propellant:dry mass). Every kg saved in structure enables ~1 kg more payload. Cryogenic propellants (LH2/LOX) boil off at ~0.1%/hour, requiring precise load-and-launch timing.',
         'thrust': 'Combined sea-level thrust of all first-stage engines. Must exceed vehicle weight by 20-40% (thrust-to-weight ratio 1.2-1.4) for safe liftoff. Too low = slow ascent, gravity losses; too high = excessive aerodynamic loads. Engines throttle back at max-Q, then throttle up for landing (Falcon 9).',
         'stages': 'Number of propulsive stages. Each stage separation event is a critical failure point. Two-stage vehicles (Falcon 9, Ariane 6) are simpler but require high-performance upper stages. PSLV\'s four stages alternate solid/liquid for optimal mass fraction at each altitude.',
-        'propellant': 'Fuel and oxidizer combination. RP-1/LOX (kerosene) is dense and storable but lower Isp (~311s). LH2/LOX is highest Isp (~450s) but very low density, requiring large tanks. Solid propellants (HTPB) are simplest but cannot be throttled or shut down. Hypergolics (UDMH/Nâ‚‚Oâ‚„) ignite on contact â€” ideal for upper stages.',
+        'propellant': 'Fuel and oxidizer combination. RP-1/LOX (kerosene) is dense and storable but lower Isp (~311s). LH2/LOX is highest Isp (~450s) but very low density, requiring large tanks. Solid propellants (HTPB) are simplest but cannot be throttled or shut down. Hypergolics (UDMH/N₂O₄) ignite on contact — ideal for upper stages.',
         'reusability': 'Whether stages are recovered for reflight. SpaceX pioneered propulsive landing (2015). Booster recovery saves ~$30M per flight. Fairings save ~$6M each. Recovery imposes ~30% payload penalty (fuel reserved for landing). No other operational vehicle currently recovers first stages, though multiple programs are in development.',
         'successRate': 'Historical mission success percentage. Mature vehicles (Soyuz: 97.8%, PSLV: 94.6%) have extensive flight heritage. New vehicles (H3, Ariane 6) have limited data. Success rate below 90% is generally unacceptable for commercial insurance. Military/government payloads may accept higher risk for strategic capability.',
     };
@@ -811,13 +811,13 @@ window.openLaunchDrilldown = function(idx) {
         const deep = deepData[deepKey] || deepData[value] || '';
         if (!deep) return `<tr><td style="color:#78909c;font-weight:600;width:130px">${label}</td><td>${value}</td></tr>`;
         return `<tr class="lv-drill" style="cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'table-row':'none'" title="Click for details">
-            <td style="color:#78909c;font-weight:600;width:130px">${label} <span style="color:#7c4dff;font-size:8px">â–¶</span></td>
+            <td style="color:#78909c;font-weight:600;width:130px">${label} <span style="color:#7c4dff;font-size:8px">▶</span></td>
             <td style="color:#00e5ff;text-decoration:underline;text-decoration-color:rgba(0,229,255,0.3)">${value}</td>
         </tr>
         <tr style="display:none"><td colspan="2" style="padding:8px 12px;background:rgba(124,77,255,0.06);border-left:2px solid #7c4dff;font-size:10px;line-height:1.7;color:#b0bec5">${deep}</td></tr>`;
     };
 
-    title.textContent = `${l.vehicle} â€” ${l.payload}`;
+    title.textContent = `${l.vehicle} — ${l.payload}`;
     body.innerHTML = `
         <img src="${detail.img}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:220px;object-fit:cover" alt="${l.vehicle}">
         <div style="font-size:11px;line-height:1.7;color:#e8eaf6;padding:0 4px 12px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:12px">${detail.desc}</div>
@@ -835,7 +835,7 @@ window.openLaunchDrilldown = function(idx) {
                 <div style="font-size:8px;color:#78909c">Target Orbit</div>
             </div>
         </div>
-        <h3>ðŸš€ Mission Details <span style="font-size:9px;color:#546e7a;font-weight:400">â€” click any row for deep dive</span></h3>
+        <h3>🚀 Mission Details <span style="font-size:9px;color:#546e7a;font-weight:400">— click any row for deep dive</span></h3>
         <table><tbody>
             ${clickRow('Vehicle', l.vehicle, l.vehicle, FIELD_DEEP)}
             ${clickRow('Payload', l.payload, l.payload, PAYLOAD_DEEP)}
@@ -844,18 +844,18 @@ window.openLaunchDrilldown = function(idx) {
             ${clickRow('Target Orbit', l.orbit, l.orbit, ORBIT_DEEP)}
             <tr><td style="color:#78909c;font-weight:600;width:130px">Window (UTC)</td><td style="font-family:JetBrains Mono,mono">${l.date}</td></tr>
         </tbody></table>
-        <h3>ðŸ“ Vehicle Specifications <span style="font-size:9px;color:#546e7a;font-weight:400">â€” click any row for deep dive</span></h3>
+        <h3>📐 Vehicle Specifications <span style="font-size:9px;color:#546e7a;font-weight:400">— click any row for deep dive</span></h3>
         <table><tbody>
             ${Object.entries(detail.specs).map(([k,v]) => clickRow(k.replace(/([A-Z])/g, ' $1'), v, k, SPEC_DEEP)).join('')}
         </tbody></table>
-        <h3>ðŸ›°ï¸ SSA Impact</h3>
+        <h3>🛰️ SSA Impact</h3>
         <div style="font-size:10px;line-height:1.6;color:#b0bec5;padding:8px;background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.08);border-radius:6px">
             <b style="color:#00e5ff">New catalog objects:</b> This launch will inject ${l.payload.includes('23 sats') ? '23 satellites + 1 upper stage' : l.payload.includes('rideshare') ? '~40 payloads + deployment hardware' : l.payload.includes('Lab Module') ? '1 module + CZ-5B core stage (uncontrolled reentry object)' : '1 payload + upper stage'} into ${l.orbit}. SentinelForge will auto-detect and catalog new objects within 24 hours via Space Fence and ground network correlation.
         </div>`;
     modal.style.display = 'flex';
 };
 
-// â”€â”€ Reentry Drill-Down â”€â”€
+// ── Reentry Drill-Down ──
 window.openReentryDrilldown = function(idx) {
     const r = STATE.reentries[idx];
     if (!r) return;
@@ -865,12 +865,12 @@ window.openReentryDrilldown = function(idx) {
     const riskCol = r.risk === 'HIGH' ? '#ff1744' : r.risk === 'MEDIUM' ? '#ffab00' : '#00e676';
     const imgMap = { 'Rocket Body': 'img/sat_rocket_body.png', 'Debris': 'img/debris_asat.png', 'Payload': 'img/sat_iridium.png' };
     const descMap = {
-        'CZ-5B R/B (2026-028B)': 'Spent core stage of a Chinese Long March 5B â€” 22.5 metric tons of aluminum and steel reentering uncontrolled. Up to 40% of mass may survive to ground impact. Reentry footprint spans the entire tropics. This is the single highest-risk uncontrolled reentry in the current prediction window.',
+        'CZ-5B R/B (2026-028B)': 'Spent core stage of a Chinese Long March 5B — 22.5 metric tons of aluminum and steel reentering uncontrolled. Up to 40% of mass may survive to ground impact. Reentry footprint spans the entire tropics. This is the single highest-risk uncontrolled reentry in the current prediction window.',
         'COSMOS 2551 DEB': 'Small debris fragment from a Russian military satellite. At 120 kg, complete atmospheric burnup is expected. Poses negligible ground risk but must be tracked to confirm destruction and remove from the active catalog.',
         'Starlink-2841': 'SpaceX Starlink satellite performing controlled deorbit via krypton ion thruster. The satellite will lower its perigee to ~150 km, ensuring rapid atmospheric entry and complete burnup. This is a textbook example of responsible end-of-life disposal.',
-        'Iridium 47 (defunct)': 'Defunct first-generation Iridium satellite. At 689 kg with a titanium frame, significant fragments will survive reentry. Near-polar orbit means the ground track covers almost the entire globe. Reentry prediction uncertainty is Â±48 hours â€” the largest window in the current queue.',
+        'Iridium 47 (defunct)': 'Defunct first-generation Iridium satellite. At 689 kg with a titanium frame, significant fragments will survive reentry. Near-polar orbit means the ground track covers almost the entire globe. Reentry prediction uncertainty is ±48 hours — the largest window in the current queue.',
     };
-    title.textContent = `âš  Reentry â€” ${r.name}`;
+    title.textContent = `⚠ Reentry — ${r.name}`;
     body.innerHTML = `
         <img src="${imgMap[r.type] || 'img/sat_rocket_body.png'}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:200px;object-fit:cover" alt="${r.name}">
         <div style="font-size:11px;line-height:1.7;color:#e8eaf6;padding:0 4px 12px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:12px">${descMap[r.name] || r.note}</div>
@@ -894,10 +894,10 @@ window.openReentryDrilldown = function(idx) {
             <tr><td style="color:#78909c;font-weight:600">Predicted Date</td><td style="font-weight:700;color:#e8eaf6">${r.predictedDate}</td></tr>
             <tr><td style="color:#78909c;font-weight:600">Uncertainty</td><td style="color:#ffab00">${r.uncertainty}</td></tr>
             <tr><td style="color:#78909c;font-weight:600">Ground Footprint</td><td style="color:#ff8a80">${r.footprint}</td></tr>
-            <tr><td style="color:#78909c;font-weight:600">Survival Estimate</td><td>${r.mass > 5000 ? '<span style="color:#ff1744;font-weight:700">30-40% mass survives â€” ground impact likely</span>' : r.mass > 500 ? '<span style="color:#ffab00">Partial survival â€” titanium/steel components</span>' : '<span style="color:#00e676">Full burnup expected</span>'}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Survival Estimate</td><td>${r.mass > 5000 ? '<span style="color:#ff1744;font-weight:700">30-40% mass survives — ground impact likely</span>' : r.mass > 500 ? '<span style="color:#ffab00">Partial survival — titanium/steel components</span>' : '<span style="color:#00e676">Full burnup expected</span>'}</td></tr>
         </tbody></table>
         <div style="margin-top:10px;padding:8px;background:rgba(255,23,68,0.05);border:1px solid rgba(255,23,68,0.1);border-radius:6px;font-size:10px;color:#b0bec5">
-            <b style="color:#ff8a80">ðŸ“¡ Tracking:</b> ${r.note}. SentinelForge is monitoring this object via LeoLabs and USSF-SSN radar. Reentry predictions update every orbit pass (~90 min).
+            <b style="color:#ff8a80">📡 Tracking:</b> ${r.note}. SentinelForge is monitoring this object via LeoLabs and USSF-SSN radar. Reentry predictions update every orbit pass (~90 min).
         </div>`;
     modal.style.display = 'flex';
 };
