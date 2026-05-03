@@ -1872,6 +1872,92 @@ function renderInventory(tab) {
                     If counting Starlink, the global total is <b style="color:#ffd740">~30 maneuvers/week</b> across LEO. Better observations = fewer false alarms = fewer unnecessary maneuvers — this is why the <b style="color:#e040fb">sensor network</b> and <b style="color:#e040fb">rapid OD pipeline</b> matter.
                 </div>
             </div>`;
+    } else if(tab === 'slingshot') {
+        // ── Slingshot Global Sensor Network Catalog (inline) ──
+        const SLING_STATIONS = [
+            { id:"SLING-NUM-CO1", name:"Fort Collins, CO", lat:40.59, lon:-105.08, status:"active", region:"Americas", gpu:67, queue:0, seeing:0.6, ops:"Primary testbed & calibration site. HQ location." },
+            { id:"SLING-NUM-CO2", name:"Colorado Springs, CO", lat:38.83, lon:-104.82, status:"active", region:"Americas", gpu:44, queue:0, seeing:2.2, ops:"Close proximity to USSF commands." },
+            { id:"SLING-NUM-NM", name:"Socorro, NM", lat:34.07, lon:-106.91, status:"degraded", region:"Americas", gpu:45, queue:10, seeing:1.5, ops:"High-altitude desert, excellent seeing." },
+            { id:"SLING-NUM-AZ", name:"Tucson, AZ", lat:32.23, lon:-110.95, status:"active", region:"Americas", gpu:76, queue:9, seeing:1.4, ops:"Near major astronomy centers." },
+            { id:"SLING-NUM-TX", name:"Fort Davis, TX", lat:30.67, lon:-103.95, status:"active", region:"Americas", gpu:81, queue:3, seeing:0.7, ops:"Remote dark-sky deep-space tracking." },
+            { id:"SLING-NUM-HI", name:"Haleakala, HI", lat:20.71, lon:-156.26, status:"active", region:"Oceania", gpu:52, queue:6, seeing:1.4, ops:"Critical Pacific mid-point coverage." },
+            { id:"SLING-NUM-AU1", name:"Siding Spring, AU", lat:-31.27, lon:149.07, status:"active", region:"Oceania", gpu:73, queue:10, seeing:0.7, ops:"Premier Southern Hemisphere site." },
+            { id:"SLING-NUM-AU2", name:"Learmonth, AU", lat:-22.24, lon:114.09, status:"active", region:"Oceania", gpu:51, queue:3, seeing:0.9, ops:"Western Australia early warning." },
+            { id:"SLING-NUM-CL", name:"Cerro Tololo, Chile", lat:-30.17, lon:-70.81, status:"active", region:"Americas", gpu:38, queue:2, seeing:1.1, ops:"World-class seeing in the Atacama." },
+            { id:"SLING-NUM-NA", name:"Gamsberg, Namibia", lat:-23.34, lon:16.23, status:"active", region:"Africa", gpu:34, queue:12, seeing:2.2, ops:"Strategic African continent coverage." },
+            { id:"SLING-NUM-SA", name:"Sutherland, RSA", lat:-32.38, lon:20.81, status:"active", region:"Africa", gpu:33, queue:8, seeing:2.2, ops:"South African astronomical hub." },
+            { id:"SLING-NUM-SP", name:"Tenerife, Spain", lat:28.3, lon:-16.51, status:"active", region:"Europe", gpu:78, queue:2, seeing:1.3, ops:"Canary Islands clear Atlantic views." },
+            { id:"SLING-NUM-IT", name:"Asiago, Italy", lat:45.87, lon:11.53, status:"active", region:"Europe", gpu:85, queue:0, seeing:0.8, ops:"European mainland tracking." },
+            { id:"SLING-NUM-JP", name:"Okayama, Japan", lat:34.57, lon:133.59, status:"offline", region:"Asia", gpu:54, queue:12, seeing:2.1, ops:"East Asia (under maintenance)." },
+            { id:"SLING-NUM-IN", name:"Mt Abu, India", lat:24.65, lon:72.78, status:"active", region:"Asia", gpu:74, queue:12, seeing:1.6, ops:"Indian subcontinent gap-filler." },
+            { id:"SLING-NUM-AR", name:"El Leoncito, Argentina", lat:-31.8, lon:-69.3, status:"active", region:"Americas", gpu:39, queue:4, seeing:0.9, ops:"Secondary South American site." },
+            { id:"SLING-NUM-KR", name:"Bohyunsan, S. Korea", lat:36.16, lon:128.98, status:"degraded", region:"Asia", gpu:77, queue:0, seeing:2.0, ops:"Korean peninsula tracking." },
+            { id:"SLING-NUM-TW", name:"Lulin, Taiwan", lat:23.47, lon:120.87, status:"degraded", region:"Asia", gpu:67, queue:8, seeing:2.3, ops:"High-altitude Asian site." },
+            { id:"SLING-NUM-MX", name:"San Pedro Martir, Mexico", lat:31.03, lon:-115.46, status:"active", region:"Americas", gpu:33, queue:1, seeing:2.2, ops:"Baja California dark sky preserve." },
+            { id:"SLING-NUM-PH", name:"Clark, Philippines", lat:15.19, lon:120.59, status:"degraded", region:"Asia", gpu:34, queue:3, seeing:1.3, ops:"Equatorial Pacific coverage." }
+        ];
+        const sActive = SLING_STATIONS.filter(s => s.status==='active').length;
+        const sDeg = SLING_STATIONS.filter(s => s.status==='degraded').length;
+        const sOff = SLING_STATIONS.filter(s => s.status==='offline').length;
+        const avgGPU = Math.round(SLING_STATIONS.reduce((a,s) => a+s.gpu, 0) / SLING_STATIONS.length);
+        const avgSee = (SLING_STATIONS.reduce((a,s) => a+s.seeing, 0) / SLING_STATIONS.length).toFixed(1);
+
+        el.innerHTML = `
+            <div style="padding:6px 8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,0.04)">
+                <span style="font-size:12px;font-weight:700;color:#ffd740">Slingshot Global Sensor Network</span>
+                <span style="font-size:9px;color:#78909c">Numerica-heritage optical network with daylight tracking & edge compute</span>
+                <span style="flex:1"></span>
+                <span style="font-size:9px;color:#00e676;font-weight:600">${sActive} Active</span>
+                <span style="font-size:9px;color:#ffab00;font-weight:600">${sDeg} Degraded</span>
+                <span style="font-size:9px;color:#ff1744;font-weight:600">${sOff} Offline</span>
+                <span style="font-size:9px;color:#78909c">| Avg GPU: <b style="color:#00e5ff">${avgGPU}%</b> | Avg Seeing: <b style="color:#e8eaf6">${avgSee}&quot;</b></span>
+            </div>
+            <table class="inv-table" style="font-size:10px">
+                <thead><tr>
+                    <th></th><th>Station ID</th><th>Location</th><th>Region</th><th>Seeing</th><th>Edge GPU</th><th>Queue</th><th>Status</th><th>Role</th>
+                </tr></thead>
+                <tbody>
+                    ${SLING_STATIONS.map(s => {
+                        const sc = s.status==='active'?'#00e676':s.status==='degraded'?'#ffab00':'#ff1744';
+                        const si = s.status==='active'?'🟢':s.status==='degraded'?'🟡':'🔴';
+                        const rc = s.region==='Americas'?'#76ff03':s.region==='Europe'?'#448aff':s.region==='Africa'?'#ffab00':s.region==='Asia'?'#ff9100':'#00e5ff';
+                        return `<tr style="cursor:pointer" onclick="openSlingshotDetail('${s.id}')" title="Click for full technology profile">
+                            <td>${si}</td>
+                            <td style="font-family:JetBrains Mono,mono;color:#ffd740;font-size:9px">${s.id}</td>
+                            <td style="color:#e8eaf6;font-weight:600">${s.name}</td>
+                            <td><span style="color:${rc};font-size:9px;font-weight:600">${s.region}</span></td>
+                            <td style="font-family:JetBrains Mono,mono">${s.seeing}&quot;</td>
+                            <td style="font-family:JetBrains Mono,mono;color:${s.gpu>70?'#ff9100':s.gpu>50?'#ffd740':'#00e676'}">${s.gpu}%</td>
+                            <td style="font-family:JetBrains Mono,mono">${s.queue}</td>
+                            <td><span style="color:${sc};font-weight:600;text-transform:uppercase;font-size:9px">${s.status}</span></td>
+                            <td style="font-size:9px;color:#78909c;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.ops}">${s.ops}</td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+            <div style="padding:8px;margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid rgba(255,255,255,0.04)">
+                <div style="background:rgba(255,215,64,0.04);border:1px solid rgba(255,215,64,0.1);border-radius:6px;padding:8px">
+                    <div style="font-size:9px;color:#ffd740;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Hardware Standard</div>
+                    <div style="font-size:10px;color:#b0bec5;line-height:1.5">
+                        <b style="color:#e8eaf6">Optics:</b> 0.35m-0.5m COTS arrays (PlaneWave CDK / Celestron RASA)<br>
+                        <b style="color:#e8eaf6">Detectors:</b> sCMOS back-illuminated, high-frame-rate<br>
+                        <b style="color:#e8eaf6">Mounts:</b> Direct-drive EQ, >5&deg;/sec slew rate<br>
+                        <b style="color:#e8eaf6">Edge:</b> NVIDIA Jetson AGX Orin 64GB<br>
+                        <b style="color:#e8eaf6">Enclosure:</b> Baader AllSky autonomous dome
+                    </div>
+                </div>
+                <div style="background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.1);border-radius:6px;padding:8px">
+                    <div style="font-size:9px;color:#00e5ff;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Operations Cycle</div>
+                    <div style="font-size:10px;color:#b0bec5;line-height:1.5">
+                        <b style="color:#e8eaf6">1.</b> Central scheduler pushes target lists via Beacon<br>
+                        <b style="color:#e8eaf6">2.</b> Weather/safety sensors auto-gate dome open/close<br>
+                        <b style="color:#e8eaf6">3.</b> Mount slews &amp; tracks (rate-track LEO, sidereal GEO)<br>
+                        <b style="color:#e8eaf6">4.</b> Edge CUDA pipeline: streak detect + photometry<br>
+                        <b style="color:#e8eaf6">5.</b> TDMs exfiltrated over secure WAN to cloud<br>
+                        <b style="color:#e8eaf6">6.</b> Day/night filter swap for daylight tracking
+                    </div>
+                </div>
+            </div>`;
     }
 }
 
