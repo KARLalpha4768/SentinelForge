@@ -366,7 +366,7 @@ function renderSites() {
     const nets = {};
     STATE.sites.forEach(s => { if(!nets[s.network]) nets[s.network]=[]; nets[s.network].push(s); });
     const sorted = Object.entries(nets).sort((a,b) => b[1].length - a[1].length);
-    el.innerHTML = '<div class="card-header" title="Sensor networks organized by operator. Status: 🟢 Active, 🟡 Degraded, 🔴 Offline">Networks · ' + STATE.sites.length + ' Sites <span style="font-size:7px;color:#546e7a;margin-left:4px">🟢 Active 🟡 Degraded 🔴 Offline</span></div>' +
+    let html = '<div class="card-header" title="Sensor networks organized by operator. Status: 🟢 Active, 🟡 Degraded, 🔴 Offline">Networks · ' + STATE.sites.length + ' Sites <span style="font-size:7px;color:#546e7a;margin-left:4px">🟢 Active 🟡 Degraded 🔴 Offline</span></div>' +
     sorted.map(([net, sites]) => {
         const active = sites.filter(s => s.status==='active').length;
         const deg = sites.filter(s => s.status==='degraded').length;
@@ -386,6 +386,62 @@ function renderSites() {
             </div>
         </div>`;
     }).join('');
+
+    // ── Slingshot Ground Station Catalog ──
+    const SLING = [
+        { id:"CO1", name:"Fort Collins, CO", st:"active", gpu:67, see:0.6, q:0, ops:"HQ & calibration testbed" },
+        { id:"CO2", name:"Colorado Springs, CO", st:"active", gpu:44, see:2.2, q:0, ops:"USSF proximity demo" },
+        { id:"NM", name:"Socorro, NM", st:"degraded", gpu:45, see:1.5, q:10, ops:"High-altitude desert" },
+        { id:"AZ", name:"Tucson, AZ", st:"active", gpu:76, see:1.4, q:9, ops:"Academic astronomy hub" },
+        { id:"TX", name:"Fort Davis, TX", st:"active", gpu:81, see:0.7, q:3, ops:"Dark-sky deep-space" },
+        { id:"HI", name:"Haleakala, HI", st:"active", gpu:52, see:1.4, q:6, ops:"Pacific mid-point" },
+        { id:"AU1", name:"Siding Spring, AU", st:"active", gpu:73, see:0.7, q:10, ops:"Southern hemisphere" },
+        { id:"AU2", name:"Learmonth, AU", st:"active", gpu:51, see:0.9, q:3, ops:"Western AU early warning" },
+        { id:"CL", name:"Cerro Tololo, Chile", st:"active", gpu:38, see:1.1, q:2, ops:"Atacama world-class seeing" },
+        { id:"NA", name:"Gamsberg, Namibia", st:"active", gpu:34, see:2.2, q:12, ops:"African continent" },
+        { id:"SA", name:"Sutherland, RSA", st:"active", gpu:33, see:2.2, q:8, ops:"SA astronomical hub" },
+        { id:"SP", name:"Tenerife, Spain", st:"active", gpu:78, see:1.3, q:2, ops:"Canary Islands Atlantic" },
+        { id:"IT", name:"Asiago, Italy", st:"active", gpu:85, see:0.8, q:0, ops:"European mainland" },
+        { id:"JP", name:"Okayama, Japan", st:"offline", gpu:54, see:2.1, q:12, ops:"East Asia (maintenance)" },
+        { id:"IN", name:"Mt Abu, India", st:"active", gpu:74, see:1.6, q:12, ops:"Indian subcontinent" },
+        { id:"AR", name:"El Leoncito, Argentina", st:"active", gpu:39, see:0.9, q:4, ops:"S. America secondary" },
+        { id:"KR", name:"Bohyunsan, S. Korea", st:"degraded", gpu:77, see:2.0, q:0, ops:"Korean peninsula" },
+        { id:"TW", name:"Lulin, Taiwan", st:"degraded", gpu:67, see:2.3, q:8, ops:"High-altitude Asian" },
+        { id:"MX", name:"San Pedro Martir, MX", st:"active", gpu:33, see:2.2, q:1, ops:"Baja dark sky" },
+        { id:"PH", name:"Clark, Philippines", st:"degraded", gpu:34, see:1.3, q:3, ops:"Equatorial Pacific" }
+    ];
+    const slAct = SLING.filter(s=>s.st==='active').length;
+    const slDeg = SLING.filter(s=>s.st==='degraded').length;
+    const slOff = SLING.filter(s=>s.st==='offline').length;
+
+    html += `<div class="card-header" style="margin-top:1px;background:rgba(255,215,64,0.04);color:#ffd740;border-top:1px solid rgba(255,215,64,0.15)">
+        Slingshot Sites <span style="font-size:7px;color:#78909c;margin-left:4px">🟢${slAct} 🟡${slDeg} 🔴${slOff}</span>
+    </div>`;
+
+    html += SLING.map(s => {
+        const icon = s.st==='active'?'🟢':s.st==='degraded'?'🟡':'🔴';
+        const gpuCol = s.gpu>70?'#ff9100':s.gpu>50?'#ffd740':'#00e676';
+        return `<div class="site-card" style="border-left:2px solid ${s.st==='active'?'#ffd740':s.st==='degraded'?'#ffab00':'#ff1744'}44;cursor:pointer" title="${s.ops} | GPU: ${s.gpu}% | Seeing: ${s.see}&quot; | Queue: ${s.q}">
+            <div class="site-header">
+                <span style="font-size:8px">${icon}</span>
+                <span class="site-name" style="font-size:11px;color:#e8eaf6">${s.name}</span>
+                <span style="flex:1"></span>
+                <span style="font-family:JetBrains Mono,mono;font-size:9px;color:#ffd740">NUM-${s.id}</span>
+            </div>
+            <div class="site-stats" style="gap:8px;font-size:9px">
+                <span style="color:${gpuCol}">GPU ${s.gpu}%</span>
+                <span>See ${s.see}&quot;</span>
+                <span>Q:${s.q}</span>
+                <span style="color:#78909c;font-style:italic;font-family:Inter,sans-serif">${s.ops}</span>
+            </div>
+        </div>`;
+    }).join('');
+
+    html += `<div style="padding:6px 10px;background:rgba(255,215,64,0.03);border-top:1px solid rgba(255,215,64,0.08);font-size:8px;color:#546e7a;line-height:1.5">
+        <b style="color:#ffd740">HARDWARE:</b> 0.5m COTS optics · sCMOS detectors · Direct-drive mounts · Jetson AGX Orin · Baader AllSky domes · Daylight tracking
+    </div>`;
+
+    el.innerHTML = html;
 }
 
 // ── Ground Map (Canvas) ─────────────────────────────
