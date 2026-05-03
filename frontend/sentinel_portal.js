@@ -1,5 +1,5 @@
 const CHAPTERS = {
-    ch1: \`
+    ch1: `
         <div class="page-container active">
             <div class="chapter-title">1. Space Domain Awareness Doctrine</div>
             <div class="chapter-subtitle">Foundations of orbital intelligence and the observe-orient-decide-act loop.</div>
@@ -24,8 +24,8 @@ const CHAPTERS = {
             <h2>Custody Requirements</h2>
             <p>Maintaining "custody" of a space object means having a state vector accurate enough to place a sensor's field of view (FOV) on the object during its next pass. Custody is lost when propagation errors (due to drag or unmodeled maneuvers) exceed the sensor's FOV.</p>
         </div>
-    \`,
-    ch2: \`
+    `,
+    ch2: `
         <div class="page-container active">
             <div class="chapter-title">2. Orbital Mechanics Reference</div>
             <div class="chapter-subtitle">The physics governing satellite motion and trajectory propagation.</div>
@@ -56,8 +56,8 @@ const CHAPTERS = {
                 <li><strong>Third-Body Gravity:</strong> Lunar and solar gravity cause long-term cyclic changes in HEO/GEO.</li>
             </ul>
         </div>
-    \`,
-    ch3: \`
+    `,
+    ch3: `
         <div class="page-container active">
             <div class="chapter-title">3. Sensor Networks & Architecture</div>
             <div class="chapter-subtitle">Ground and space-based phenomenologies for tracking 46,000+ objects.</div>
@@ -80,8 +80,8 @@ const CHAPTERS = {
                 <strong>Edge Node Processing:</strong> SentinelForge assumes smart edge nodes. Optical sensors run GPU-accelerated pipelines locally to extract RA/Dec astrometry, sending only bytes of telemetry to the cloud rather than gigabytes of FITS images.
             </div>
         </div>
-    \`,
-    ch4: \`
+    `,
+    ch4: `
         <div class="page-container active">
             <div class="chapter-title">4. Conjunction Assessment</div>
             <div class="chapter-subtitle">Evaluating and mitigating orbital collision risks.</div>
@@ -99,8 +99,8 @@ const CHAPTERS = {
             <h2>Secondary Screening</h2>
             <p>When planning a Collision Avoidance Maneuver (CAM), the proposed post-maneuver ephemeris must be screened against the entire catalog to ensure the avoidance burn doesn't cause a collision with a third object 12 hours later.</p>
         </div>
-    \`,
-    ch5: \`
+    `,
+    ch5: `
         <div class="page-container active">
             <div class="chapter-title">5. Catalog Maintenance</div>
             <div class="chapter-subtitle">Orbit determination, correlation, and UCT resolution.</div>
@@ -120,8 +120,8 @@ const CHAPTERS = {
             <h2>Priority Reacquisition</h2>
             <p>When an object is maneuvered or heavily perturbed by atmospheric drag, its covariance grows rapidly. Once the uncertainty volume exceeds standard sensor search boxes, it enters the "Priority Reacquisition Queue." Dedicated sensors must execute wide-area search patterns to recover it.</p>
         </div>
-    \`,
-    ch6: \`
+    `,
+    ch6: `
         <div class="page-container active">
             <div class="chapter-title">6. Debris Environment</div>
             <div class="chapter-subtitle">Fragmentation events and the Kessler Syndrome risk.</div>
@@ -142,8 +142,8 @@ const CHAPTERS = {
             <h2>Debris Cloud Evolution</h2>
             <p>Following a fragmentation event, debris initially forms a localized cloud. Over hours to days, differences in orbital period cause the cloud to stretch into a "ring" around the entire orbit plane. Over months to years, variations in J2 precession (due to slight inclination differences) cause the orbital planes to fan out, eventually enveloping the entire Earth.</p>
         </div>
-    \`,
-    ch7: \`
+    `,
+    ch7: `
         <div class="page-container active">
             <div class="chapter-title">7. Launch & Reentry</div>
             <div class="chapter-subtitle">Spaceflight operations at the atmospheric boundary.</div>
@@ -161,8 +161,8 @@ const CHAPTERS = {
             <h2>Controlled Deorbit</h2>
             <p>Responsible operators utilize reserved propellant to lower perigee into the dense atmosphere (~50 km) over an uninhabited region (typically the South Pacific Ocean Uninhabited Area, SPOUA), ensuring complete destruction and zero ground casualty risk.</p>
         </div>
-    \`,
-    ch8: \`
+    `,
+    ch8: `
         <div class="page-container active">
             <div class="chapter-title">8. System Architecture</div>
             <div class="chapter-subtitle">SentinelForge operational pipeline and data flows.</div>
@@ -179,7 +179,7 @@ const CHAPTERS = {
             <h2>Agentic Autonomy</h2>
             <p>SentinelForge employs a multi-agent system to automate routine operations. Agents monitor conjunction queues, task sensors for reacquisition, and evaluate covariance realism without human intervention. Operators only intervene during high-tier escalations (e.g., active avoidance maneuvers).</p>
         </div>
-    \`
+    `
 };
 
 // Navigation Logic
@@ -189,7 +189,7 @@ const contentContainer = document.getElementById('portalContent');
 function loadChapter(chId) {
     // Update active nav state
     navItems.forEach(item => item.classList.remove('active'));
-    document.querySelector(\`[data-target="\${chId}"]\`).classList.add('active');
+    document.querySelector(`[data-target="${chId}"]`).classList.add('active');
 
     // Inject HTML
     if (CHAPTERS[chId]) {

@@ -52,7 +52,7 @@ totalEl.textContent = '46,238+';
 // Format helpers
 function getRegimeBadge(r) {
     const cls = r === 'LEO' ? 'regime-leo' : r === 'MEO' ? 'regime-meo' : r === 'GEO' ? 'regime-geo' : 'regime-heo';
-    return \`<span class="regime-badge \${cls}">\${r}</span>\`;
+    return `<span class="regime-badge ${cls}">${r}</span>`;
 }
 function getTypeClass(t) {
     return t === 'Payload' ? 'type-payload' : t === 'Debris' ? 'type-debris' : 'type-rb';
@@ -68,20 +68,20 @@ function renderTable() {
     filteredData.forEach((sat, i) => {
         const tr = document.createElement('tr');
         tr.onclick = () => openDetail(sat, tr);
-        tr.innerHTML = \`
-            <td style="font-family:'JetBrains Mono',monospace">\${sat.norad}</td>
-            <td style="font-weight:600;color:#e8eaf6">\${sat.name}</td>
-            <td class="\${getTypeClass(sat.type)}">\${sat.type}</td>
-            <td>\${getRegimeBadge(sat.regime)}</td>
-            <td>\${sat.alt.toLocaleString()}</td>
-            <td>\${sat.inc.toFixed(1)}</td>
-            <td>\${sat.period.toFixed(1)}</td>
-            <td>\${sat.rcs.toFixed(2)}</td>
-            <td>\${sat.owner}</td>
-            <td>\${sat.country}</td>
-            <td class="\${getStatusClass(sat.status)}">\${sat.status}</td>
-            <td>\${sat.launched}</td>
-        \`;
+        tr.innerHTML = `
+            <td style="font-family:'JetBrains Mono',monospace">${sat.norad}</td>
+            <td style="font-weight:600;color:#e8eaf6">${sat.name}</td>
+            <td class="${getTypeClass(sat.type)}">${sat.type}</td>
+            <td>${getRegimeBadge(sat.regime)}</td>
+            <td>${sat.alt.toLocaleString()}</td>
+            <td>${sat.inc.toFixed(1)}</td>
+            <td>${sat.period.toFixed(1)}</td>
+            <td>${sat.rcs.toFixed(2)}</td>
+            <td>${sat.owner}</td>
+            <td>${sat.country}</td>
+            <td class="${getStatusClass(sat.status)}">${sat.status}</td>
+            <td>${sat.launched}</td>
+        `;
         tbody.appendChild(tr);
     });
 }
@@ -90,37 +90,37 @@ function openDetail(sat, trNode) {
     document.querySelectorAll('.cat-table tr').forEach(t => t.classList.remove('selected'));
     if (trNode) trNode.classList.add('selected');
 
-    detailBody.innerHTML = \`
-        <h2>\${sat.name}</h2>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#00e5ff;margin-bottom:12px">NORAD ID: \${sat.norad}</div>
+    detailBody.innerHTML = `
+        <h2>${sat.name}</h2>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#00e5ff;margin-bottom:12px">NORAD ID: ${sat.norad}</div>
         
-        <img src="\${sat.img}" alt="\${sat.name}">
+        <img src="${sat.img}" alt="${sat.name}">
         
-        <div style="font-size:11px;line-height:1.7;color:#b0bec5;margin-bottom:16px">\${sat.desc}</div>
+        <div style="font-size:11px;line-height:1.7;color:#b0bec5;margin-bottom:16px">${sat.desc}</div>
         
         <h3>Orbital Parameters</h3>
         <table><tbody>
-            <tr><td style="color:#78909c;width:120px">Regime</td><td>\${getRegimeBadge(sat.regime)}</td></tr>
-            <tr><td style="color:#78909c">Altitude (Mean)</td><td>\${sat.alt.toLocaleString()} km</td></tr>
-            <tr><td style="color:#78909c">Inclination</td><td>\${sat.inc.toFixed(2)}°</td></tr>
-            <tr><td style="color:#78909c">Orbital Period</td><td>\${sat.period.toFixed(2)} min</td></tr>
-            <tr><td style="color:#78909c">Radar Cross Sec.</td><td>\${sat.rcs.toFixed(2)} m²</td></tr>
+            <tr><td style="color:#78909c;width:120px">Regime</td><td>${getRegimeBadge(sat.regime)}</td></tr>
+            <tr><td style="color:#78909c">Altitude (Mean)</td><td>${sat.alt.toLocaleString()} km</td></tr>
+            <tr><td style="color:#78909c">Inclination</td><td>${sat.inc.toFixed(2)}°</td></tr>
+            <tr><td style="color:#78909c">Orbital Period</td><td>${sat.period.toFixed(2)} min</td></tr>
+            <tr><td style="color:#78909c">Radar Cross Sec.</td><td>${sat.rcs.toFixed(2)} m²</td></tr>
         </tbody></table>
 
         <h3>Registration</h3>
         <table><tbody>
-            <tr><td style="color:#78909c;width:120px">Object Type</td><td class="\${getTypeClass(sat.type)}">\${sat.type}</td></tr>
-            <tr><td style="color:#78909c">Operational Status</td><td class="\${getStatusClass(sat.status)}">\${sat.status}</td></tr>
-            <tr><td style="color:#78909c">Owner/Operator</td><td>\${sat.owner}</td></tr>
-            <tr><td style="color:#78909c">Origin Country</td><td>\${sat.country}</td></tr>
-            <tr><td style="color:#78909c">Launch Date</td><td>\${sat.launched}</td></tr>
+            <tr><td style="color:#78909c;width:120px">Object Type</td><td class="${getTypeClass(sat.type)}">${sat.type}</td></tr>
+            <tr><td style="color:#78909c">Operational Status</td><td class="${getStatusClass(sat.status)}">${sat.status}</td></tr>
+            <tr><td style="color:#78909c">Owner/Operator</td><td>${sat.owner}</td></tr>
+            <tr><td style="color:#78909c">Origin Country</td><td>${sat.country}</td></tr>
+            <tr><td style="color:#78909c">Launch Date</td><td>${sat.launched}</td></tr>
         </tbody></table>
         
         <div style="margin-top:20px;padding:12px;background:rgba(124,77,255,0.05);border:1px solid rgba(124,77,255,0.1);border-radius:6px">
             <div style="font-size:10px;color:#7c4dff;font-weight:700;margin-bottom:4px;text-transform:uppercase">Intelligence Tiers Available</div>
             <div style="font-size:10px;color:#78909c">SDA tracking indicates nominal orbit propagation. No anomalous maneuvers detected in the last 72 hours. Conjunction screening is active against the entire 46k+ catalog.</div>
         </div>
-    \`;
+    `;
     detailPanel.classList.add('open');
 }
 
@@ -170,7 +170,7 @@ document.getElementById('searchInput').addEventListener('input', applyFilters);
 document.querySelectorAll('.filter-chip').forEach(chip => {
     chip.addEventListener('click', () => {
         const group = chip.parentElement.id;
-        document.querySelectorAll(\`#\${group} .filter-chip\`).forEach(c => c.classList.remove('active'));
+        document.querySelectorAll(`#${group} .filter-chip`).forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         
         const filterType = chip.getAttribute('data-filter');
