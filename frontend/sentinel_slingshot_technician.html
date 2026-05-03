@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelForge — Slingshot Onsite Technician Guide</title>
+    <meta name="description" content="Field technician reference for Slingshot Aerospace ground stations — installation procedures, maintenance checklists, troubleshooting guides, and emergency SOPs">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#07090f; color:#b0bec5; font-family:'Inter',sans-serif; min-height:100vh; }
+        body::before { content:''; position:fixed; top:0; left:0; width:100%; height:100%; background:
+            radial-gradient(ellipse 60% 40% at 20% 30%, rgba(255,215,64,0.03), transparent),
+            radial-gradient(ellipse 50% 50% at 80% 70%, rgba(124,77,255,0.03), transparent);
+            pointer-events:none; z-index:0; }
+
+        /* ── Nav ── */
+        .nav { display:flex; align-items:center; gap:16px; padding:12px 32px; background:rgba(10,12,20,0.95); border-bottom:1px solid rgba(255,215,64,0.08); position:sticky; top:0; z-index:100; backdrop-filter:blur(20px); }
+        .nav .logo { font-size:15px; font-weight:900; color:#ffd740; letter-spacing:1.5px; text-transform:uppercase; }
+        .nav .logo span { color:#b0bec5; font-weight:400; font-size:12px; margin-left:8px; letter-spacing:0; text-transform:none; }
+        .nav .spacer { flex:1; }
+        .nav a { color:#546e7a; font-size:10px; text-decoration:none; padding:5px 12px; border:1px solid rgba(255,255,255,0.06); border-radius:4px; transition:all .2s; text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+        .nav a:hover { color:#e8eaf6; border-color:rgba(255,215,64,0.3); background:rgba(255,215,64,0.08); }
+
+        /* ── Hero ── */
+        .hero { padding:48px 32px 24px; text-align:center; position:relative; z-index:1; }
+        .hero h1 { font-size:28px; font-weight:900; background:linear-gradient(135deg,#ffd740,#ff9100); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px; letter-spacing:-.5px; }
+        .hero .subtitle { font-size:13px; color:#78909c; max-width:700px; margin:0 auto 24px; line-height:1.7; }
+
+        /* ── Content ── */
+        .content { max-width:1100px; margin:0 auto; padding:0 32px 40px; position:relative; z-index:1; }
+        .section { margin-bottom:32px; }
+        .section h2 { font-size:16px; font-weight:800; color:#ffd740; margin-bottom:12px; display:flex; align-items:center; gap:8px; padding-bottom:6px; border-bottom:1px solid rgba(255,215,64,0.1); }
+        .section h3 { font-size:13px; font-weight:700; color:#e8eaf6; margin:16px 0 8px; }
+
+        /* ── Procedure Cards ── */
+        .proc-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px; }
+        .proc-card { background:linear-gradient(135deg,rgba(15,18,30,0.95),rgba(10,12,20,0.98)); border:1px solid rgba(255,215,64,0.06); border-radius:10px; padding:16px; transition:all .25s; }
+        .proc-card:hover { border-color:rgba(255,215,64,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.3); }
+        .proc-card h4 { font-size:13px; font-weight:700; color:#ffd740; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+        .proc-card h4 .badge { font-size:8px; padding:2px 6px; border-radius:3px; font-weight:700; text-transform:uppercase; }
+        .badge-critical { color:#ff1744; background:rgba(255,23,68,0.1); border:1px solid rgba(255,23,68,0.15); }
+        .badge-routine { color:#00e676; background:rgba(0,230,118,0.1); border:1px solid rgba(0,230,118,0.15); }
+        .badge-safety { color:#ffab00; background:rgba(255,171,0,0.1); border:1px solid rgba(255,171,0,0.15); }
+
+        .step-list { list-style:none; padding:0; }
+        .step-list li { display:flex; align-items:flex-start; gap:8px; padding:5px 0; font-size:11px; color:#b0bec5; border-bottom:1px solid rgba(255,255,255,0.02); line-height:1.6; }
+        .step-num { min-width:20px; height:20px; border-radius:50%; background:rgba(255,215,64,0.1); border:1px solid rgba(255,215,64,0.2); color:#ffd740; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:'JetBrains Mono',monospace; }
+
+        /* ── Spec Table ── */
+        .spec-table { width:100%; border-collapse:collapse; margin-top:8px; }
+        .spec-table td { padding:6px 12px; font-size:11px; border-bottom:1px solid rgba(255,255,255,0.03); }
+        .spec-table td:first-child { color:#546e7a; font-weight:600; width:180px; }
+        .spec-table td:last-child { color:#e8eaf6; }
+        .spec-table tr:hover { background:rgba(255,215,64,0.02); }
+
+        /* ── Warning Box ── */
+        .warning-box { background:rgba(255,23,68,0.05); border:1px solid rgba(255,23,68,0.12); border-radius:8px; padding:12px 16px; font-size:11px; color:#ff8a80; line-height:1.7; margin:12px 0; }
+        .warning-box strong { color:#ff5252; }
+        .info-box { background:rgba(0,229,255,0.04); border:1px solid rgba(0,229,255,0.1); border-radius:8px; padding:12px 16px; font-size:11px; color:#80deea; line-height:1.7; margin:12px 0; }
+        .info-box strong { color:#00e5ff; }
+
+        /* ── Checklist ── */
+        .checklist { list-style:none; padding:0; }
+        .checklist li { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:11px; color:#b0bec5; }
+        .checklist li::before { content:'☐'; color:#ffd740; font-size:14px; }
+
+        /* ── Footer ── */
+        .footer { padding:12px 32px; font-size:9px; color:#263238; border-top:1px solid rgba(255,255,255,0.03); text-align:center; position:relative; z-index:1; }
+
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-thumb { background:rgba(255,215,64,0.2); border-radius:3px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+
+        @media (max-width:768px) {
+            .proc-grid { grid-template-columns:1fr; }
+            .nav, .content, .hero { padding-left:16px; padding-right:16px; }
+            .hero h1 { font-size:22px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="logo">SENTINELFORGE<span>Onsite Technician Guide</span></div>
+        <div class="spacer"></div>
+        <a href="sentinel_ops.html">← Ops Center</a>
+        <a href="sentinel_slingshot_catalog.html">💻 Programmer's Specs</a>
+        <a href="sentinel_catalog.html">🛰 Object Catalog</a>
+        <a href="sentinel_portal.html">📖 Portal</a>
+    </nav>
+
+    <section class="hero">
+        <h1>🔧 Onsite Technician Field Guide</h1>
+        <p class="subtitle">Standard operating procedures, maintenance checklists, and troubleshooting references for Slingshot ground station field technicians. All 20 sites follow these unified procedures.</p>
+    </section>
+
+    <div class="content">
+
+        <!-- Site Arrival & Safety -->
+        <div class="section">
+            <h2>🛡️ Site Arrival Protocol</h2>
+            <div class="warning-box">
+                <strong>⚠ SAFETY FIRST:</strong> All sites are equipped with high-voltage equipment, automated moving parts (dome, mount), and sensitive optical/electronic systems. Do NOT approach the telescope mount or dome mechanism while the system is in autonomous mode. Always engage the <b>MANUAL OVERRIDE</b> switch on the control panel before servicing.
+            </div>
+            <div class="proc-grid">
+                <div class="proc-card">
+                    <h4>🔑 Access Procedure <span class="badge badge-routine">ROUTINE</span></h4>
+                    <ol class="step-list">
+                        <li><span class="step-num">1</span>Badge into site perimeter gate using issued RFID credential</li>
+                        <li><span class="step-num">2</span>Log arrival in the on-site tablet (mounted inside equipment shed)</li>
+                        <li><span class="step-num">3</span>Verify dome status indicator: <b style="color:#00e676">GREEN</b> = safe to enter, <b style="color:#ff1744">RED</b> = dome active — do NOT enter</li>
+                        <li><span class="step-num">4</span>Engage MANUAL OVERRIDE switch (located on exterior control panel, south wall)</li>
+                        <li><span class="step-num">5</span>Wait 10 seconds for servo brakes to engage — listen for confirmation click</li>
+                        <li><span class="step-num">6</span>Enter dome enclosure</li>
+                    </ol>
+                </div>
+                <div class="proc-card">
+                    <h4>📋 Pre-Work Inspection <span class="badge badge-safety">SAFETY</span></h4>
+                    <ul class="checklist">
+                        <li>Dome shutter fully open or fully closed (no intermediate position)</li>
+                        <li>Mount parked at zenith or stow position</li>
+                        <li>UPS status LEDs all green (no amber/red)</li>
+                        <li>Weather station anemometer reading < 35 mph</li>
+                        <li>Humidity sensor reading < 85%</li>
+                        <li>No condensation on primary optics (visual check)</li>
+                        <li>Edge compute chassis fans spinning (audible check)</li>
+                        <li>GPS timing module lock confirmed (solid green LED)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hardware Maintenance -->
+        <div class="section">
+            <h2>🔭 Hardware Maintenance Procedures</h2>
+            <div class="proc-grid">
+                <div class="proc-card">
+                    <h4>🔬 Optics Cleaning <span class="badge badge-routine">ROUTINE</span></h4>
+                    <ol class="step-list">
+                        <li><span class="step-num">1</span>Remove dust cap from primary mirror (0.5m f/4 Newtonian)</li>
+                        <li><span class="step-num">2</span>Use compressed nitrogen (NOT air) to blow loose particulates — 10 PSI max</li>
+                        <li><span class="step-num">3</span>Apply lens-grade cleaning solution to microfiber cloth (never directly to optics)</li>
+                        <li><span class="step-num">4</span>Wipe in concentric circles from center outward — single direction only</li>
+                        <li><span class="step-num">5</span>Inspect under collimation laser — verify Airy disk pattern at focus</li>
+                        <li><span class="step-num">6</span>Log cleaning date and seeing conditions in maintenance tablet</li>
+                    </ol>
+                    <div class="info-box">
+                        <strong>Cleaning interval:</strong> Every 30 days at desert sites (CO1, TX, AZ, NM, CL), every 45 days at observatory-campus sites, every 14 days at tropical sites (PH, HI).
+                    </div>
+                </div>
+                <div class="proc-card">
+                    <h4>⚡ Edge Compute (Jetson AGX Orin) <span class="badge badge-critical">CRITICAL</span></h4>
+                    <ol class="step-list">
+                        <li><span class="step-num">1</span>Check GPU temperature via LCD readout on chassis face — must be < 78°C</li>
+                        <li><span class="step-num">2</span>Clear dust from intake vents using ESD-safe vacuum (quarterly)</li>
+                        <li><span class="step-num">3</span>Verify thermal paste contact on GPU die — reapply Noctua NT-H2 if > 12 months</li>
+                        <li><span class="step-num">4</span>Confirm all 4x NVMe status LEDs solid green (OS + data + swap + spare)</li>
+                        <li><span class="step-num">5</span>Run <code style="color:#ffd740;background:rgba(255,215,64,0.08);padding:1px 4px;border-radius:3px;font-size:10px">jetson_health --diag</code> from SSH terminal — capture screenshot</li>
+                        <li><span class="step-num">6</span>Upload diagnostics to Beacon portal under Maintenance > Edge Health</li>
+                    </ol>
+                </div>
+                <div class="proc-card">
+                    <h4>🏔 Dome & Enclosure <span class="badge badge-routine">ROUTINE</span></h4>
+                    <ol class="step-list">
+                        <li><span class="step-num">1</span>Grease dome shutter track rails (Baader-spec lithium grease, every 90 days)</li>
+                        <li><span class="step-num">2</span>Test shutter open/close cycle — must complete in < 45 seconds</li>
+                        <li><span class="step-num">3</span>Inspect weather seal gaskets — replace if cracked or > 18 months old</li>
+                        <li><span class="step-num">4</span>Verify rain sensor trigger by spraying water on sensor head</li>
+                        <li><span class="step-num">5</span>Test emergency close relay — shutter must close within 8 seconds</li>
+                    </ol>
+                </div>
+                <div class="proc-card">
+                    <h4>🔧 Mount & Drive System <span class="badge badge-critical">CRITICAL</span></h4>
+                    <ol class="step-list">
+                        <li><span class="step-num">1</span>Inspect direct-drive motor cable connections (RA + Dec axes)</li>
+                        <li><span class="step-num">2</span>Run pointing model calibration: <code style="color:#ffd740;background:rgba(255,215,64,0.08);padding:1px 4px;border-radius:3px;font-size:10px">mount_cal --full-sky --stars=42</code></li>
+                        <li><span class="step-num">3</span>Verify slew speed > 5°/sec on both axes</li>
+                        <li><span class="step-num">4</span>Check encoder ring for debris (shine flashlight through gap)</li>
+                        <li><span class="step-num">5</span>Confirm tracking residual < 0.5" RMS over 120-second integration</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Troubleshooting -->
+        <div class="section">
+            <h2>🚨 Troubleshooting Quick Reference</h2>
+            <table class="spec-table">
+                <tr><td>Dome won't open</td><td>Check wind speed (>35 mph = auto-lockout). Verify humidity < 85%. Reset dome controller by cycling breaker B3. If persists → <b style="color:#ff5252">escalate to Tier 2</b></td></tr>
+                <tr><td>GPU thermal throttle</td><td>Clear intake vents. Check ambient temp (>40°C = expected at desert sites). Verify fan tach on chassis LCD. If fan failed → swap Noctua NF-A8 from spares kit</td></tr>
+                <tr><td>Seeing > 3.0"</td><td>Normal at low-altitude sites during daytime. If nighttime: check dome equilibration (open shutter 30 min before obs). Inspect for heat sources near aperture</td></tr>
+                <tr><td>GPS timing lost</td><td>Check antenna cable (roof-mounted). Verify u-blox ZED-F9T LED: solid green = lock, blinking = acquiring. Cold start takes 5-15 min. If > 30 min → replace antenna</td></tr>
+                <tr><td>Kafka queue backup (>20)</td><td>Check uplink bandwidth: <code style="color:#ffd740;font-size:10px">speedtest --simple</code>. Verify Starlink dish obstruction map. If bandwidth OK → restart kafka_transport.py service</td></tr>
+                <tr><td>sCMOS read noise elevated</td><td>Check detector temperature (must be at -20°C set point). Verify TEC power cable. If temp nominal → run dark frame calibration: <code style="color:#ffd740;font-size:10px">cam_cal --darks --count=100</code></td></tr>
+                <tr><td>Streak detect false positives</td><td>Update star catalog: <code style="color:#ffd740;font-size:10px">cat_update --tycho2</code>. Check hot pixel map freshness (< 7 days). If persists → re-run flat field calibration</td></tr>
+                <tr><td>Power failure recovery</td><td>UPS provides 8-24h backup. On AC restore: dome controller auto-reinit in 30s. Edge compute auto-boots in 90s. If stuck → manual power cycle in order: UPS → Orin → Mount → Dome</td></tr>
+            </table>
+        </div>
+
+        <!-- Spares Kit -->
+        <div class="section">
+            <h2>🧰 Standard Spares Kit (Per Site)</h2>
+            <table class="spec-table">
+                <tr><td>Noctua NF-A8 PWM (×2)</td><td>Edge compute chassis cooling fans</td></tr>
+                <tr><td>Noctua NT-H2 thermal paste</td><td>GPU die thermal interface material</td></tr>
+                <tr><td>Baader dome gasket set</td><td>Weather seal replacement kit</td></tr>
+                <tr><td>u-blox ANN-MB GPS antenna</td><td>Replacement roof-mount timing antenna</td></tr>
+                <tr><td>Cat6a shielded patch (×4)</td><td>Various lengths — edge compute to switch</td></tr>
+                <tr><td>Samsung 990 Pro 2TB NVMe</td><td>Data drive hot spare</td></tr>
+                <tr><td>Microfiber cloth set (×10)</td><td>Optics-grade, lint-free</td></tr>
+                <tr><td>N₂ gas canister (×2)</td><td>Compressed nitrogen for optics cleaning</td></tr>
+                <tr><td>Collimation laser</td><td>Primary mirror alignment verification</td></tr>
+                <tr><td>Davis Vantage Pro2 ISS</td><td>Spare weather station integrated sensor suite</td></tr>
+            </table>
+        </div>
+
+        <!-- Emergency Contacts -->
+        <div class="section">
+            <h2>📞 Escalation & Emergency Contacts</h2>
+            <table class="spec-table">
+                <tr><td>Tier 1 — Field Dispatch</td><td>NOC Duty Officer: <b style="color:#00e5ff">+1 (720) 555-0180</b> (24/7)</td></tr>
+                <tr><td>Tier 2 — Engineering</td><td>Edge Compute Team: <b style="color:#ffd740">edge-eng@slingshot.space</b></td></tr>
+                <tr><td>Tier 3 — Critical Ops</td><td>VP Ground Segment: <b style="color:#ff8a80">escalation@slingshot.space</b></td></tr>
+                <tr><td>Site-Specific Emergency</td><td>Local emergency number posted on site control panel</td></tr>
+            </table>
+            <div class="warning-box">
+                <strong>⚠ ESCALATION RULE:</strong> If any site goes offline for > 4 hours with no remote recovery path, escalate directly to Tier 2. If > 12 hours → Tier 3 auto-triggers. All unscheduled outages must be logged in Beacon within 30 minutes.
+            </div>
+        </div>
+
+        <!-- Page Navigation -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:24px">
+            <a href="sentinel_slingshot_catalog.html" style="color:#00e5ff;font-size:11px;text-decoration:none;padding:6px 16px;border:1px solid rgba(0,229,255,0.2);border-radius:6px;transition:all .2s;background:rgba(0,229,255,0.04)" onmouseover="this.style.background='rgba(0,229,255,0.12)';this.style.borderColor='rgba(0,229,255,0.4)'" onmouseout="this.style.background='rgba(0,229,255,0.04)';this.style.borderColor='rgba(0,229,255,0.2)'">💻 Programmer's Specs & Ground Station Catalog</a>
+            <a href="sentinel_ops.html" style="color:#b388ff;font-size:11px;text-decoration:none;padding:6px 16px;border:1px solid rgba(179,136,255,0.2);border-radius:6px;transition:all .2s;background:rgba(179,136,255,0.04)" onmouseover="this.style.background='rgba(179,136,255,0.12)';this.style.borderColor='rgba(179,136,255,0.4)'" onmouseout="this.style.background='rgba(179,136,255,0.04)';this.style.borderColor='rgba(179,136,255,0.2)'">← Ops Center</a>
+        </div>
+    </div>
+
+    <div class="footer">SentinelForge Onsite Technician Guide — Slingshot Global Sensor Network. Field procedures modeled from public Slingshot Aerospace / Numerica documentation.</div>
+</body>
+</html>
