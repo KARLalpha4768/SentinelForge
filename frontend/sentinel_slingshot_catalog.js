@@ -1,4 +1,4 @@
-// SentinelForge — Slingshot Technology Catalog Logic
+// SentinelForge - Slingshot Technology Catalog Logic
 
 const STATIONS = [
     { id: "SLING-NUM-CO1", name: "Fort Collins, CO", lat: 40.59, lon: -105.08, status: "active", region: "Americas", gpu: 67, queue: 0, seeing: 0.6, type: "Numerica 0.5m", ops: "Primary testbed and calibration site. Headquarters location." },
@@ -23,7 +23,6 @@ const STATIONS = [
     { id: "SLING-NUM-PH", name: "Clark, Philippines", lat: 15.19, lon: 120.59, status: "degraded", region: "Asia", gpu: 34, queue: 3, seeing: 1.3, type: "Numerica 0.5m", ops: "Equatorial Pacific coverage." }
 ];
 
-// Rich detailed technology and operations data for the Slingshot network
 const NETWORK_TECH_SPECS = {
     optics: "Multiple 14-inch (0.35m) to 20-inch (0.5m) commercial-off-the-shelf (COTS) optical tubes (e.g., Celestron RASA or PlaneWave CDK) operating in tandem arrays. This achieves wide-field survey capabilities at a fraction of the cost of monolithic DoD sensors.",
     mounts: "High-slew-rate direct-drive equatorial mounts capable of keeping up with fast LEO objects (>5 degrees/second) without gear backlash, enabling precision tracking across all orbital regimes.",
@@ -42,7 +41,6 @@ const OPS_PROCEDURES = [
     { step: "Day/Night Transition", desc: "The system dynamically swaps filter wheels and adjusts exposure times to seamlessly transition between nighttime broadband and daytime narrow-band observation modes." }
 ];
 
-// DOM Elements
 const grid = document.getElementById('stationGrid');
 const searchInput = document.getElementById('searchInput');
 const detailOverlay = document.getElementById('detailOverlay');
@@ -50,12 +48,10 @@ const detailPanel = document.getElementById('detailPanel');
 const detailContent = document.getElementById('detailContent');
 const heroStats = document.getElementById('heroStats');
 
-// State
 let activeRegion = 'ALL';
 let activeStatus = 'ALL';
 let searchQuery = '';
 
-// Init
 function init() {
     updateHeroStats();
     renderGrid();
@@ -74,13 +70,13 @@ function updateHeroStats() {
     const totalGPU = Math.round(STATIONS.reduce((acc, s) => acc + s.gpu, 0) / STATIONS.length);
     const avgSeeing = (STATIONS.reduce((acc, s) => acc + s.seeing, 0) / STATIONS.length).toFixed(1);
 
-    heroStats.innerHTML = \`
-        <div class="hero-stat"><div class="num">\${STATIONS.length}</div><div class="lbl">Global Sites</div></div>
-        <div class="hero-stat"><div class="num">\${activeCount}</div><div class="lbl">Active Tracking</div></div>
-        <div class="hero-stat"><div class="num">\${totalGPU}%</div><div class="lbl">Avg Edge GPU Load</div></div>
-        <div class="hero-stat"><div class="num">\${avgSeeing}"</div><div class="lbl">Avg Seeing</div></div>
+    heroStats.innerHTML = `
+        <div class="hero-stat"><div class="num">${STATIONS.length}</div><div class="lbl">Global Sites</div></div>
+        <div class="hero-stat"><div class="num">${activeCount}</div><div class="lbl">Active Tracking</div></div>
+        <div class="hero-stat"><div class="num">${totalGPU}%</div><div class="lbl">Avg Edge GPU Load</div></div>
+        <div class="hero-stat"><div class="num">${avgSeeing}&quot;</div><div class="lbl">Avg Seeing</div></div>
         <div class="hero-stat"><div class="num">24/7</div><div class="lbl">Operations</div></div>
-    \`;
+    `;
 }
 
 function renderGrid() {
@@ -105,20 +101,20 @@ function renderGrid() {
         const regionCls = 'region-' + s.region.toLowerCase();
         
         const card = document.createElement('div');
-        card.className = \`station-card \${s.status}\`;
-        card.innerHTML = \`
+        card.className = `station-card ${s.status}`;
+        card.innerHTML = `
             <div class="card-header">
-                <div class="card-status \${statusCls}"></div>
-                <div class="card-id">\${s.id}</div>
-                <div class="card-name">\${s.name}</div>
-                <div class="card-region \${regionCls}">\${s.region}</div>
+                <div class="card-status ${statusCls}"></div>
+                <div class="card-id">${s.id}</div>
+                <div class="card-name">${s.name}</div>
+                <div class="card-region ${regionCls}">${s.region}</div>
             </div>
             <div class="card-body">
                 <div class="card-metrics">
-                    <div class="metric"><div class="val">\${s.lat.toFixed(1)}°</div><div class="key">LAT</div></div>
-                    <div class="metric"><div class="val">\${s.lon.toFixed(1)}°</div><div class="key">LON</div></div>
-                    <div class="metric"><div class="val">\${s.gpu}%</div><div class="key">EDGE GPU</div></div>
-                    <div class="metric"><div class="val">\${s.seeing}"</div><div class="key">SEEING</div></div>
+                    <div class="metric"><div class="val">${s.lat.toFixed(1)}&deg;</div><div class="key">LAT</div></div>
+                    <div class="metric"><div class="val">${s.lon.toFixed(1)}&deg;</div><div class="key">LON</div></div>
+                    <div class="metric"><div class="val">${s.gpu}%</div><div class="key">EDGE GPU</div></div>
+                    <div class="metric"><div class="val">${s.seeing}&quot;</div><div class="key">SEEING</div></div>
                 </div>
                 <div class="card-tech">
                     <span class="tech-tag tech-optical">MULTI-APERTURE</span>
@@ -126,9 +122,9 @@ function renderGrid() {
                     <span class="tech-tag tech-dome">AUTONOMOUS</span>
                     <span class="tech-tag tech-day">DAYLIGHT TRACKING</span>
                 </div>
-                <div class="card-ops"><strong>Role:</strong> \${s.ops}</div>
+                <div class="card-ops"><strong>Role:</strong> ${s.ops}</div>
             </div>
-        \`;
+        `;
         
         card.addEventListener('click', () => openDetail(s));
         grid.appendChild(card);
@@ -138,30 +134,35 @@ function renderGrid() {
 function openDetail(s) {
     const statusCls = s.status === 'active' ? '#00e676' : s.status === 'degraded' ? '#ffab00' : '#ff1744';
     
-    detailContent.innerHTML = \`
-        <h2>\${s.name} Ground Station</h2>
-        <div class="detail-id">\${s.id} · <span style="color:\${statusCls};text-transform:uppercase">\${s.status}</span></div>
+    let checklistHtml = '';
+    OPS_PROCEDURES.forEach(op => {
+        checklistHtml += `<li><strong>${op.step}:</strong> ${op.desc}</li>`;
+    });
+
+    detailContent.innerHTML = `
+        <h2>${s.name} Ground Station</h2>
+        <div class="detail-id">${s.id} &middot; <span style="color:${statusCls};text-transform:uppercase">${s.status}</span></div>
         
-        <div class="map-container" style="height:180px; margin-bottom:20px; background:url('img/sat_earth_obs.png') center/cover; position:relative; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+        <div class="map-container" style="height:180px; margin-bottom:20px; background:linear-gradient(rgba(10,12,20,0.8), rgba(10,12,20,0.9)), url('img/sat_earth_obs.png') center/cover; position:relative; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
             <div style="position:absolute; bottom:10px; left:10px; background:rgba(0,0,0,0.8); padding:4px 8px; border-radius:4px; font-size:10px; font-family:'JetBrains Mono',monospace; color:#00e5ff;">
-                COORD: \${s.lat.toFixed(4)}°, \${s.lon.toFixed(4)}°
+                COORD: ${s.lat.toFixed(4)}&deg;, ${s.lon.toFixed(4)}&deg;
             </div>
         </div>
 
         <div class="detail-section">
-            <h3><span class="icon">💻</span> Site Metrics & Connectivity</h3>
+            <h3><span class="icon">[SYS]</span> Site Metrics & Connectivity</h3>
             <div class="tech-spec-grid">
                 <div class="tech-spec-item">
                     <div class="ts-label">Edge GPU Load</div>
-                    <div class="ts-value" style="color:#00e5ff">\${s.gpu}%</div>
+                    <div class="ts-value" style="color:#00e5ff">${s.gpu}%</div>
                 </div>
                 <div class="tech-spec-item">
                     <div class="ts-label">Current Seeing</div>
-                    <div class="ts-value">\${s.seeing} arcsec</div>
+                    <div class="ts-value">${s.seeing} arcsec</div>
                 </div>
                 <div class="tech-spec-item">
                     <div class="ts-label">Task Queue</div>
-                    <div class="ts-value">\${s.queue} pending</div>
+                    <div class="ts-value">${s.queue} pending</div>
                 </div>
                 <div class="tech-spec-item">
                     <div class="ts-label">Network Uplink</div>
@@ -171,30 +172,30 @@ function openDetail(s) {
         </div>
 
         <div class="detail-section">
-            <h3><span class="icon">🔭</span> Hardware & Technology Profile</h3>
+            <h3><span class="icon">[HW]</span> Hardware & Technology Profile</h3>
             <table class="detail-table">
                 <tbody>
-                    <tr><td>Sensor Array</td><td>\${NETWORK_TECH_SPECS.optics}</td></tr>
-                    <tr><td>Tracking Mounts</td><td>\${NETWORK_TECH_SPECS.mounts}</td></tr>
-                    <tr><td>Detectors</td><td>\${NETWORK_TECH_SPECS.detectors}</td></tr>
-                    <tr><td>Daylight Tracking</td><td>\${NETWORK_TECH_SPECS.daylight}</td></tr>
-                    <tr><td>Enclosure</td><td>\${NETWORK_TECH_SPECS.enclosures}</td></tr>
-                    <tr><td>Edge Compute</td><td>\${NETWORK_TECH_SPECS.edgeCompute}</td></tr>
+                    <tr><td>Sensor Array</td><td>${NETWORK_TECH_SPECS.optics}</td></tr>
+                    <tr><td>Tracking Mounts</td><td>${NETWORK_TECH_SPECS.mounts}</td></tr>
+                    <tr><td>Detectors</td><td>${NETWORK_TECH_SPECS.detectors}</td></tr>
+                    <tr><td>Daylight Tracking</td><td>${NETWORK_TECH_SPECS.daylight}</td></tr>
+                    <tr><td>Enclosure</td><td>${NETWORK_TECH_SPECS.enclosures}</td></tr>
+                    <tr><td>Edge Compute</td><td>${NETWORK_TECH_SPECS.edgeCompute}</td></tr>
                 </tbody>
             </table>
         </div>
 
         <div class="detail-section">
-            <h3><span class="icon">⚙️</span> Standard Operating Procedures</h3>
+            <h3><span class="icon">[OPS]</span> Standard Operating Procedures</h3>
             <ul class="ops-checklist">
-                \${OPS_PROCEDURES.map(op => \`<li><strong>\${op.step}:</strong> \${op.desc}</li>\`).join('')}
+                ${checklistHtml}
             </ul>
         </div>
         
         <div style="margin-top:24px; padding:12px; background:rgba(124,77,255,0.05); border:1px solid rgba(124,77,255,0.15); border-radius:6px; font-size:10px; color:#b0bec5; line-height:1.6;">
-            <strong style="color:#7c4dff">MISSION IMPACT:</strong> \${s.name} is a critical node in the Slingshot Global Sensor Network. Its edge-computed observations feed directly into the SentinelForge orbit determination pipeline, enabling high-fidelity covariance realism and actionable conjunction assessments for DoD and commercial clients.
+            <strong style="color:#7c4dff">MISSION IMPACT:</strong> ${s.name} is a critical node in the Slingshot Global Sensor Network. Its edge-computed observations feed directly into the SentinelForge orbit determination pipeline, enabling high-fidelity covariance realism and actionable conjunction assessments for DoD and commercial clients.
         </div>
-    \`;
+    `;
     
     detailOverlay.classList.add('open');
     detailPanel.classList.add('open');
@@ -230,5 +231,4 @@ function setupFilters() {
     });
 }
 
-// Boot
 window.addEventListener('DOMContentLoaded', init);
