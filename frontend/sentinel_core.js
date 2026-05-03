@@ -2028,6 +2028,126 @@ document.querySelectorAll('.inv-tab').forEach(tab => {
 
 // Globe layer toggles — wired in sentinel_globe_chat.js
 
+// ── Slingshot Station Detail Modal ──────────────────
+function openSlingshotDetail(stationId) {
+    // Find station from the inline SLING_STATIONS data
+    const SLING_DB = {
+        "SLING-NUM-CO1": { name:"Fort Collins, CO", lat:40.59, lon:-105.08, status:"active", region:"Americas", gpu:67, queue:0, seeing:0.6, alt:1525, tz:"UTC-7", ops:"Primary R&D testbed and calibration facility. HQ co-located with Numerica engineering. First site to receive firmware/software updates. Hosts cross-calibration campaigns with USSF sensors.", climate:"Semi-arid continental, 300+ clear nights/year", power:"Municipal grid + 8h LiFePO4 UPS", connectivity:"Fiber 1Gbps primary, Starlink 100Mbps backup", specialCap:"Daylight tracking validation rig, multi-telescope array prototype" },
+        "SLING-NUM-CO2": { name:"Colorado Springs, CO", lat:38.83, lon:-104.82, status:"active", region:"Americas", gpu:44, queue:0, seeing:2.2, alt:1839, tz:"UTC-7", ops:"Strategic proximity to USSF Space Operations Command (Peterson SFB) and NORAD (Cheyenne Mountain). Supports proximity operations demos and DoD SSA data sharing exercises.", climate:"Semi-arid, moderate light pollution from military installations", power:"Municipal grid + generator backup", connectivity:"Fiber 500Mbps + secure VPN to CSpOC", specialCap:"DoD integration testbed, classified data handling (CUI)" },
+        "SLING-NUM-NM": { name:"Socorro, NM", lat:34.07, lon:-106.91, status:"degraded", region:"Americas", gpu:45, queue:10, seeing:1.5, alt:1402, tz:"UTC-7", ops:"High-altitude desert site near NRAO VLA. Excellent median seeing. Currently degraded due to edge GPU thermal throttling in summer heat.", climate:"Desert, 280+ clear nights/year, extreme summer temps", power:"Rural grid + solar + 12h battery", connectivity:"Starlink 100Mbps primary", specialCap:"Co-located with radio astronomy infrastructure" },
+        "SLING-NUM-AZ": { name:"Tucson, AZ", lat:32.23, lon:-110.95, status:"active", region:"Americas", gpu:76, queue:9, seeing:1.4, alt:875, tz:"UTC-7", ops:"Near University of Arizona Steward Observatory and Kitt Peak. Leverages academic astronomy expertise for advanced calibration and algorithm development.", climate:"Sonoran desert, 300+ clear nights", power:"Municipal grid + UPS", connectivity:"University fiber 10Gbps + Starlink failover", specialCap:"Academic collaboration pipeline, advanced photometry research" },
+        "SLING-NUM-TX": { name:"Fort Davis, TX", lat:30.67, lon:-103.95, status:"active", region:"Americas", gpu:81, queue:3, seeing:0.7, alt:1545, tz:"UTC-6", ops:"Remote dark-sky preserve near McDonald Observatory. Exceptional seeing (sub-arcsecond median). Primary deep-space GEO/HEO tracking site for Western Hemisphere.", climate:"Trans-Pecos highland desert, Bortle 1 dark sky", power:"Solar + generator + 24h battery", connectivity:"Starlink 100Mbps (sole uplink)", specialCap:"Deep-space GEO surveillance, sub-arcsecond imaging" },
+        "SLING-NUM-HI": { name:"Haleakala, HI", lat:20.71, lon:-156.26, status:"active", region:"Oceania", gpu:52, queue:6, seeing:1.4, alt:3055, tz:"UTC-10", ops:"Summit of Haleakala, Maui. Critical Pacific mid-point coverage bridging Americas and Asia-Pacific. Co-located near AMOS/MSSS facilities.", climate:"Above inversion layer, 320+ clear nights", power:"Summit grid + UPS", connectivity:"Fiber to Kahului + Starlink backup", specialCap:"High-altitude above weather, Pacific gap-filler" },
+        "SLING-NUM-AU1": { name:"Siding Spring, AU", lat:-31.27, lon:149.07, status:"active", region:"Oceania", gpu:73, queue:10, seeing:0.7, alt:1165, tz:"UTC+10", ops:"Premier Southern Hemisphere dark-sky observatory. Shares infrastructure with AAO and ANU. Key for southern declination coverage.", climate:"Semi-arid, excellent transparency, 260+ clear nights", power:"Observatory grid + generator", connectivity:"AARNet fiber 1Gbps", specialCap:"Southern hemisphere deep-space, SST collaboration" },
+        "SLING-NUM-AU2": { name:"Learmonth, AU", lat:-22.24, lon:114.09, status:"active", region:"Oceania", gpu:51, queue:3, seeing:0.9, alt:7, tz:"UTC+8", ops:"Western Australia near Harold E. Holt Naval Communications Station. Early warning coverage for objects approaching from the Indian Ocean sector.", climate:"Arid tropical, minimal cloud cover", power:"Naval base grid + solar", connectivity:"Military fiber + Starlink", specialCap:"Indian Ocean early warning, naval base infrastructure" },
+        "SLING-NUM-CL": { name:"Cerro Tololo, Chile", lat:-30.17, lon:-70.81, status:"active", region:"Americas", gpu:38, queue:2, seeing:1.1, alt:2200, tz:"UTC-4", ops:"World-class seeing in the Atacama Desert. Near CTIO/Gemini South. Supports photometric calibration campaigns and GEO belt survey.", climate:"Atacama desert, 330+ clear nights, sub-arcsecond seeing", power:"CTIO grid + UPS", connectivity:"REUNA fiber 10Gbps", specialCap:"World-class photometric calibration, Atacama conditions" },
+        "SLING-NUM-NA": { name:"Gamsberg, Namibia", lat:-23.34, lon:16.23, status:"active", region:"Africa", gpu:34, queue:12, seeing:2.2, alt:2347, tz:"UTC+2", ops:"Strategic African continent coverage filling the Europe-Asia gap. International Dark-Sky Reserve. Remote autonomous operations.", climate:"Semi-arid highland, 300+ clear nights", power:"Solar + diesel generator + 16h battery", connectivity:"VSAT Ku-band 20Mbps + Starlink", specialCap:"Africa-only longitude coverage, fully autonomous" },
+        "SLING-NUM-SA": { name:"Sutherland, RSA", lat:-32.38, lon:20.81, status:"active", region:"Africa", gpu:33, queue:8, seeing:2.2, alt:1798, tz:"UTC+2", ops:"South African Astronomical Observatory campus. Southern Africa hub complementing Gamsberg. SALT telescope co-location.", climate:"Semi-arid Karoo, 250+ clear nights", power:"SAAO grid + generator", connectivity:"SANReN fiber 1Gbps", specialCap:"SAAO infrastructure sharing, SALT proximity" },
+        "SLING-NUM-SP": { name:"Tenerife, Spain", lat:28.3, lon:-16.51, status:"active", region:"Europe", gpu:78, queue:2, seeing:1.3, alt:2390, tz:"UTC+0", ops:"Canary Islands, Teide Observatory campus. Clear Atlantic views. European flagship site for Slingshot commercial SSA.", climate:"Subtropical above inversion, 300+ clear nights", power:"IAC grid + UPS", connectivity:"RedIRIS fiber 10Gbps", specialCap:"European flagship, ESA SST coordination" },
+        "SLING-NUM-IT": { name:"Asiago, Italy", lat:45.87, lon:11.53, status:"active", region:"Europe", gpu:85, queue:0, seeing:0.8, alt:1045, tz:"UTC+1", ops:"Asiago Astrophysical Observatory. European mainland tracking coverage. Complements Tenerife for higher-latitude passes.", climate:"Alpine, 200+ clear nights, winter seeing excellent", power:"Municipal grid + UPS", connectivity:"GARR fiber 1Gbps", specialCap:"High-latitude European coverage, alpine seeing" },
+        "SLING-NUM-JP": { name:"Okayama, Japan", lat:34.57, lon:133.59, status:"offline", region:"Asia", gpu:54, queue:12, seeing:2.1, alt:372, tz:"UTC+9", ops:"East Asia coverage near NAOJ Okayama. Currently offline for scheduled dome motor replacement and mount controller firmware upgrade.", climate:"Temperate maritime, monsoon season impacts", power:"Municipal grid + UPS", connectivity:"SINET fiber 10Gbps", specialCap:"East Asia longitudinal coverage (when operational)" },
+        "SLING-NUM-IN": { name:"Mt Abu, India", lat:24.65, lon:72.78, status:"active", region:"Asia", gpu:74, queue:12, seeing:1.6, alt:1680, tz:"UTC+5:30", ops:"Indian subcontinent gap-filler. Physical Research Laboratory campus. Critical for Indian Ocean / South Asian coverage.", climate:"Semi-arid, 220+ clear nights (monsoon gap Jun-Sep)", power:"PRL grid + diesel generator", connectivity:"NKN fiber 1Gbps", specialCap:"South Asian coverage, PRL research collaboration" },
+        "SLING-NUM-AR": { name:"El Leoncito, Argentina", lat:-31.8, lon:-69.3, status:"active", region:"Americas", gpu:39, queue:4, seeing:0.9, alt:2552, tz:"UTC-3", ops:"CASLEO observatory campus in San Juan Province. Secondary South American site complementing Chile. High altitude with excellent transparency.", climate:"Andean desert, 300+ clear nights", power:"CASLEO grid + solar", connectivity:"ARIU fiber 1Gbps", specialCap:"Andean high-altitude backup to Chile" },
+        "SLING-NUM-KR": { name:"Bohyunsan, S. Korea", lat:36.16, lon:128.98, status:"degraded", region:"Asia", gpu:77, queue:0, seeing:2.0, alt:1124, tz:"UTC+9", ops:"Korean peninsula tracking at KASI Bohyunsan Observatory. Currently degraded due to humidity sensor calibration drift affecting dome open/close logic.", climate:"Temperate continental, monsoon impacts", power:"KASI grid + UPS", connectivity:"KREONET fiber 10Gbps", specialCap:"Korean peninsula / Sea of Japan coverage" },
+        "SLING-NUM-TW": { name:"Lulin, Taiwan", lat:23.47, lon:120.87, status:"degraded", region:"Asia", gpu:67, queue:8, seeing:2.3, alt:2862, tz:"UTC+8", ops:"High-altitude Asian site at Lulin Observatory. Degraded due to monsoon-season cloud cover exceeding 60% — automated scheduler reducing tasking.", climate:"Subtropical mountain, seasonal monsoon", power:"Observatory grid + battery", connectivity:"TANet fiber 1Gbps", specialCap:"High-altitude Western Pacific coverage" },
+        "SLING-NUM-MX": { name:"San Pedro Martir, Mexico", lat:31.03, lon:-115.46, status:"active", region:"Americas", gpu:33, queue:1, seeing:2.2, alt:2800, tz:"UTC-7", ops:"Baja California dark sky preserve. OAN-SPM observatory campus. Excellent photometric conditions for satellite characterization.", climate:"High desert, 280+ clear nights, Bortle 2", power:"Solar + diesel + 12h battery", connectivity:"Starlink 100Mbps (sole uplink)", specialCap:"Baja dark sky photometry, off-grid autonomous" },
+        "SLING-NUM-PH": { name:"Clark, Philippines", lat:15.19, lon:120.59, status:"degraded", region:"Asia", gpu:34, queue:3, seeing:1.3, alt:160, tz:"UTC+8", ops:"Equatorial Pacific coverage at Clark Freeport Zone. Critical for near-equatorial and GEO belt observations. Degraded due to seasonal typhoon proximity.", climate:"Tropical, wet/dry seasons, typhoon belt", power:"Clark grid + diesel generator", connectivity:"PLDT fiber 500Mbps", specialCap:"Near-equatorial GEO belt surveillance" }
+    };
+    const s = SLING_DB[stationId];
+    if(!s) return;
+
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    const modal = document.getElementById('siteModal');
+
+    const sc = s.status==='active'?'#00e676':s.status==='degraded'?'#ffab00':'#ff1744';
+    const si = s.status==='active'?'🟢':s.status==='degraded'?'🟡':'🔴';
+    const rc = s.region==='Americas'?'#76ff03':s.region==='Europe'?'#448aff':s.region==='Africa'?'#ffab00':s.region==='Asia'?'#ff9100':'#00e5ff';
+
+    title.textContent = `${stationId} — ${s.name}`;
+    body.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="font-size:16px">${si}</span>
+            <span style="font-size:16px;font-weight:800;color:#e8eaf6">${s.name}</span>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;color:${rc};background:${rc}18">${s.region}</span>
+            <span style="flex:1"></span>
+            <span style="font-size:11px;color:${sc};font-weight:700;text-transform:uppercase">${s.status}</span>
+        </div>
+
+        <h3>📍 Site Profile</h3>
+        <table><tbody>
+            <tr><td style="color:#78909c;width:140px">Coordinates</td><td>${s.lat}°, ${s.lon}°</td></tr>
+            <tr><td style="color:#78909c">Altitude</td><td>${s.alt}m ASL</td></tr>
+            <tr><td style="color:#78909c">Time Zone</td><td>${s.tz}</td></tr>
+            <tr><td style="color:#78909c">Climate</td><td>${s.climate}</td></tr>
+            <tr><td style="color:#78909c">Median Seeing</td><td>${s.seeing}" (${s.seeing<=1.0?'Excellent':s.seeing<=1.5?'Good':s.seeing<=2.0?'Fair':'Poor'})</td></tr>
+        </tbody></table>
+
+        <h3>🔭 Hardware Configuration</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div style="background:rgba(179,136,255,0.06);border:1px solid rgba(179,136,255,0.12);border-radius:6px;padding:8px">
+                <div style="font-size:8px;color:#b388ff;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Primary Optics</div>
+                <div style="font-size:12px;font-weight:700;color:#e8eaf6">0.5m f/4 Newtonian</div>
+                <div style="font-size:9px;color:#78909c">Numerica COTS astrograph array</div>
+            </div>
+            <div style="background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.12);border-radius:6px;padding:8px">
+                <div style="font-size:8px;color:#00e5ff;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Detector</div>
+                <div style="font-size:12px;font-weight:700;color:#e8eaf6">sCMOS Back-Illuminated</div>
+                <div style="font-size:9px;color:#78909c">High frame-rate, low read noise</div>
+            </div>
+            <div style="background:rgba(118,255,3,0.06);border:1px solid rgba(118,255,3,0.12);border-radius:6px;padding:8px">
+                <div style="font-size:8px;color:#76ff03;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Edge Compute</div>
+                <div style="font-size:12px;font-weight:700;color:#e8eaf6">Jetson AGX Orin 64GB</div>
+                <div style="font-size:9px;color:#78909c">GPU Load: <b style="color:${s.gpu>70?'#ff9100':s.gpu>50?'#ffd740':'#00e676'}">${s.gpu}%</b> | Queue: ${s.queue}</div>
+            </div>
+            <div style="background:rgba(255,215,64,0.06);border:1px solid rgba(255,215,64,0.12);border-radius:6px;padding:8px">
+                <div style="font-size:8px;color:#ffd740;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Enclosure</div>
+                <div style="font-size:12px;font-weight:700;color:#e8eaf6">Baader AllSky Dome</div>
+                <div style="font-size:9px;color:#78909c">Autonomous open/close, weather-gated</div>
+            </div>
+        </div>
+        <table><tbody>
+            <tr><td style="color:#78909c;width:140px">Mount</td><td>Direct-drive equatorial, >5°/sec slew</td></tr>
+            <tr><td style="color:#78909c">Daylight Filters</td><td>Narrow-band SWIR/NIR for sunlit tracking</td></tr>
+            <tr><td style="color:#78909c">GPS Timing</td><td>u-blox ZED-F9T (ns-grade UTC sync)</td></tr>
+            <tr><td style="color:#78909c">Weather Station</td><td>Davis Vantage Pro2 (seeing/humidity)</td></tr>
+            <tr><td style="color:#78909c">Power</td><td>${s.power}</td></tr>
+            <tr><td style="color:#78909c">Connectivity</td><td>${s.connectivity}</td></tr>
+            <tr><td style="color:#78909c">Special Capability</td><td style="color:#ffd740">${s.specialCap}</td></tr>
+        </tbody></table>
+
+        <h3>⚙️ Edge Software Stack</h3>
+        <table><tbody>
+            <tr><td style="color:#78909c;width:140px">streak_detect.cu</td><td>PINN-accelerated streak detection (v3.2) — J2-J6 matched filter bank</td></tr>
+            <tr><td style="color:#78909c">bayesian_iod.py</td><td>Initial orbit determination from 3+ observations (v2.1)</td></tr>
+            <tr><td style="color:#78909c">catalog_lifecycle.py</td><td>UCT → TENTATIVE → CATALOGED state machine (v1.4)</td></tr>
+            <tr><td style="color:#78909c">kafka_transport.py</td><td>Edge→Cloud Kafka producer/consumer (v1.0)</td></tr>
+            <tr><td style="color:#78909c">site_monitor.py</td><td>Health telemetry, weather gating, queue management (v1.2)</td></tr>
+        </tbody></table>
+
+        <h3>📋 Operations Procedure</h3>
+        <div style="font-size:11px;color:#b0bec5;line-height:1.7;margin-bottom:8px">${s.ops}</div>
+        <div style="background:rgba(124,77,255,0.06);border:1px solid rgba(124,77,255,0.1);border-radius:6px;padding:10px;font-size:10px;color:#b0bec5;line-height:1.8">
+            <b style="color:#7c4dff">AUTONOMOUS CYCLE:</b><br>
+            <b style="color:#e8eaf6">1.</b> Beacon scheduler pushes prioritized target list<br>
+            <b style="color:#e8eaf6">2.</b> Weather sensors auto-gate dome open/close<br>
+            <b style="color:#e8eaf6">3.</b> Mount slews & tracks (rate-track LEO, sidereal GEO)<br>
+            <b style="color:#e8eaf6">4.</b> Edge CUDA pipeline: streak detect + photometry extraction<br>
+            <b style="color:#e8eaf6">5.</b> TDMs exfiltrated over secure WAN to Slingshot Cloud (Azure)<br>
+            <b style="color:#e8eaf6">6.</b> Day/night filter swap for continuous daylight tracking
+        </div>
+
+        <h3>🎯 Mission Impact</h3>
+        <div style="font-size:11px;color:#b0bec5;line-height:1.7">
+            <b style="color:#ffd740">${s.name}</b> is a critical node in the Slingshot Global Sensor Network. Its edge-computed observations feed directly into the SentinelForge orbit determination pipeline, enabling high-fidelity covariance realism and actionable conjunction assessments for DoD and commercial clients.
+        </div>
+
+        <div style="margin-top:14px;padding:8px;background:rgba(100,160,255,0.06);border:1px solid rgba(100,160,255,0.12);border-radius:8px;font-size:10px;color:#78909c">
+            <a href="#" onclick="renderInventory('slingshot');document.getElementById('siteModal').style.display='none';return false" style="color:#ffd740">← Back to Slingshot Catalog</a>
+        </div>`;
+    modal.style.display = 'flex';
+}
+
 // ── Push Alerts ─────────────────────────────────────
 function pushAlert(level, msg, meta) {
     const stack = document.getElementById('alertStack');
