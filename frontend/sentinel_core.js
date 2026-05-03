@@ -360,6 +360,15 @@ function renderGauges() {
  * and shows radar vs optical sensor distribution.
  * @returns {void}
  */
+let _slingshotOpen = false;
+function _toggleSlingshot(e) {
+    if(e) e.stopPropagation();
+    _slingshotOpen = !_slingshotOpen;
+    var d = document.getElementById('slingshotDrop');
+    var c = document.getElementById('slingshotChev');
+    if(d) d.style.display = _slingshotOpen ? 'block' : 'none';
+    if(c) c.textContent = _slingshotOpen ? '▼' : '▶';
+}
 function renderSites() {
     const el = document.getElementById('groundSites');
     // Group by network
@@ -414,16 +423,16 @@ function renderSites() {
     const slDeg = SLING.filter(s=>s.st==='degraded').length;
     const slOff = SLING.filter(s=>s.st==='offline').length;
 
-    html += `<div class="card-header" style="margin-top:1px;background:rgba(255,215,64,0.04);color:#ffd740;border-top:1px solid rgba(255,215,64,0.15);cursor:pointer" onclick="var d=document.getElementById('slingshotDrop');var c=document.getElementById('slingshotChev');if(d.style.display==='none'){d.style.display='block';c.textContent='▼'}else{d.style.display='none';c.textContent='▶'}">
-        <span id="slingshotChev" style="font-size:8px;margin-right:4px">▶</span>Slingshot Sites <span style="font-size:7px;color:#78909c;margin-left:4px">🟢${slAct} 🟡${slDeg} 🔴${slOff}</span>
+    html += `<div class="card-header" style="margin-top:1px;background:rgba(255,215,64,0.04);color:#ffd740;border-top:1px solid rgba(255,215,64,0.15);cursor:pointer" onclick="_toggleSlingshot(event)">
+        <span id="slingshotChev" style="font-size:8px;margin-right:4px">${_slingshotOpen ? '▼' : '▶'}</span>Slingshot Sites <span style="font-size:7px;color:#78909c;margin-left:4px">🟢${slAct} 🟡${slDeg} 🔴${slOff}</span>
     </div>`;
 
-    html += `<div id="slingshotDrop" style="display:none">`;
+    html += `<div id="slingshotDrop" style="display:${_slingshotOpen ? 'block' : 'none'}">`;
 
     html += SLING.map(s => {
         const icon = s.st==='active'?'🟢':s.st==='degraded'?'🟡':'🔴';
         const gpuCol = s.gpu>70?'#ff9100':s.gpu>50?'#ffd740':'#00e676';
-        return `<div class="site-card" style="border-left:2px solid ${s.st==='active'?'#ffd740':s.st==='degraded'?'#ffab00':'#ff1744'}44;cursor:pointer" title="${s.ops} | GPU: ${s.gpu}% | Seeing: ${s.see}&quot; | Queue: ${s.q}" onclick="openSlingshotDetail('SLING-NUM-${s.id}')">
+        return `<div class="sling-station-card site-card" style="border-left:2px solid ${s.st==='active'?'#ffd740':s.st==='degraded'?'#ffab00':'#ff1744'}44;cursor:pointer" title="${s.ops} | GPU: ${s.gpu}% | Seeing: ${s.see}&quot; | Queue: ${s.q}" onclick="event.stopPropagation();openSlingshotDetail('SLING-NUM-${s.id}')">
             <div class="site-header">
                 <span style="font-size:8px">${icon}</span>
                 <span class="site-name" style="font-size:11px;color:#e8eaf6">${s.name}</span>
