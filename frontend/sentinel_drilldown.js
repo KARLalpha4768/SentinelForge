@@ -392,7 +392,29 @@ const _patchInterval = setInterval(() => {
             el.appendChild(hint);
         }
 
-        // Make diagnostics subsystem rows clickable
+        // Make launch rows clickable
+        if (tab === 'launches') {
+            el.querySelectorAll('.inv-table tbody tr').forEach((row, idx) => {
+                row.style.cursor = 'pointer';
+                row.title = 'Click for vehicle image, payload details, and SSA impact';
+                row.addEventListener('click', () => openLaunchDrilldown(idx));
+                row.addEventListener('mouseover', () => { row.style.background = 'rgba(124,77,255,0.08)'; });
+                row.addEventListener('mouseout', () => { row.style.background = ''; });
+            });
+        }
+
+        // Make reentry rows clickable
+        if (tab === 'reentries') {
+            el.querySelectorAll('.inv-table tbody tr').forEach((row, idx) => {
+                row.style.cursor = 'pointer';
+                row.title = 'Click for reentry details, risk assessment, and ground footprint';
+                row.addEventListener('click', () => openReentryDrilldown(idx));
+                row.addEventListener('mouseover', () => { row.style.background = 'rgba(124,77,255,0.08)'; });
+                row.addEventListener('mouseout', () => { row.style.background = ''; });
+            });
+        }
+
+
         if (tab === 'diagnostics') {
             el.querySelectorAll('[style*="align-items:center;gap:8px;margin-bottom:6px"]').forEach(row => {
                 const label = row.querySelector('[style*="color:#e8eaf6"]')?.textContent?.trim();
@@ -679,9 +701,140 @@ window.openDebrisDrilldown = function(eventName) {
                 <div style="height:100%;width:${decayPct}%;background:linear-gradient(90deg,#00e676,#76ff03);border-radius:4px;transition:width 0.5s"></div>
                 <span style="position:absolute;right:6px;top:0;font-size:8px;color:#b0bec5;line-height:14px">${decayPct}% decayed</span>
             </div>
+            </div>
         </div>`;
     modal.style.display = 'flex';
 };
 
-console.log('[DRILLDOWN] Row + network + debris drill-down system loaded.');
+// ── Launch Vehicle Drill-Down ──
+const LAUNCH_DETAILS = {
+    'Falcon 9': {
+        img: 'img/lv_falcon9.png',
+        desc: 'SpaceX\'s workhorse medium-lift rocket — the most-flown orbital vehicle in history. Reusable first stage lands on drone ships, cutting launch costs to ~$2,700/kg. Merlin 1D engines burn RP-1/LOX. Each Starlink mission deploys 23 flat-packed satellites that autonomously raise orbit using krypton ion thrusters.',
+        specs: { height:'70 m', diameter:'3.7 m', mass:'549,054 kg', thrust:'7,607 kN (sea level)', stages:'2', propellant:'RP-1 / LOX', reusability:'First stage — RTLS or ASDS', successRate:'99.3% (300+ flights)' },
+    },
+    'Soyuz-2.1b': {
+        img: 'img/lv_soyuz.png',
+        desc: 'Russia\'s modernized Soyuz — descendant of Korolev\'s R-7 ICBM, the rocket that launched Sputnik. Digital flight computer replaced analog systems. The four-booster "Korolev Cross" separation is iconic. Fregat upper stage enables complex multi-burn insertion to MEO for GLONASS navigation constellation.',
+        specs: { height:'46.3 m', diameter:'2.95 m (core)', mass:'312,000 kg', thrust:'4,147 kN', stages:'3 + Fregat', propellant:'RP-1 / LOX', reusability:'Expendable', successRate:'97.8% (1,900+ R-7 family)' },
+    },
+    'CZ-5B': {
+        img: 'img/lv_cz5b.png',
+        desc: 'China\'s heavy-lift rocket for space station modules — the core stage reaches orbit and reenters uncontrolled. At 21 metric tons, it\'s the largest object to regularly make uncontrolled reentry. SSA must track the core stage post-launch for reentry prediction. Each flight generates a major reentry hazard event.',
+        specs: { height:'53.7 m', diameter:'5.0 m', mass:'849,000 kg', thrust:'10,565 kN', stages:'1.5 (core + 4 boosters)', propellant:'LH2/LOX (core) + RP-1/LOX (boosters)', reusability:'Expendable — core reaches orbit', successRate:'85.7% (7 flights)' },
+    },
+    'H3-24L': {
+        img: 'img/lv_h3.png',
+        desc: 'Japan\'s next-generation launch vehicle replacing the H-IIA. LE-9 engine uses expander bleed cycle — no gas generator, improving reliability. The 24L configuration uses 2 SRBs and long fairing. Carries Japan\'s classified IGS reconnaissance satellites for the Cabinet Satellite Intelligence Center.',
+        specs: { height:'63 m', diameter:'5.2 m (fairing)', mass:'574,000 kg', thrust:'8,686 kN (with SRBs)', stages:'2 + 2 SRBs', propellant:'LH2 / LOX', reusability:'Expendable', successRate:'66.7% (3 flights — early program)' },
+    },
+    'Ariane 6': {
+        img: 'img/lv_ariane6.png',
+        desc: 'Europe\'s newest launcher — replacing the Ariane 5 for independent European access to space. Vinci upper stage enables multi-burn GTO insertion and direct GEO placement. Launches from Kourou near the equator, maximizing GTO performance. Syracuse 4C is a French military communications satellite.',
+        specs: { height:'56 m (A62) / 63 m (A64)', diameter:'5.4 m', mass:'530,000 kg (A62)', thrust:'8,000 kN (with 2 SRBs)', stages:'2 + 2 or 4 P120C SRBs', propellant:'LH2/LOX (core) + solid (SRBs)', reusability:'Expendable', successRate:'100% (2 flights — new program)' },
+    },
+    'PSLV-C62': {
+        img: 'img/lv_pslv.png',
+        desc: 'India\'s reliable polar satellite launch vehicle — ISRO\'s proven workhorse with 50+ missions. Four-stage alternating solid/liquid design. The PS4 upper stage can serve as an orbital platform after payload deployment. PSLV launched India\'s Mars Orbiter Mission and Chandrayaan-1 lunar mission.',
+        specs: { height:'44 m', diameter:'2.8 m', mass:'320,000 kg', thrust:'4,860 kN (S139 first stage)', stages:'4 (solid-liquid-solid-liquid)', propellant:'HTPB solid + UDMH/N₂O₄ liquid', reusability:'Expendable', successRate:'94.6% (56 flights)' },
+    },
+};
+
+window.openLaunchDrilldown = function(idx) {
+    const l = STATE.launches[idx];
+    if (!l) return;
+    const detail = LAUNCH_DETAILS[l.vehicle];
+    if (!detail) return;
+    const modal = document.getElementById('siteModal');
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    const d = new Date(l.date);
+    const hrs = Math.max(0, Math.round((d - new Date()) / 3600000));
+    const statusCol = l.status === 'GO' ? '#00e676' : '#ffab00';
+    title.textContent = `${l.vehicle} — ${l.payload}`;
+    body.innerHTML = `
+        <img src="${detail.img}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:220px;object-fit:cover" alt="${l.vehicle}">
+        <div style="font-size:11px;line-height:1.7;color:#e8eaf6;padding:0 4px 12px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:12px">${detail.desc}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.15);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:14px;font-weight:700;color:${statusCol}">${l.status}</div>
+                <div style="font-size:8px;color:#78909c">Launch Status</div>
+            </div>
+            <div style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:14px;font-weight:700;color:#00e5ff">T-${hrs}h</div>
+                <div style="font-size:8px;color:#78909c">Countdown</div>
+            </div>
+            <div style="background:rgba(255,215,64,0.08);border:1px solid rgba(255,215,64,0.15);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:12px;font-weight:700;color:#ffd740">${l.orbit.split(' ')[0]}</div>
+                <div style="font-size:8px;color:#78909c">Target Orbit</div>
+            </div>
+        </div>
+        <h3>🚀 Mission Details</h3>
+        <table><tbody>
+            <tr><td style="color:#78909c;font-weight:600;width:130px">Vehicle</td><td style="font-weight:700;color:#e8eaf6">${l.vehicle}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Payload</td><td style="color:#00e5ff">${l.payload}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Launch Site</td><td>${l.site}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Operator</td><td>${l.owner}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Target Orbit</td><td>${l.orbit}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Window (UTC)</td><td style="font-family:JetBrains Mono,mono">${l.date}</td></tr>
+        </tbody></table>
+        <h3>📐 Vehicle Specifications</h3>
+        <table><tbody>
+            ${Object.entries(detail.specs).map(([k,v]) => `<tr><td style="color:#78909c;font-weight:600;width:130px;text-transform:capitalize">${k.replace(/([A-Z])/g, ' $1')}</td><td>${v}</td></tr>`).join('')}
+        </tbody></table>
+        <h3>🛰️ SSA Impact</h3>
+        <div style="font-size:10px;line-height:1.6;color:#b0bec5;padding:8px;background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.08);border-radius:6px">
+            <b style="color:#00e5ff">New catalog objects:</b> This launch will inject ${l.payload.includes('23 sats') ? '23 satellites + 1 upper stage' : l.payload.includes('rideshare') ? '~40 payloads + deployment hardware' : l.payload.includes('Lab Module') ? '1 module + CZ-5B core stage (uncontrolled reentry object)' : '1 payload + upper stage'} into ${l.orbit}. SentinelForge will auto-detect and catalog new objects within 24 hours via Space Fence and ground network correlation.
+        </div>`;
+    modal.style.display = 'flex';
+};
+
+// ── Reentry Drill-Down ──
+window.openReentryDrilldown = function(idx) {
+    const r = STATE.reentries[idx];
+    if (!r) return;
+    const modal = document.getElementById('siteModal');
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    const riskCol = r.risk === 'HIGH' ? '#ff1744' : r.risk === 'MEDIUM' ? '#ffab00' : '#00e676';
+    const imgMap = { 'Rocket Body': 'img/sat_rocket_body.png', 'Debris': 'img/debris_asat.png', 'Payload': 'img/sat_iridium.png' };
+    const descMap = {
+        'CZ-5B R/B (2026-028B)': 'Spent core stage of a Chinese Long March 5B — 22.5 metric tons of aluminum and steel reentering uncontrolled. Up to 40% of mass may survive to ground impact. Reentry footprint spans the entire tropics. This is the single highest-risk uncontrolled reentry in the current prediction window.',
+        'COSMOS 2551 DEB': 'Small debris fragment from a Russian military satellite. At 120 kg, complete atmospheric burnup is expected. Poses negligible ground risk but must be tracked to confirm destruction and remove from the active catalog.',
+        'Starlink-2841': 'SpaceX Starlink satellite performing controlled deorbit via krypton ion thruster. The satellite will lower its perigee to ~150 km, ensuring rapid atmospheric entry and complete burnup. This is a textbook example of responsible end-of-life disposal.',
+        'Iridium 47 (defunct)': 'Defunct first-generation Iridium satellite. At 689 kg with a titanium frame, significant fragments will survive reentry. Near-polar orbit means the ground track covers almost the entire globe. Reentry prediction uncertainty is ±48 hours — the largest window in the current queue.',
+    };
+    title.textContent = `⚠ Reentry — ${r.name}`;
+    body.innerHTML = `
+        <img src="${imgMap[r.type] || 'img/sat_rocket_body.png'}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:200px;object-fit:cover" alt="${r.name}">
+        <div style="font-size:11px;line-height:1.7;color:#e8eaf6;padding:0 4px 12px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:12px">${descMap[r.name] || r.note}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <div style="background:${riskCol}12;border:1px solid ${riskCol}30;border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:16px;font-weight:700;color:${riskCol}">${r.risk}</div>
+                <div style="font-size:8px;color:#78909c">Ground Risk</div>
+            </div>
+            <div style="background:rgba(255,171,0,0.08);border:1px solid rgba(255,171,0,0.15);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:14px;font-weight:700;color:#ffab00">${(r.mass/1000).toFixed(1)} t</div>
+                <div style="font-size:8px;color:#78909c">Dry Mass</div>
+            </div>
+            <div style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);border-radius:6px;padding:8px;text-align:center">
+                <div style="font-size:14px;font-weight:700;color:#00e5ff">${r.uncertainty}</div>
+                <div style="font-size:8px;color:#78909c">Window</div>
+            </div>
+        </div>
+        <table><tbody>
+            <tr><td style="color:#78909c;font-weight:600;width:140px">NORAD ID</td><td style="font-family:JetBrains Mono,mono">${r.norad}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Object Type</td><td>${r.type}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Predicted Date</td><td style="font-weight:700;color:#e8eaf6">${r.predictedDate}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Uncertainty</td><td style="color:#ffab00">${r.uncertainty}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Ground Footprint</td><td style="color:#ff8a80">${r.footprint}</td></tr>
+            <tr><td style="color:#78909c;font-weight:600">Survival Estimate</td><td>${r.mass > 5000 ? '<span style="color:#ff1744;font-weight:700">30-40% mass survives — ground impact likely</span>' : r.mass > 500 ? '<span style="color:#ffab00">Partial survival — titanium/steel components</span>' : '<span style="color:#00e676">Full burnup expected</span>'}</td></tr>
+        </tbody></table>
+        <div style="margin-top:10px;padding:8px;background:rgba(255,23,68,0.05);border:1px solid rgba(255,23,68,0.1);border-radius:6px;font-size:10px;color:#b0bec5">
+            <b style="color:#ff8a80">📡 Tracking:</b> ${r.note}. SentinelForge is monitoring this object via LeoLabs and USSF-SSN radar. Reentry predictions update every orbit pass (~90 min).
+        </div>`;
+    modal.style.display = 'flex';
+};
+
+console.log('[DRILLDOWN] Row + network + debris + launch + reentry drill-down system loaded.');
 })();
