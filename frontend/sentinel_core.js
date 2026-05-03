@@ -887,7 +887,21 @@ function openSiteModal(site) {
     const seed = site.id.charCodeAt(0) + site.id.charCodeAt(site.id.length-1);
     const jitter = (idx) => Math.min(100, Math.max(60, 85 + ((seed*7 + idx*13) % 30) - 15));
 
+    // Station overview paragraphs by network
+    const stationOverviews = {
+        'ExoAnalytic': `Part of ExoAnalytic's 350+ telescope Electro-Optical Global Telescope Network (EGTN), this station runs automated acquisition sequences to capture astrometry and photometry of deep-space objects. Light curves reveal satellite attitude, spin state, and anomalies. AI-driven pipeline detects maneuvers within minutes.`,
+        'USSF-SSN': `Operated by the 18th Space Defense Squadron, this station contributes to the authoritative US space catalog of 46,000+ objects. Data feeds Space-Track.org for global conjunction screening. The SSN provides the backbone of worldwide space domain awareness.`,
+        'Slingshot': `A Slingshot Aerospace sensor using narrow-band optical filters for daylight satellite tracking — eliminating the dawn/dusk observation gap. Observations feed into the Numerica orbit determination engine for high-accuracy state estimation.`,
+        'LeoLabs': `A LeoLabs phased-array S-band radar capable of tracking LEO debris as small as 2cm — far below optical detection thresholds. Operates rain-or-shine, 24/7, providing persistent coverage unaffected by weather or atmospheric seeing conditions.`,
+        'ESA-SST': `Part of the European Space Agency's SST programme providing sovereign European space surveillance capability. Data exchanged via CCSDS Navigation Data Messages under the EU SST Consortium framework.`,
+        'Contributing': `An independent contributing sensor sharing observations under bilateral SSA agreements. Data quality is validated through automated outlier rejection and cross-correlation with primary catalog sources.`,
+    };
+    const stImg = site.type === 'radar' ? 'img/station_radar.png' : 'img/station_optical.png';
+    const stOverview = stationOverviews[site.network] || `A ${site.type} sensor station in the ${site.network} network, contributing observations to the SentinelForge multi-sensor fusion pipeline for global space domain awareness.`;
+
     body.innerHTML = `
+        <img src="${stImg}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:200px;object-fit:cover" alt="${site.type} station">
+        <div style="font-size:10px;line-height:1.6;color:#b0bec5;padding:0 4px 10px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:10px">${stOverview}</div>
         <h3>📍 Location & Status</h3>
         <table>
             <tr><td style="color:#78909c;width:130px">Coordinates</td><td><b>${site.lat.toFixed(2)}°${site.lat>=0?'N':'S'}, ${Math.abs(site.lon).toFixed(2)}°${site.lon>=0?'E':'W'}</b></td></tr>
