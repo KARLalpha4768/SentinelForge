@@ -751,6 +751,72 @@ window.openLaunchDrilldown = function(idx) {
     const d = new Date(l.date);
     const hrs = Math.max(0, Math.round((d - new Date()) / 3600000));
     const statusCol = l.status === 'GO' ? '#00e676' : '#ffab00';
+
+    // Deep-dive data for every clickable field
+    const FIELD_DEEP = {
+        'Falcon 9': 'First flew 2010. 300+ missions to date. Merlin 1D engines generate 845 kN each (×9 = 7,607 kN). First stage lands vertically on drone ships "Just Read the Instructions" and "Of Course I Still Love You." Fairing halves recovered by net-equipped boats. Holds record for fastest turnaround: 21 days between flights on a single booster. B1062 has flown 19 times.',
+        'Soyuz-2.1b': 'Evolution of the R-7 ICBM that launched Sputnik (1957). The Soyuz family has over 1,900 flights — the most-launched rocket design in history. The 2.1b variant adds a digital flight computer and RD-0124 upper stage engine with 359s Isp. Fregat upper stage enables complex multi-burn profiles for MEO/HEO insertion.',
+        'CZ-5B': 'China\'s heaviest operational rocket. Unlike CZ-5 (with a restartable upper stage), the CZ-5B has NO upper stage — the core itself reaches orbital velocity, then reenters uncontrolled. This design choice has drawn international criticism. The 5m-diameter core uses YF-77 LH2/LOX engines (vacuum Isp: 430s). Four 3.35m boosters use YF-100 kerolox engines.',
+        'H3-24L': 'JAXA\'s next-gen launcher replacing H-IIA after 2001-2024 service. LE-9 engine uses an expander bleed cycle — coolant heated by the combustion chamber drives the turbopumps, eliminating the gas generator and reducing failure modes. First flight (2023) failed due to second-stage ignition issue. Configuration "24L" = 2 SRBs + 4m long fairing.',
+        'Ariane 6': 'Developed by ArianeGroup (Airbus/Safran JV) to restore European launch independence. A62 variant (2 SRBs) for government missions; A64 (4 SRBs) for heavy GTO payloads. Vinci upper stage engine restarts up to 4 times in flight, enabling direct GEO insertion and complex multi-manifest missions. First flight July 2024.',
+        'PSLV-C62': 'ISRO\'s most reliable vehicle — 53 of 56 missions successful. Unique 4-stage alternating design: S139 solid → Vikas liquid → S7 solid → L-2-5 liquid. PS4 (4th stage) can operate as an orbital platform for months after payload separation. PSLV set the record: 104 satellites deployed on a single mission (PSLV-C37, 2017).',
+    };
+    const PAYLOAD_DEEP = {
+        'Starlink Group 12-8 (23 sats)': '23 Starlink v2-Mini satellites, each ~800 kg. Flat-pack deployed at 300 km, then autonomously raise orbit to 550 km using krypton Hall-effect thrusters over 3-4 weeks. Each sat provides ~20 Gbps throughput via Ka/Ku-band phased arrays. Laser inter-satellite links (ISL) enable mesh routing without ground relays. Constellation target: 12,000 operational satellites.',
+        'GLONASS-K2 No.8': 'Next-generation Russian navigation satellite replacing aging GLONASS-M fleet. Unpressurized bus (vs pressurized GLONASS-M) extends design life to 10 years. Broadcasts L1, L2, L3 signals with CDMA modulation for improved accuracy (1.4m CEP). Mass: ~1,600 kg. Augments Russia\'s 24-satellite GLONASS constellation for global PNT capability.',
+        'Wentian-2 Lab Module': 'Second laboratory module for China\'s Tiangong space station. ~23 metric tons, 17.9m length. Contains experiment racks for materials science, fluid physics, and biotechnology. External payload platform for space exposure experiments. Docks to Tianhe core module via a Chinese Docking Mechanism (CDM). Pressurized volume: ~118 m³.',
+        'Transporter-14 (rideshare)': 'SpaceX\'s dedicated smallsat rideshare mission. ~40 payloads from commercial, government, and academic customers. Uses ESPA Grande and Exolaunch deployers. SSO orbit enables Earth observation missions. Typical manifest includes 6U-12U CubeSats, microsats up to 300 kg, and hosted payloads. Price: ~$5,500/kg to SSO.',
+        'IGS Radar-8': 'Japan\'s classified Intelligence Gathering Satellite — synthetic aperture radar (SAR) reconnaissance. Operated by Cabinet Satellite Intelligence Center (CSICE), not JAXA. Resolution estimated at <1m. Provides all-weather, day/night imaging of North Korean missile sites and Chinese naval bases. Part of a 4+ satellite IGS constellation.',
+        'Syracuse 4C (mil-sat)': 'French military SATCOM satellite for the Direction Générale de l\'Armement (DGA). Provides secure, jam-resistant X-band and Ka-band communications for French armed forces and NATO allies. Designed life: 15 years in GEO. Syracuse 4 system uses anti-jamming steerable spot beams and onboard processing for theater operations.',
+        'EOS-08 (Earth obs)': 'ISRO Earth Observation Satellite with electro-optical and thermal infrared payloads. Targets disaster monitoring, agriculture assessment, and urban heat island mapping. Uses ISRO\'s new Microsat-IMS bus platform (~180 kg). SSO orbit provides consistent solar illumination for calibrated imagery. Designed life: 5 years.',
+    };
+    const SITE_DEEP = {
+        'CCSFS LC-40': 'Cape Canaveral Space Force Station, Launch Complex 40. Located on the Florida Atlantic coast (28.56°N, 80.58°W). Originally built for Titan III/IV. Rebuilt by SpaceX after a 2016 AMOS-6 explosion destroyed the pad. SpaceX\'s primary East Coast pad. Azimuth range supports 28.5°-57° inclinations. Adjacent to LC-39A (NASA/SpaceX Crew Dragon pad).',
+        'Plesetsk': 'Plesetsk Cosmodrome (62.93°N, 40.68°W), Russia\'s primary military launch site. 800 km north of Moscow in Arkhangelsk Oblast. High latitude supports polar and sun-synchronous orbits but penalizes GTO performance. Over 1,600 launches since 1966. Houses Soyuz, Angara, and Rokot launch pads. Surrounded by boreal forest.',
+        'Wenchang': 'Wenchang Spacecraft Launch Site, Hainan Island (19.61°N, 110.95°E). China\'s newest and most southerly spaceport, opened 2016. Low latitude (19°N) maximizes payload to GTO/GEO. Two launch pads support CZ-5, CZ-7, and CZ-8. Coastal location enables sea transport of large rocket stages. Adjacent commercial spaceport under construction.',
+        'Vandenberg SLC-4E': 'Vandenberg Space Force Base, Space Launch Complex 4E (34.63°N, 120.61°W). Located on the California coast, supporting polar and sun-synchronous orbits southward over the Pacific. SpaceX\'s West Coast pad for SSO and national security missions. Originally built for Titan IIID reconnaissance satellite launches.',
+        'Tanegashima': 'Tanegashima Space Center, Kagoshima Prefecture (30.37°N, 131.00°E). JAXA\'s primary launch facility on a subtropical island. Known as "the most beautiful rocket launch site in the world." Yoshinobu Launch Complex hosts H3 and H-IIA. Due to local fishing agreements, launches were historically restricted to two annual windows.',
+        'Kourou ELA-4': 'Guiana Space Centre, Ensemble de Lancement Ariane 4 (5.24°N, 52.77°W). Located in French Guiana near the equator — the lowest-latitude orbital launch site. Equatorial location provides maximum velocity boost (463 m/s) for GTO missions. ELA-4 is Ariane 6\'s dedicated pad, featuring a mobile gantry and cryogenic propellant systems.',
+        'Sriharikota': 'Satish Dhawan Space Centre, Sriharikota (13.72°N, 80.23°E). ISRO\'s primary launch complex on a barrier island in the Bay of Bengal, Andhra Pradesh. Two launch pads (FLP and SLP) support PSLV, GSLV, and LVM3. Eastern azimuth launches over the Bay of Bengal. Range includes India\'s only solid propellant plant.',
+    };
+    const OPERATOR_DEEP = {
+        'SpaceX': 'Space Exploration Technologies Corp. Founded 2002 by Elon Musk. Headquarters: Hawthorne, CA. First private company to send humans to ISS (Crew Dragon, 2020). Operates Falcon 9, Falcon Heavy, and developing Starship. Starlink constellation generates primary revenue. Valued at ~$180B (2025). Launch cadence: ~100 missions/year.',
+        'Roscosmos': 'Russian Federal Space Agency. Successor to Soviet space program. Headquarters: Moscow. Operates Baikonur (Kazakhstan), Plesetsk, and Vostochny cosmodromes. Primary vehicles: Soyuz-2, Proton-M, Angara. Sole provider of ISS crew transport 2011-2020 (Soyuz). Sanctions since 2022 have reduced Western commercial launches to zero.',
+        'CNSA': 'China National Space Administration. Government agency under SASTIND. Headquarters: Beijing. Operates Jiuquan, Taiyuan, Xichang, and Wenchang launch sites. Vehicles: CZ-2/3/4/5/6/7/8/11. Achieved: lunar sample return (Chang\'e 5), Mars rover (Zhurong), space station (Tiangong). Growing at ~50 launches/year.',
+        'JAXA': 'Japan Aerospace Exploration Agency. Formed 2003 from merger of ISAS, NAL, and NASDA. Headquarters: Tsukuba. Vehicles: H3, Epsilon. Achievements: Hayabusa asteroid sample return, Kaguya lunar orbiter, SLIM precision lander. Budget: ~$1.5B/year. Developing HTV-X cargo vehicle for ISS and future lunar Gateway.',
+        'ArianeGroup': 'Joint venture of Airbus Defence & Space (50%) and Safran (50%). Headquarters: Paris. Prime contractor for Ariane 6 and support for Ariane 5 legacy. Also develops M51 submarine-launched ballistic missile for French nuclear deterrent. Annual revenue: ~€3.3B. ~8,300 employees across France and Germany.',
+        'ISRO': 'Indian Space Research Organisation. Government agency under Department of Space. Headquarters: Bengaluru. Vehicles: PSLV, GSLV Mk II, LVM3. Achievements: Mars Orbiter Mission (2014, first attempt), Chandrayaan-3 lunar landing (2023). Known for extreme cost efficiency: Mangalyaan cost $74M. ~16,000 employees.',
+    };
+    const ORBIT_DEEP = {
+        'LEO 550km 53°': 'Low Earth Orbit at 550 km altitude, 53° inclination. This is the primary Starlink shell — optimized for coverage of populated latitudes (53°N to 53°S). Orbital period: ~95.6 minutes. Velocity: ~7.59 km/s. At this altitude, atmospheric drag is minimal, providing ~5 year orbit lifetime without station-keeping.',
+        'MEO 19,100km 64.8°': 'Medium Earth Orbit at 19,100 km, 64.8° inclination. Standard GLONASS operational orbit — three orbital planes with 8 satellites each, ensuring 24/7 global navigation coverage. Orbital period: ~11.25 hours. Each satellite completes ~2.14 orbits per day. MEO provides optimal balance between coverage geometry and signal strength.',
+        'LEO 390km 41.5°': 'Low Earth Orbit at 390 km, 41.5° inclination. Chinese Space Station (Tiangong) operational orbit. Low inclination optimizes payload capacity from Wenchang (19°N). Orbital period: ~92.3 minutes. ISS orbits at similar altitude (408 km) but higher inclination (51.6°) to accommodate Russian launch sites.',
+        'SSO 525km 97.5°': 'Sun-Synchronous Orbit at 525 km, 97.5° inclination. The orbital plane precesses at exactly 1°/day to maintain constant sun angle — ideal for Earth observation and remote sensing payloads. The Transporter rideshare deploys dozens of small satellites into this highly popular orbit regime.',
+        'SSO 500km': 'Sun-Synchronous Orbit at 500 km. Classified IGS reconnaissance orbit — exact inclination undisclosed but approximately 97.4°. Lower altitude than typical SSO provides higher ground resolution for SAR imaging. Orbital period: ~94.6 minutes, providing ~15 ground tracks per day over target areas.',
+        'GTO→GEO': 'Geostationary Transfer Orbit to Geostationary Orbit. Initial injection: ~250 × 35,786 km. The satellite\'s own apogee motor circularizes at GEO (35,786 km). At GEO, the satellite orbits at exactly Earth\'s rotation rate, appearing stationary over one ground point. Ideal for communications, weather, and missile warning.',
+        'LEO 475km 97.4°': 'Sun-Synchronous Orbit at 475 km, 97.4° inclination. Standard Earth observation altitude — balances resolution, coverage swath, and orbit lifetime. ISRO\'s EOS satellites typically operate in 10:30 AM descending node SSO, providing consistent morning illumination for optical imaging.',
+    };
+    const SPEC_DEEP = {
+        'height': 'Total vehicle height from base of first stage to tip of payload fairing. Determines vertical clearance requirements at the launch pad and imposes structural stiffness constraints — taller rockets experience greater bending loads during max-Q (maximum aerodynamic pressure, typically 60-80 seconds after liftoff).',
+        'diameter': 'Core stage outer diameter. Constrained by manufacturing capability and ground transportation limits (US: 3.7m road/rail; China: 5.0m sea transport). Larger diameter enables higher propellant volume and thrust — CZ-5B\'s 5m core was China\'s breakthrough to heavy-lift capability.',
+        'mass': 'Gross liftoff mass including propellant, structure, and payload. Falcon 9 achieves ~22:1 mass ratio (propellant:dry mass). Every kg saved in structure enables ~1 kg more payload. Cryogenic propellants (LH2/LOX) boil off at ~0.1%/hour, requiring precise load-and-launch timing.',
+        'thrust': 'Combined sea-level thrust of all first-stage engines. Must exceed vehicle weight by 20-40% (thrust-to-weight ratio 1.2-1.4) for safe liftoff. Too low = slow ascent, gravity losses; too high = excessive aerodynamic loads. Engines throttle back at max-Q, then throttle up for landing (Falcon 9).',
+        'stages': 'Number of propulsive stages. Each stage separation event is a critical failure point. Two-stage vehicles (Falcon 9, Ariane 6) are simpler but require high-performance upper stages. PSLV\'s four stages alternate solid/liquid for optimal mass fraction at each altitude.',
+        'propellant': 'Fuel and oxidizer combination. RP-1/LOX (kerosene) is dense and storable but lower Isp (~311s). LH2/LOX is highest Isp (~450s) but very low density, requiring large tanks. Solid propellants (HTPB) are simplest but cannot be throttled or shut down. Hypergolics (UDMH/N₂O₄) ignite on contact — ideal for upper stages.',
+        'reusability': 'Whether stages are recovered for reflight. SpaceX pioneered propulsive landing (2015). Booster recovery saves ~$30M per flight. Fairings save ~$6M each. Recovery imposes ~30% payload penalty (fuel reserved for landing). No other operational vehicle currently recovers first stages, though multiple programs are in development.',
+        'successRate': 'Historical mission success percentage. Mature vehicles (Soyuz: 97.8%, PSLV: 94.6%) have extensive flight heritage. New vehicles (H3, Ariane 6) have limited data. Success rate below 90% is generally unacceptable for commercial insurance. Military/government payloads may accept higher risk for strategic capability.',
+    };
+
+    const clickRow = (label, value, deepKey, deepData) => {
+        const deep = deepData[deepKey] || deepData[value] || '';
+        if (!deep) return `<tr><td style="color:#78909c;font-weight:600;width:130px">${label}</td><td>${value}</td></tr>`;
+        return `<tr class="lv-drill" style="cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'table-row':'none'" title="Click for details">
+            <td style="color:#78909c;font-weight:600;width:130px">${label} <span style="color:#7c4dff;font-size:8px">▶</span></td>
+            <td style="color:#00e5ff;text-decoration:underline;text-decoration-color:rgba(0,229,255,0.3)">${value}</td>
+        </tr>
+        <tr style="display:none"><td colspan="2" style="padding:8px 12px;background:rgba(124,77,255,0.06);border-left:2px solid #7c4dff;font-size:10px;line-height:1.7;color:#b0bec5">${deep}</td></tr>`;
+    };
+
     title.textContent = `${l.vehicle} — ${l.payload}`;
     body.innerHTML = `
         <img src="${detail.img}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:220px;object-fit:cover" alt="${l.vehicle}">
@@ -769,18 +835,18 @@ window.openLaunchDrilldown = function(idx) {
                 <div style="font-size:8px;color:#78909c">Target Orbit</div>
             </div>
         </div>
-        <h3>🚀 Mission Details</h3>
+        <h3>🚀 Mission Details <span style="font-size:9px;color:#546e7a;font-weight:400">— click any row for deep dive</span></h3>
         <table><tbody>
-            <tr><td style="color:#78909c;font-weight:600;width:130px">Vehicle</td><td style="font-weight:700;color:#e8eaf6">${l.vehicle}</td></tr>
-            <tr><td style="color:#78909c;font-weight:600">Payload</td><td style="color:#00e5ff">${l.payload}</td></tr>
-            <tr><td style="color:#78909c;font-weight:600">Launch Site</td><td>${l.site}</td></tr>
-            <tr><td style="color:#78909c;font-weight:600">Operator</td><td>${l.owner}</td></tr>
-            <tr><td style="color:#78909c;font-weight:600">Target Orbit</td><td>${l.orbit}</td></tr>
-            <tr><td style="color:#78909c;font-weight:600">Window (UTC)</td><td style="font-family:JetBrains Mono,mono">${l.date}</td></tr>
+            ${clickRow('Vehicle', l.vehicle, l.vehicle, FIELD_DEEP)}
+            ${clickRow('Payload', l.payload, l.payload, PAYLOAD_DEEP)}
+            ${clickRow('Launch Site', l.site, l.site, SITE_DEEP)}
+            ${clickRow('Operator', l.owner, l.owner, OPERATOR_DEEP)}
+            ${clickRow('Target Orbit', l.orbit, l.orbit, ORBIT_DEEP)}
+            <tr><td style="color:#78909c;font-weight:600;width:130px">Window (UTC)</td><td style="font-family:JetBrains Mono,mono">${l.date}</td></tr>
         </tbody></table>
-        <h3>📐 Vehicle Specifications</h3>
+        <h3>📐 Vehicle Specifications <span style="font-size:9px;color:#546e7a;font-weight:400">— click any row for deep dive</span></h3>
         <table><tbody>
-            ${Object.entries(detail.specs).map(([k,v]) => `<tr><td style="color:#78909c;font-weight:600;width:130px;text-transform:capitalize">${k.replace(/([A-Z])/g, ' $1')}</td><td>${v}</td></tr>`).join('')}
+            ${Object.entries(detail.specs).map(([k,v]) => clickRow(k.replace(/([A-Z])/g, ' $1'), v, k, SPEC_DEEP)).join('')}
         </tbody></table>
         <h3>🛰️ SSA Impact</h3>
         <div style="font-size:10px;line-height:1.6;color:#b0bec5;padding:8px;background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.08);border-radius:6px">
