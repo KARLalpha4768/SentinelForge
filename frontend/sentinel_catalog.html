@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelForge — Object Catalog</title>
+    <meta name="description" content="Searchable satellite catalog — 200+ tracked objects with orbital data, ownership, and mission details">
+    <link rel="stylesheet" href="sentinel_ops.css">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#0a0c14; color:#b0bec5; font-family:'Inter','Segoe UI',sans-serif; min-height:100vh; display:flex; flex-direction:column; }
+
+        /* ── Top Nav ── */
+        .cat-nav { display:flex; align-items:center; gap:16px; padding:10px 24px; background:linear-gradient(180deg,rgba(10,12,20,0.98),rgba(10,12,20,0.92)); border-bottom:1px solid rgba(100,160,255,0.08); position:sticky; top:0; z-index:100; backdrop-filter:blur(12px); }
+        .cat-nav .logo { font-size:16px; font-weight:800; color:#7c4dff; letter-spacing:1px; }
+        .cat-nav .logo span { color:#00e5ff; font-weight:400; margin-left:6px; font-size:13px; }
+        .cat-nav a { color:#78909c; font-size:11px; text-decoration:none; padding:4px 10px; border:1px solid rgba(255,255,255,0.06); border-radius:4px; transition:all .2s; }
+        .cat-nav a:hover { color:#e8eaf6; border-color:rgba(124,77,255,0.3); background:rgba(124,77,255,0.08); }
+        .cat-nav .spacer { flex:1; }
+        .cat-nav .stat { font-family:'JetBrains Mono',monospace; color:#00e5ff; font-size:13px; font-weight:700; }
+        .cat-nav .stat-label { font-size:9px; color:#546e7a; margin-right:4px; text-transform:uppercase; }
+
+        /* ── Search & Filters ── */
+        .cat-toolbar { display:flex; align-items:center; gap:12px; padding:12px 24px; background:rgba(10,12,20,0.95); border-bottom:1px solid rgba(255,255,255,0.04); flex-wrap:wrap; }
+        .cat-search { flex:1; min-width:250px; background:rgba(255,255,255,0.04); border:1px solid rgba(100,160,255,0.12); border-radius:6px; padding:8px 14px; font-size:12px; color:#e8eaf6; font-family:inherit; outline:none; transition:border-color .2s; }
+        .cat-search:focus { border-color:#7c4dff; }
+        .cat-search::placeholder { color:#455a64; }
+        .filter-group { display:flex; gap:4px; flex-wrap:wrap; }
+        .filter-chip { font-size:10px; padding:4px 10px; border:1px solid rgba(255,255,255,0.08); border-radius:12px; cursor:pointer; color:#78909c; transition:all .15s; user-select:none; }
+        .filter-chip:hover { border-color:rgba(124,77,255,0.3); color:#b0bec5; }
+        .filter-chip.active { background:rgba(124,77,255,0.15); border-color:#7c4dff; color:#e8eaf6; }
+
+        /* ── Table ── */
+        .cat-table-wrap { flex:1; overflow:auto; padding:0 24px 24px; }
+        .cat-table { width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }
+        .cat-table thead { position:sticky; top:0; z-index:10; }
+        .cat-table th { text-align:left; padding:8px 10px; color:#546e7a; font-size:9px; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid rgba(100,160,255,0.1); background:#0a0c14; cursor:pointer; user-select:none; white-space:nowrap; }
+        .cat-table th:hover { color:#e8eaf6; }
+        .cat-table th .sort-arrow { margin-left:4px; font-size:8px; color:#7c4dff; }
+        .cat-table td { padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.02); white-space:nowrap; }
+        .cat-table tbody tr { cursor:pointer; transition:background .1s; }
+        .cat-table tbody tr:hover { background:rgba(124,77,255,0.06); }
+        .cat-table tbody tr.selected { background:rgba(124,77,255,0.12); }
+
+        /* Regime badges */
+        .regime-badge { font-size:9px; font-weight:700; padding:2px 6px; border-radius:3px; }
+        .regime-leo { color:#00e5ff; background:rgba(0,229,255,0.1); }
+        .regime-meo { color:#76ff03; background:rgba(118,255,3,0.1); }
+        .regime-geo { color:#ffd740; background:rgba(255,215,64,0.1); }
+        .regime-heo { color:#ff9100; background:rgba(255,145,0,0.1); }
+        .type-payload { color:#448aff; }
+        .type-debris { color:#ff5252; }
+        .type-rb { color:#ffab00; }
+        .status-active { color:#00e676; }
+        .status-defunct { color:#ff5252; }
+        .status-decayed { color:#78909c; }
+
+        /* ── Detail Panel ── */
+        .cat-detail { position:fixed; top:0; right:-520px; width:500px; height:100vh; background:linear-gradient(135deg,rgba(15,18,30,0.98),rgba(10,12,20,0.99)); border-left:1px solid rgba(100,160,255,0.1); z-index:200; transition:right .3s cubic-bezier(.22,1,.36,1); overflow-y:auto; backdrop-filter:blur(20px); box-shadow:-10px 0 40px rgba(0,0,0,0.5); }
+        .cat-detail.open { right:0; }
+        .cat-detail-close { position:absolute; top:12px; right:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:4px; color:#78909c; font-size:14px; width:28px; height:28px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10; }
+        .cat-detail-close:hover { background:rgba(255,23,68,0.1); color:#ff5252; }
+        .cat-detail-body { padding:20px; }
+        .cat-detail-body h2 { color:#e8eaf6; font-size:15px; margin-bottom:4px; }
+        .cat-detail-body h3 { color:#e8eaf6; font-size:12px; margin:14px 0 6px; border-bottom:1px solid rgba(100,160,255,0.06); padding-bottom:4px; }
+        .cat-detail-body table { width:100%; border-collapse:collapse; margin:6px 0; }
+        .cat-detail-body td { padding:4px 8px; font-size:11px; border-bottom:1px solid rgba(255,255,255,0.03); }
+        .cat-detail-body img { width:100%; border-radius:8px; margin-bottom:12px; max-height:200px; object-fit:cover; }
+
+        /* Footer */
+        .cat-footer { padding:8px 24px; font-size:9px; color:#37474f; border-top:1px solid rgba(255,255,255,0.04); text-align:center; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-thumb { background:rgba(124,77,255,0.2); border-radius:3px; }
+    </style>
+</head>
+<body>
+    <!-- Nav -->
+    <nav class="cat-nav">
+        <div class="logo">SENTINELFORGE<span>Object Catalog</span></div>
+        <div class="spacer"></div>
+        <span class="stat-label">Objects</span><span class="stat" id="totalCount">0</span>
+        <span class="stat-label">Shown</span><span class="stat" id="shownCount">0</span>
+        <a href="sentinel_ops.html">← Ops Center</a>
+        <a href="sentinel_portal.html">📖 Portal</a>
+    </nav>
+
+    <!-- Toolbar -->
+    <div class="cat-toolbar">
+        <input class="cat-search" id="searchInput" type="text" placeholder="Search by name, NORAD ID, owner, or country..." autocomplete="off">
+        <div class="filter-group" id="regimeFilters">
+            <span class="filter-chip active" data-filter="regime" data-val="ALL">All</span>
+            <span class="filter-chip" data-filter="regime" data-val="LEO">LEO</span>
+            <span class="filter-chip" data-filter="regime" data-val="MEO">MEO</span>
+            <span class="filter-chip" data-filter="regime" data-val="GEO">GEO</span>
+            <span class="filter-chip" data-filter="regime" data-val="HEO">HEO</span>
+        </div>
+        <div class="filter-group" id="typeFilters">
+            <span class="filter-chip active" data-filter="type" data-val="ALL">All Types</span>
+            <span class="filter-chip" data-filter="type" data-val="Payload">Payload</span>
+            <span class="filter-chip" data-filter="type" data-val="Debris">Debris</span>
+            <span class="filter-chip" data-filter="type" data-val="Rocket Body">R/B</span>
+        </div>
+        <div class="filter-group" id="statusFilters">
+            <span class="filter-chip active" data-filter="status" data-val="ALL">All Status</span>
+            <span class="filter-chip" data-filter="status" data-val="Active">Active</span>
+            <span class="filter-chip" data-filter="status" data-val="Defunct">Defunct</span>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="cat-table-wrap">
+        <table class="cat-table">
+            <thead><tr>
+                <th data-sort="norad">NORAD <span class="sort-arrow"></span></th>
+                <th data-sort="name">Name <span class="sort-arrow"></span></th>
+                <th data-sort="type">Type <span class="sort-arrow"></span></th>
+                <th data-sort="regime">Regime <span class="sort-arrow"></span></th>
+                <th data-sort="altitude">Alt (km) <span class="sort-arrow"></span></th>
+                <th data-sort="inc">Inc (°) <span class="sort-arrow"></span></th>
+                <th data-sort="period">Period (min) <span class="sort-arrow"></span></th>
+                <th data-sort="rcs">RCS (m²) <span class="sort-arrow"></span></th>
+                <th data-sort="owner">Owner <span class="sort-arrow"></span></th>
+                <th data-sort="country">Country <span class="sort-arrow"></span></th>
+                <th data-sort="status">Status <span class="sort-arrow"></span></th>
+                <th data-sort="launched">Launched <span class="sort-arrow"></span></th>
+            </tr></thead>
+            <tbody id="catBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Detail Panel (slide-in from right) -->
+    <div class="cat-detail" id="detailPanel">
+        <button class="cat-detail-close" id="detailClose">✕</button>
+        <div class="cat-detail-body" id="detailBody"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="cat-footer">SentinelForge Object Catalog — Data simulated for demonstration. Inspired by Slingshot Aerospace Seradata.</div>
+
+    <script src="sentinel_catalog.js"></script>
+</body>
+</html>
