@@ -364,9 +364,157 @@ df(){
 },
 };
 
+// ── Natural Language Processing Layer ──
+function nlp(input){
+  const s=input.toLowerCase().trim();
+  // Direct command passthrough — if first word is a known command, skip NLP
+  const first=s.split(/\s+/)[0];
+  if(CMDS[first]||first==='exit') return null;
+
+  // File extraction helper
+  const fileMatch=input.match(/[\w\-\/]+\.(?:py|cu|cpp|html|js|txt|json|yaml|md)/i);
+  const fileName=fileMatch?fileMatch[0]:null;
+
+  // ── Intent patterns (ordered by specificity) ──
+
+  // Show/view/open/read/display file
+  if(/(?:show|view|open|read|display|print|what(?:'s| is| does)? (?:in|inside))\b/.test(s)&&fileName)
+    return {cmd:'cat',args:[fileName],narr:`Reading ${fileName}...`};
+  if(/(?:show|view|open|read|display|what(?:'s| is))\s+(?:the\s+)?(?:source|code|contents?)\s+(?:of|for|in)\b/.test(s)&&fileName)
+    return {cmd:'cat',args:[fileName],narr:`Opening ${fileName}...`};
+
+  // Edit/modify/change file
+  if(/(?:edit|modify|change|update|fix|write|open.*editor)\b/.test(s)&&fileName)
+    return {cmd:'nano',args:[fileName],narr:`Opening ${fileName} in editor...`};
+  if(/(?:edit|modify|change|update)\s+(?:the\s+)?(?:code|file|source)/i.test(s)&&fileName)
+    return {cmd:'nano',args:[fileName],narr:`Opening ${fileName} for editing...`};
+
+  // Run/execute scripts
+  if(/(?:run|execute|start|launch)\s+(?:the\s+)?(?:test|tests|test suite|unit tests)/i.test(s))
+    return {cmd:'pytest',args:[],narr:'Running test suite...'};
+  if(/(?:run|execute|start|launch)\s+(?:the\s+)?(?:benchmark|benchmarks|perf)/i.test(s))
+    return {cmd:'python',args:['benchmarks/benchmark_science.py'],narr:'Running benchmarks...'};
+  if(/(?:run|execute|start|launch)\s+(?:the\s+)?pipeline/i.test(s))
+    return {cmd:'python',args:['process_real_frame.py'],narr:'Running frame processing pipeline...'};
+  if(/(?:run|execute|start|launch)\s+(?:the\s+)?(?:main|app|program|system)/i.test(s))
+    return {cmd:'python',args:['main.py'],narr:'Running main.py...'};
+  if(/(?:run|execute|start|launch)\b/.test(s)&&fileName)
+    return {cmd:'python',args:[fileName],narr:`Running ${fileName}...`};
+
+  // List/show files and directories
+  if(/(?:list|show|what(?:'s| are))\s+(?:the\s+)?(?:files|contents?|directory|dir|folder|what(?:'s)? (?:here|in here))/i.test(s))
+    return {cmd:'ls',args:[],narr:'Listing directory...'};
+  if(/(?:show|list|what(?:'s| are))\s+(?:the\s+)?(?:project|file)?\s*(?:structure|tree|layout|hierarchy)/i.test(s))
+    return {cmd:'tree',args:[],narr:'Showing project structure...'};
+  if(/(?:where am i|current dir|pwd|what dir|which dir|what folder)/i.test(s))
+    return {cmd:'pwd',args:[],narr:null};
+
+  // Navigation
+  if(/(?:go|navigate|move|switch|cd)\s+(?:to|into)\s+(.+)/i.test(s)){
+    const m=s.match(/(?:go|navigate|move|switch|cd)\s+(?:to|into)\s+(.+)/i);
+    return {cmd:'cd',args:[m[1].trim()],narr:`Navigating to ${m[1].trim()}...`};
+  }
+  if(/(?:go\s+)?(?:back|up|parent)/i.test(s))
+    return {cmd:'cd',args:['..'],narr:'Going up one directory...'};
+  if(/(?:go\s+)?home/i.test(s))
+    return {cmd:'cd',args:['~'],narr:'Going home...'};
+
+  // Search/find
+  if(/(?:search|find|look for|locate|where(?:'s| is))\s+(.+)/i.test(s)){
+    const m=s.match(/(?:search|find|look for|locate|where(?:'s| is))\s+(.+)/i);
+    const q=m[1].replace(/^(?:the|a|file|files)\s+/i,'').trim();
+    return {cmd:'find',args:[q],narr:`Searching for "${q}"...`};
+  }
+
+  // Git operations
+  if(/(?:git\s+)?(?:status|what(?:'s| has) changed|any changes|uncommitted)/i.test(s))
+    return {cmd:'git',args:['status'],narr:'Checking git status...'};
+  if(/(?:git\s+)?(?:log|history|commits|recent changes|what(?:'s| was) committed)/i.test(s))
+    return {cmd:'git',args:['log'],narr:'Showing commit history...'};
+  if(/(?:git\s+)?(?:branch|branches|which branch)/i.test(s))
+    return {cmd:'git',args:['branch'],narr:'Listing branches...'};
+  if(/(?:git\s+)?(?:remote|repo|repository|origin)/i.test(s))
+    return {cmd:'git',args:['remote'],narr:'Showing remotes...'};
+  if(/(?:git\s+)?diff/i.test(s))
+    return {cmd:'git',args:['diff'],narr:'Checking diff...'};
+
+  // Build
+  if(/(?:build|compile|make|cmake)\b/i.test(s))
+    return {cmd:'make',args:[],narr:'Building pipeline...'};
+
+  // Deploy
+  if(/(?:deploy|ship|push to prod|release)/i.test(s)){
+    return {cmd:'_narr',args:[],narr:null,custom:()=>{
+      addLine('Deployment workflow:','info');
+      addLine('  1. make            → Build CUDA/C++ modules','out');
+      addLine('  2. pytest          → Verify all tests pass','out');
+      addLine('  3. git push        → Push to origin/main','out');
+      addLine('  4. vercel --prod   → Deploy to production','out');
+      addLine('Run "make" to start the build step.','info');
+    }};
+  }
+
+  // SSH/connect
+  if(/(?:connect|ssh|log\s*in)\s+(?:to\s+)?(\w+)/i.test(s)){
+    const m=s.match(/(?:connect|ssh|log\s*in)\s+(?:to\s+)?(\w+)/i);
+    return {cmd:'ssh',args:[m[1]],narr:null};
+  }
+
+  // System health
+  if(/(?:gpu|graphics|cuda|temperature|thermal|temp)\b/i.test(s))
+    return {cmd:'jetson_health',args:[],narr:'Running GPU diagnostics...'};
+  if(/(?:pipeline|service|daemon)\s*(?:status|health|running|check)/i.test(s))
+    return {cmd:'slingshot-pipeline',args:[],narr:'Checking pipeline status...'};
+  if(/(?:how(?:'s| is)|check|status of)\s+(?:the\s+)?(?:pipeline|system|service)/i.test(s))
+    return {cmd:'slingshot-pipeline',args:[],narr:'Checking pipeline status...'};
+  if(/(?:disk|storage|space|capacity)/i.test(s))
+    return {cmd:'df',args:[],narr:'Checking disk usage...'};
+  if(/(?:uptime|how long|been running)/i.test(s))
+    return {cmd:'uptime',args:[],narr:null};
+  if(/(?:who am i|whoami|current user|what user)/i.test(s))
+    return {cmd:'whoami',args:[],narr:null};
+  if(/(?:what time|date|current time)/i.test(s))
+    return {cmd:'date',args:[],narr:null};
+  if(/(?:system|os|kernel|uname|what system)/i.test(s))
+    return {cmd:'uname',args:['-a'],narr:null};
+
+  // Help
+  if(/(?:help|what can|commands|how do i|what do|options|usage|manual)/i.test(s))
+    return {cmd:'help',args:[],narr:null};
+
+  // Clear
+  if(/(?:clear|clean|reset|wipe)\s*(?:the\s+)?(?:screen|terminal|console)?/i.test(s))
+    return {cmd:'clear',args:[],narr:null};
+
+  // Greeting / conversational
+  if(/^(?:hi|hello|hey|sup|yo|greetings)\b/i.test(s))
+    return {cmd:'_narr',args:[],narr:null,custom:()=>{
+      addLine('Hello! I\'m the SentinelForge edge terminal.','info');
+      addLine('You can use natural language or standard Unix commands.','out');
+      addLine('Try: "show me the project files" or "run the tests"','out');
+    }};
+  if(/(?:thanks|thank you|thx|cheers)/i.test(s))
+    return {cmd:'_narr',args:[],narr:null,custom:()=>{
+      addLine('You\'re welcome. Ready for the next command.','info');
+    }};
+  if(/(?:what (?:is|are) you|who are you|about)/i.test(s))
+    return {cmd:'_narr',args:[],narr:null,custom:()=>{
+      addLine('SentinelForge Antigravity IDE Terminal v1.15.8','info');
+      addLine('Embedded command-line for the Slingshot Ground Sensor Network.','out');
+      addLine('I understand both Unix commands and natural language.','out');
+      addLine('Backed by a simulated 20-node edge processing network.','out');
+    }};
+
+  // Catch-all question about specific files
+  if(fileName)
+    return {cmd:'cat',args:[fileName],narr:`Showing ${fileName}...`};
+
+  return null; // No NLP match — fall through to raw command parser
+}
+
 // Boot message
 addLine('Antigravity IDE v1.15.8 — Integrated Terminal','info');
-addLine('SentinelForge workspace loaded. Type "help" for commands.','out');
+addLine('SentinelForge workspace loaded. Accepts commands and natural language.','out');
 addLine('');
 
 inp.addEventListener('keydown',e=>{
@@ -376,11 +524,21 @@ inp.addEventListener('keydown',e=>{
     if(!raw)return;
     history.push(raw);histIdx=history.length;
     addLine(`${document.querySelector('.prompt').textContent}${raw}`,'cmd');
-    const parts=raw.split(/\s+/);
-    const cmd=parts[0];const args=parts.slice(1);
-    if(CMDS[cmd]) CMDS[cmd](args);
-    else if(cmd==='exit') addLine('Use Ctrl+D or close the browser tab.','warn');
-    else addLine(`${cmd}: command not found. Type "help" for available commands.`,'err');
+
+    // Try NLP first
+    const intent=nlp(raw);
+    if(intent){
+      if(intent.narr) addLine(intent.narr,'info');
+      if(intent.custom) intent.custom();
+      else if(CMDS[intent.cmd]) CMDS[intent.cmd](intent.args);
+    } else {
+      // Fall back to raw command parsing
+      const parts=raw.split(/\s+/);
+      const cmd=parts[0];const args=parts.slice(1);
+      if(CMDS[cmd]) CMDS[cmd](args);
+      else if(cmd==='exit') addLine('Use Ctrl+D or close the browser tab.','warn');
+      else addLine(`I didn't understand that. Try natural language ("show me the files") or a command ("ls").`,'warn');
+    }
     scroll();
   } else if(e.key==='ArrowUp'){
     e.preventDefault();
