@@ -43,7 +43,7 @@ const FS={
 'coordinate_frames.py':{type:'file',size:'8KB'}
 }},
 'hardware':{type:'dir',children:{
-'ascom_hal.py':{type:'file',size:'24KB',content:'"""ASCOM Hardware Abstraction Layer\nProduction-grade observatory control for PlaneWave L-500\nclass mounts with ZWO ASI6200MM Pro cameras.\n"""\nclass ObservatoryHAL:\n    def __init__(self, sim=True):\n        self.sim = sim\n        self.mount_connected = False\n        self.camera_connected = False\n\n    def connect(self):\n        self.mount_connected = True\n        self.camera_connected = True\n        return True\n\n    def slew(self, ra, dec):\n        \"\"\"Slew to RA/Dec in hours/degrees.\"\"\"'},
+'ascom_hal.py':{type:'file',size:'24KB',content:'"""ASCOM Hardware Abstraction Layer\nProduction-grade observatory control for PlaneWave L-500\nclass mounts with ZWO ASI6200MM Pro cameras.\n"""\nclass ObservatoryHAL:\n    def __init__(self, sim=True):\n        self.sim = sim\n        self.mount_connected = False\n        self.camera_connected = False\n\n    def connect(self):\n        self.mount_connected = True\n        self.camera_connected = True\n        return True\n\n    def slew(self, ra, dec):\n        """Slew to RA/Dec in hours/degrees."""'},
 'streak_detect.cu':{type:'file',size:'8KB'},
 'calibration.cu':{type:'file',size:'6KB'},
 'plate_solver.cpp':{type:'file',size:'12KB'},
@@ -61,9 +61,9 @@ const FS={
 'benchmarks':{type:'dir',children:{
 'benchmark_science.py':{type:'file',size:'8KB'}
 }},
-'data':{type:'dir',children:{}},
-}}}}}
-};
+'data':{type:'dir',children:{}}
+}}}}  // sentinelforge.children, sentinelforge, ~.children, ~
+};  // FS
 
 let cwd='~/sentinelforge';
 let history=[];
