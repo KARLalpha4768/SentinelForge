@@ -2158,8 +2158,137 @@ function openSlingshotDetail(stationId) {
         <div style="margin-top:14px;padding:10px;background:rgba(100,160,255,0.06);border:1px solid rgba(100,160,255,0.12);border-radius:8px;font-size:10px;color:#78909c;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
             <span style="color:#546e7a;font-size:9px;text-transform:uppercase;letter-spacing:.5px">Navigate:</span>
             <a href="sentinel_slingshot_technician.html" style="color:#ffd740;text-decoration:none;padding:3px 10px;border:1px solid rgba(255,215,64,0.2);border-radius:4px;transition:all .2s" onmouseover="this.style.background='rgba(255,215,64,0.1)';this.style.borderColor='rgba(255,215,64,0.4)'" onmouseout="this.style.background='';this.style.borderColor='rgba(255,215,64,0.2)'">🔧 Onsite Technician</a>
-            <a href="sentinel_slingshot_catalog.html" style="color:#00e5ff;text-decoration:none;padding:3px 10px;border:1px solid rgba(0,229,255,0.2);border-radius:4px;transition:all .2s" onmouseover="this.style.background='rgba(0,229,255,0.1)';this.style.borderColor='rgba(0,229,255,0.4)'" onmouseout="this.style.background='';this.style.borderColor='rgba(0,229,255,0.2)'">💻 Programmer's Specs</a>
+            <a href="#" onclick="openProgrammerSheet('${stationId}');return false" style="color:#00e5ff;text-decoration:none;padding:3px 10px;border:1px solid rgba(0,229,255,0.2);border-radius:4px;transition:all .2s" onmouseover="this.style.background='rgba(0,229,255,0.1)';this.style.borderColor='rgba(0,229,255,0.4)'" onmouseout="this.style.background='';this.style.borderColor='rgba(0,229,255,0.2)'">💻 Programmer's Specs</a>
             <a href="#" onclick="renderInventory('slingshot');document.getElementById('siteModal').style.display='none';return false" style="color:#b388ff;text-decoration:none;padding:3px 10px;border:1px solid rgba(179,136,255,0.2);border-radius:4px;transition:all .2s" onmouseover="this.style.background='rgba(179,136,255,0.1)';this.style.borderColor='rgba(179,136,255,0.4)'" onmouseout="this.style.background='';this.style.borderColor='rgba(179,136,255,0.2)'">← Slingshot Catalog</a>
+        </div>`;
+    modal.style.display = 'flex';
+    body.scrollTop = 0;
+    modal.scrollTop = 0;
+}
+
+// ── Programmer's Sheet (in-modal drill-down) ────────
+function openProgrammerSheet(stationId) {
+    const SLING_DB = {
+        "SLING-NUM-CO1": { name:"Fort Collins, CO", lat:40.59, lon:-105.08, status:"active", gpu:67, queue:0, seeing:0.6, alt:1525, tz:"UTC-7", connectivity:"Fiber 1Gbps primary, Starlink 100Mbps backup", power:"Municipal grid + 8h LiFePO4 UPS" },
+        "SLING-NUM-CO2": { name:"Colorado Springs, CO", lat:38.83, lon:-104.82, status:"active", gpu:44, queue:0, seeing:2.2, alt:1839, tz:"UTC-7", connectivity:"Fiber 500Mbps + secure VPN to CSpOC", power:"Municipal grid + generator backup" },
+        "SLING-NUM-NM": { name:"Socorro, NM", lat:34.07, lon:-106.91, status:"degraded", gpu:45, queue:10, seeing:1.5, alt:1402, tz:"UTC-7", connectivity:"Starlink 100Mbps primary", power:"Rural grid + solar + 12h battery" },
+        "SLING-NUM-AZ": { name:"Tucson, AZ", lat:32.23, lon:-110.95, status:"active", gpu:76, queue:9, seeing:1.4, alt:875, tz:"UTC-7", connectivity:"University fiber 10Gbps + Starlink failover", power:"Municipal grid + UPS" },
+        "SLING-NUM-TX": { name:"Fort Davis, TX", lat:30.67, lon:-103.95, status:"active", gpu:81, queue:3, seeing:0.7, alt:1545, tz:"UTC-6", connectivity:"Starlink 100Mbps (sole uplink)", power:"Solar + generator + 24h battery" },
+        "SLING-NUM-HI": { name:"Haleakala, HI", lat:20.71, lon:-156.26, status:"active", gpu:52, queue:6, seeing:1.4, alt:3055, tz:"UTC-10", connectivity:"Fiber to Kahului + Starlink backup", power:"Summit grid + UPS" },
+        "SLING-NUM-AU1": { name:"Siding Spring, AU", lat:-31.27, lon:149.07, status:"active", gpu:73, queue:10, seeing:0.7, alt:1165, tz:"UTC+10", connectivity:"AARNet fiber 1Gbps", power:"Observatory grid + generator" },
+        "SLING-NUM-AU2": { name:"Learmonth, AU", lat:-22.24, lon:114.09, status:"active", gpu:51, queue:3, seeing:0.9, alt:7, tz:"UTC+8", connectivity:"Military fiber + Starlink", power:"Naval base grid + solar" },
+        "SLING-NUM-CL": { name:"Cerro Tololo, Chile", lat:-30.17, lon:-70.81, status:"active", gpu:38, queue:2, seeing:1.1, alt:2200, tz:"UTC-4", connectivity:"REUNA fiber 10Gbps", power:"CTIO grid + UPS" },
+        "SLING-NUM-NA": { name:"Gamsberg, Namibia", lat:-23.34, lon:16.23, status:"active", gpu:34, queue:12, seeing:2.2, alt:2347, tz:"UTC+2", connectivity:"VSAT Ku-band 20Mbps + Starlink", power:"Solar + diesel generator + 16h battery" },
+        "SLING-NUM-SA": { name:"Sutherland, RSA", lat:-32.38, lon:20.81, status:"active", gpu:33, queue:8, seeing:2.2, alt:1798, tz:"UTC+2", connectivity:"SANReN fiber 1Gbps", power:"SAAO grid + generator" },
+        "SLING-NUM-SP": { name:"Tenerife, Spain", lat:28.3, lon:-16.51, status:"active", gpu:78, queue:2, seeing:1.3, alt:2390, tz:"UTC+0", connectivity:"RedIRIS fiber 10Gbps", power:"IAC grid + UPS" },
+        "SLING-NUM-IT": { name:"Asiago, Italy", lat:45.87, lon:11.53, status:"active", gpu:85, queue:0, seeing:0.8, alt:1045, tz:"UTC+1", connectivity:"GARR fiber 1Gbps", power:"Municipal grid + UPS" },
+        "SLING-NUM-JP": { name:"Okayama, Japan", lat:34.57, lon:133.59, status:"offline", gpu:54, queue:12, seeing:2.1, alt:372, tz:"UTC+9", connectivity:"SINET fiber 10Gbps", power:"Municipal grid + UPS" },
+        "SLING-NUM-IN": { name:"Mt Abu, India", lat:24.65, lon:72.78, status:"active", gpu:74, queue:12, seeing:1.6, alt:1680, tz:"UTC+5:30", connectivity:"NKN fiber 1Gbps", power:"PRL grid + diesel generator" },
+        "SLING-NUM-AR": { name:"El Leoncito, Argentina", lat:-31.8, lon:-69.3, status:"active", gpu:39, queue:4, seeing:0.9, alt:2552, tz:"UTC-3", connectivity:"ARIU fiber 1Gbps", power:"CASLEO grid + solar" },
+        "SLING-NUM-KR": { name:"Bohyunsan, S. Korea", lat:36.16, lon:128.98, status:"degraded", gpu:77, queue:0, seeing:2.0, alt:1124, tz:"UTC+9", connectivity:"KREONET fiber 10Gbps", power:"KASI grid + UPS" },
+        "SLING-NUM-TW": { name:"Lulin, Taiwan", lat:23.47, lon:120.87, status:"degraded", gpu:67, queue:8, seeing:2.3, alt:2862, tz:"UTC+8", connectivity:"TANet fiber 1Gbps", power:"Observatory grid + battery" },
+        "SLING-NUM-MX": { name:"San Pedro Martir, Mexico", lat:31.03, lon:-115.46, status:"active", gpu:33, queue:1, seeing:2.2, alt:2800, tz:"UTC-7", connectivity:"Starlink 100Mbps (sole uplink)", power:"Solar + diesel + 12h battery" },
+        "SLING-NUM-PH": { name:"Clark, Philippines", lat:15.19, lon:120.59, status:"degraded", gpu:34, queue:3, seeing:1.3, alt:160, tz:"UTC+8", connectivity:"PLDT fiber 500Mbps", power:"Clark grid + diesel generator" }
+    };
+    const s = SLING_DB[stationId];
+    if(!s) return;
+
+    const title = document.getElementById('siteModalTitle');
+    const body = document.getElementById('siteModalBody');
+    const modal = document.getElementById('siteModal');
+    const sc = s.status==='active'?'#00e676':s.status==='degraded'?'#ffab00':'#ff1744';
+    const gpuCol = s.gpu>70?'#ff9100':s.gpu>50?'#ffd740':'#00e676';
+    const siteSlug = stationId.replace('SLING-NUM-','').toLowerCase();
+
+    title.textContent = stationId + ' \u2014 Programmer\u2019s Reference';
+    body.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <span style="font-size:14px;font-weight:800;color:#00e5ff">\ud83d\udcbb ${s.name}</span>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;color:${sc};background:${sc}18;text-transform:uppercase">${s.status}</span>
+        </div>
+
+        <h3>\ud83d\udd0c REST API Endpoints</h3>
+        <table><tbody>
+            <tr><td style="color:#78909c;width:180px">Health Check</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">GET /api/v2/sites/${siteSlug}/health</code></td></tr>
+            <tr><td style="color:#78909c">Telemetry Stream</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">GET /api/v2/sites/${siteSlug}/telemetry?interval=5s</code></td></tr>
+            <tr><td style="color:#78909c">Submit TDM</td><td><code style="color:#ffd740;background:rgba(255,215,64,0.08);padding:1px 6px;border-radius:3px;font-size:10px">POST /api/v2/sites/${siteSlug}/tdm</code></td></tr>
+            <tr><td style="color:#78909c">Queue Status</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">GET /api/v2/sites/${siteSlug}/queue</code></td></tr>
+            <tr><td style="color:#78909c">Task Schedule</td><td><code style="color:#ffd740;background:rgba(255,215,64,0.08);padding:1px 6px;border-radius:3px;font-size:10px">PUT /api/v2/sites/${siteSlug}/schedule</code></td></tr>
+            <tr><td style="color:#78909c">Calibration Data</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">GET /api/v2/sites/${siteSlug}/calibration</code></td></tr>
+            <tr><td style="color:#78909c">Edge Logs</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">GET /api/v2/sites/${siteSlug}/logs?tail=500</code></td></tr>
+        </tbody></table>
+
+        <h3>\u2699\ufe0f Edge Pipeline Configuration</h3>
+        <div style="background:rgba(10,12,20,0.9);border:1px solid rgba(100,160,255,0.08);border-radius:8px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#b0bec5;line-height:1.8;overflow-x:auto">
+<span style="color:#546e7a"># /opt/slingshot/config/site.yaml</span>
+<span style="color:#7c4dff">site:</span>
+  <span style="color:#00e5ff">id:</span> <span style="color:#ffd740">${stationId}</span>
+  <span style="color:#00e5ff">name:</span> <span style="color:#ffd740">${s.name}</span>
+  <span style="color:#00e5ff">lat:</span> ${s.lat}
+  <span style="color:#00e5ff">lon:</span> ${s.lon}
+  <span style="color:#00e5ff">alt_m:</span> ${s.alt}
+  <span style="color:#00e5ff">timezone:</span> ${s.tz}
+
+<span style="color:#7c4dff">edge_compute:</span>
+  <span style="color:#00e5ff">platform:</span> <span style="color:#ffd740">jetson_agx_orin_64gb</span>
+  <span style="color:#00e5ff">cuda_version:</span> <span style="color:#ffd740">12.2</span>
+  <span style="color:#00e5ff">tensorrt:</span> <span style="color:#ffd740">8.6.1</span>
+  <span style="color:#00e5ff">gpu_budget_pct:</span> <span style="color:${gpuCol}">${s.gpu}</span>
+  <span style="color:#00e5ff">max_queue_depth:</span> 25
+
+<span style="color:#7c4dff">pipeline:</span>
+  <span style="color:#00e5ff">streak_detect:</span>
+    <span style="color:#00e5ff">model:</span> <span style="color:#ffd740">pinn_streak_v3.2.engine</span>
+    <span style="color:#00e5ff">filter_bank:</span> <span style="color:#ffd740">J2-J6_matched</span>
+    <span style="color:#00e5ff">min_snr:</span> 3.5
+    <span style="color:#00e5ff">max_streak_width_px:</span> 12
+  <span style="color:#00e5ff">photometry:</span>
+    <span style="color:#00e5ff">aperture_radii:</span> [3, 5, 8]
+    <span style="color:#00e5ff">zeropoint_catalog:</span> <span style="color:#ffd740">tycho2_v2</span>
+  <span style="color:#00e5ff">astrometry:</span>
+    <span style="color:#00e5ff">solver:</span> <span style="color:#ffd740">astrometry_net_local</span>
+    <span style="color:#00e5ff">index_scale:</span> [0.5, 2.0]
+
+<span style="color:#7c4dff">transport:</span>
+  <span style="color:#00e5ff">kafka:</span>
+    <span style="color:#00e5ff">brokers:</span> <span style="color:#ffd740">[beacon-ingest-01.slingshot.cloud:9092]</span>
+    <span style="color:#00e5ff">topic:</span> <span style="color:#ffd740">site.${siteSlug}.tdm</span>
+    <span style="color:#00e5ff">compression:</span> <span style="color:#ffd740">zstd</span>
+    <span style="color:#00e5ff">batch_size:</span> 100
+    <span style="color:#00e5ff">linger_ms:</span> 500
+
+<span style="color:#7c4dff">connectivity:</span>
+  <span style="color:#00e5ff">primary:</span> <span style="color:#ffd740">${s.connectivity.split(',')[0].split('+')[0].trim()}</span>
+  <span style="color:#00e5ff">failover:</span> <span style="color:#ffd740">${s.connectivity.includes('+') ? s.connectivity.split('+').pop().trim() : 'none'}</span>
+        </div>
+
+        <h3>\ud83d\udce6 Key Python Modules</h3>
+        <table><tbody>
+            <tr><td style="color:#78909c;width:180px"><code style="color:#b388ff;font-size:10px">streak_detect.cu</code></td><td>PINN-accelerated matched-filter streak detection. Input: raw FITS frame. Output: candidate list with (x,y,flux,SNR,angle). CUDA kernel uses J2-J6 perturbation bank for LEO rate-matching.</td></tr>
+            <tr><td style="color:#78909c"><code style="color:#b388ff;font-size:10px">bayesian_iod.py</code></td><td>Initial Orbit Determination from 3+ tracklets. Uses Gauss method + UKF refinement. Outputs 6-element state vector (pos+vel) in TEME frame with covariance matrix.</td></tr>
+            <tr><td style="color:#78909c"><code style="color:#b388ff;font-size:10px">catalog_lifecycle.py</code></td><td>State machine: UCT \u2192 TENTATIVE \u2192 CATALOGED. Correlation engine matches new tracklets against existing catalog using Mahalanobis distance on projected state.</td></tr>
+            <tr><td style="color:#78909c"><code style="color:#b388ff;font-size:10px">kafka_transport.py</code></td><td>Edge\u2192Cloud Kafka producer. Serializes TDMs (Tracking Data Messages) to Protobuf, batches with zstd compression. Handles offline queueing if uplink drops.</td></tr>
+            <tr><td style="color:#78909c"><code style="color:#b388ff;font-size:10px">site_monitor.py</code></td><td>Health daemon: GPU temp/util, dome state, weather sensors, queue depth, disk I/O. Pushes JSON telemetry to <code style="color:#76ff03;font-size:9px">/telemetry</code> endpoint every 5s.</td></tr>
+            <tr><td style="color:#78909c"><code style="color:#b388ff;font-size:10px">scheduler.py</code></td><td>Priority-weighted observation scheduler. Inputs: Beacon target list, site horizon mask, weather forecast. Outputs: chronological slew sequence with time-on-target estimates.</td></tr>
+            <tr><td style="color:#78909c"><code style="color:#b388ff;font-size:10px">flat_field.py</code></td><td>Twilight/dome flat calibration pipeline. Median-stacks N frames, normalizes, stores master flat. Auto-triggers when flat age > 7 days.</td></tr>
+        </tbody></table>
+
+        <h3>\ud83d\udee0\ufe0f SSH & Debug Commands</h3>
+        <table><tbody>
+            <tr><td style="color:#78909c;width:180px">SSH Access</td><td><code style="color:#ffd740;background:rgba(255,215,64,0.08);padding:1px 6px;border-radius:3px;font-size:10px">ssh edge@${siteSlug}.slingshot.internal -p 2222</code></td></tr>
+            <tr><td style="color:#78909c">GPU Status</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">jetson_health --diag --json</code></td></tr>
+            <tr><td style="color:#78909c">Pipeline Status</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">systemctl status slingshot-pipeline</code></td></tr>
+            <tr><td style="color:#78909c">Restart Pipeline</td><td><code style="color:#ff8a80;background:rgba(255,23,68,0.08);padding:1px 6px;border-radius:3px;font-size:10px">sudo systemctl restart slingshot-pipeline</code></td></tr>
+            <tr><td style="color:#78909c">Tail Detections</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">journalctl -u slingshot-pipeline -f --output=json</code></td></tr>
+            <tr><td style="color:#78909c">Kafka Lag</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">kafka-consumer-groups --describe --group site-${siteSlug}</code></td></tr>
+            <tr><td style="color:#78909c">Disk Usage</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">df -h /data /var/log/slingshot</code></td></tr>
+            <tr><td style="color:#78909c">Force Flat Cal</td><td><code style="color:#ffd740;background:rgba(255,215,64,0.08);padding:1px 6px;border-radius:3px;font-size:10px">python3 /opt/slingshot/flat_field.py --force --count=50</code></td></tr>
+        </tbody></table>
+
+        <div style="margin-top:14px;padding:10px;background:rgba(100,160,255,0.06);border:1px solid rgba(100,160,255,0.12);border-radius:8px;font-size:10px;color:#78909c;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <span style="color:#546e7a;font-size:9px;text-transform:uppercase;letter-spacing:.5px">Navigate:</span>
+            <a href="#" onclick="openSlingshotDetail('${stationId}');return false" style="color:#00e5ff;text-decoration:none;padding:3px 10px;border:1px solid rgba(0,229,255,0.2);border-radius:4px;transition:all .2s" onmouseover="this.style.background='rgba(0,229,255,0.1)'" onmouseout="this.style.background=''">← Station Detail</a>
+            <a href="sentinel_slingshot_technician.html" style="color:#ffd740;text-decoration:none;padding:3px 10px;border:1px solid rgba(255,215,64,0.2);border-radius:4px;transition:all .2s" onmouseover="this.style.background='rgba(255,215,64,0.1)'" onmouseout="this.style.background=''">\ud83d\udd27 Onsite Technician</a>
         </div>`;
     modal.style.display = 'flex';
     body.scrollTop = 0;
