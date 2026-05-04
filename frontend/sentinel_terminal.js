@@ -575,12 +575,51 @@ function nlp(input){
   return null; // No NLP match
 }
 
+// Gemini NLU fallback
+async function geminiNLU(input){
+  try{
+    addLine('🧠 Thinking...','info');
+    scroll();
+    const resp=await fetch('/api/nlp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({input})
+    });
+    if(!resp.ok) return false;
+    const data=await resp.json();
+    // Remove "Thinking..." line
+    const thinking=out.querySelector('.line:last-child');
+    if(thinking&&thinking.textContent.includes('Thinking')) thinking.remove();
+
+    if(data.cmd==='_reply'){
+      // Conversational response from Gemini
+      (data.text||'').split('\\n').forEach(l=>addLine(l,l.startsWith('•')?'info':'out'));
+    } else if(data.cmd&&CMDS[data.cmd]){
+      if(data.narr) addLine(data.narr,'info');
+      CMDS[data.cmd](data.args||[]);
+    } else {
+      addLine(data.text||data.narr||'Command understood.','info');
+    }
+    scroll();
+    return true;
+  } catch(e){
+    return false;
+  }
+}
+
+// Execute a parsed intent
+function execIntent(intent){
+  if(intent.narr) addLine(intent.narr,'info');
+  if(intent.custom) intent.custom();
+  else if(CMDS[intent.cmd]) CMDS[intent.cmd](intent.args);
+}
+
 // Boot message
 addLine('Antigravity IDE v1.15.8 — Integrated Terminal','info');
-addLine('SentinelForge workspace loaded. Accepts commands and natural language.','out');
+addLine('SentinelForge workspace loaded. Powered by Gemini NLU.','out');
 addLine('');
 
-inp.addEventListener('keydown',e=>{
+inp.addEventListener('keydown',async e=>{
   if(e.key==='Enter'){
     const raw=inp.value.trim();
     inp.value='';
@@ -588,19 +627,27 @@ inp.addEventListener('keydown',e=>{
     history.push(raw);histIdx=history.length;
     addLine(`${document.querySelector('.prompt').textContent}${raw}`,'cmd');
 
-    // Try NLP first
+    // Layer 1: Direct command match
+    const parts=raw.split(/\s+/);
+    const cmd=parts[0];const args=parts.slice(1);
+    if(CMDS[cmd]){
+      CMDS[cmd](args);
+      scroll();
+      return;
+    }
+
+    // Layer 2: Local regex NLP (instant, no network)
     const intent=nlp(raw);
     if(intent){
-      if(intent.narr) addLine(intent.narr,'info');
-      if(intent.custom) intent.custom();
-      else if(CMDS[intent.cmd]) CMDS[intent.cmd](intent.args);
-    } else {
-      // Fall back to raw command parsing
-      const parts=raw.split(/\s+/);
-      const cmd=parts[0];const args=parts.slice(1);
-      if(CMDS[cmd]) CMDS[cmd](args);
-      else if(cmd==='exit') addLine('Use Ctrl+D or close the browser tab.','warn');
-      else addLine(`I didn't understand that. Try natural language ("show me the files") or a command ("ls").`,'warn');
+      execIntent(intent);
+      scroll();
+      return;
+    }
+
+    // Layer 3: Gemini LLM (full natural language understanding)
+    const understood=await geminiNLU(raw);
+    if(!understood){
+      addLine(`I didn't understand that. Try "help" to see available commands.`,'warn');
     }
     scroll();
   } else if(e.key==='ArrowUp'){
