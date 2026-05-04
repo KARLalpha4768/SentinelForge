@@ -191,6 +191,16 @@ function openDetail(s) {
                 ${checklistHtml}
             </ul>
         </div>
+
+        <div class="detail-section">
+            <h3><span class="icon">[SCH]</span> Observatory Hardware Schematic</h3>
+            <div style="background:rgba(10,12,20,0.9);border:1px solid rgba(0,229,255,0.12);border-radius:8px;padding:12px;text-align:center">
+                <img src="img/technician_schematic.png" alt="Observatory Hardware Schematic — ${s.name}" style="width:100%;max-width:720px;border-radius:6px;opacity:0.95" />
+                <div style="margin-top:8px;font-size:9px;color:#546e7a;font-family:'JetBrains Mono',monospace">
+                    FIG 1 — ${s.id} HARDWARE LAYOUT · Dome → OTA → Camera → Edge Compute → WAN Uplink
+                </div>
+            </div>
+        </div>
         
         <div style="margin-top:24px; padding:12px; background:rgba(124,77,255,0.05); border:1px solid rgba(124,77,255,0.15); border-radius:6px; font-size:10px; color:#b0bec5; line-height:1.6;">
             <strong style="color:#7c4dff">MISSION IMPACT:</strong> ${s.name} is a critical node in the Slingshot Global Sensor Network. Its edge-computed observations feed directly into the SentinelForge orbit determination pipeline, enabling high-fidelity covariance realism and actionable conjunction assessments for DoD and commercial clients.
@@ -311,6 +321,16 @@ function openProgrammerPanel(stationId) {
                 <tr><td>Tail Detections</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">journalctl -u slingshot-pipeline -f --output=json</code></td></tr>
                 <tr><td>Kafka Lag</td><td><code style="color:#76ff03;background:rgba(118,255,3,0.08);padding:1px 6px;border-radius:3px;font-size:10px">kafka-consumer-groups --describe --group site-${slug}</code></td></tr>
             </tbody></table>
+        </div>
+
+        <div class="detail-section">
+            <h3><span class="icon">📐</span> Edge-to-Cloud Data Flow Schematic</h3>
+            <div style="background:rgba(10,12,20,0.9);border:1px solid rgba(0,229,255,0.12);border-radius:8px;padding:12px;text-align:center">
+                <img src="img/programmer_schematic.png" alt="Edge-to-Cloud Pipeline Schematic — ${s.name}" style="width:100%;max-width:720px;border-radius:6px;opacity:0.95" />
+                <div style="margin-top:8px;font-size:9px;color:#546e7a;font-family:'JetBrains Mono',monospace">
+                    FIG 2 — ${s.id} DATA FLOW · CCD Frame (32MB) → CUDA Pipeline → TDM (10KB) → Kafka → Cloud Catalog
+                </div>
+            </div>
         </div>
 
         <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
