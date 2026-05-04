@@ -335,13 +335,13 @@ function createGaugeSVG(g) {
 function renderGauges() {
     const panel = document.getElementById('gaugePanel');
     const scopeColors = { FLEET:'#00e5ff', CATALOG:'#76ff03', FILTER:'#e040fb', CLOUD:'#ffd740', OPS:'#ff9100', SCIENCE:'#448aff' };
-    panel.innerHTML = '<div class="card-header">System Gauges <span style="font-size:8px;font-weight:400;color:#546e7a;letter-spacing:0">&mdash; Global Pipeline Health</span></div>' + STATE.gauges.map(g => {
+    panel.innerHTML = '<div class="card-header">System Gauges <span style="font-size:8px;font-weight:400;color:#546e7a;letter-spacing:0">&mdash; Global Pipeline Health &middot; click any gauge for details</span></div>' + STATE.gauges.map(g => {
         const svg = createGaugeSVG(g);
         let color;
         if(g.invert) { color = g.value <= g.green ? '#00e676' : g.value <= g.yellow ? '#ffab00' : '#ff1744'; }
         else { color = g.value >= g.green ? '#00e676' : g.value >= g.yellow ? '#ffab00' : '#ff1744'; }
         const scopeCol = scopeColors[g.scope] || '#78909c';
-        return `<div class="gauge-card" title="${g.detail || ''}">
+        return `<div class="gauge-card" style="cursor:pointer" onclick="showGaugeDetail('${g.key}')">
             ${svg}
             <div class="gauge-info">
                 <div class="gauge-label">${g.label} <span style="font-size:7px;font-weight:700;color:${scopeCol};background:${scopeCol}18;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle">${g.scope}</span></div>
@@ -351,6 +351,88 @@ function renderGauges() {
             </div>
         </div>`;
     }).join('');
+}
+
+// ── Gauge Detail Popup ──────────────────────────────
+const GAUGE_KNOWLEDGE = {
+    detection: {
+        title: 'Detection Rate',
+        body: 'Measures the percentage of predicted satellite passes where the sensor network successfully detected the object. Driven by weather, sensor health, and object brightness. Below 90% means the catalog is losing custody of objects — observations become stale, covariance grows, and conjunction screening accuracy degrades. Target: >90%.',
+        thresholds: '🟢 ≥90% nominal | 🟡 80-90% degraded | 🔴 <80% critical'
+    },
+    freshness: {
+        title: 'Catalog Freshness',
+        body: 'Median age of the most recent observation for each cataloged object. Stale observations mean larger uncertainty ellipsoids in conjunction screening. Freshness degrades when weather shuts down sites, passes are missed, or the network has coverage gaps. Lower is better.',
+        thresholds: '🟢 <8 hrs fresh | 🟡 8-24 hrs aging | 🔴 >24 hrs stale — Pc estimates unreliable'
+    },
+    nees: {
+        title: 'NEES (Normalized Estimation Error Squared)',
+        body: 'The gold-standard metric for covariance realism. Compares the filter\'s predicted uncertainty against actual observation residuals. A value near 3 (state dimension) means the UKF covariance accurately represents true uncertainty. Too high = overconfident filter, Pc values become meaningless.',
+        thresholds: '🟢 <4 well-calibrated | 🟡 4-6 investigate | 🔴 >6 covariance broken — all Pc untrustworthy'
+    },
+    throughput: {
+        title: 'Edge Throughput',
+        body: 'Average frames per second processed by the Jetson AGX Orin edge compute nodes across all active sites. Each frame passes through CUDA streak detection, astrometry plate-solving, and photometry extraction. Low throughput means the edge pipeline is bottlenecked — observations are being dropped.',
+        thresholds: '🟢 >10 fps healthy | 🟡 5-10 fps slow | 🔴 <5 fps critical — detections being lost'
+    },
+    conjActive: {
+        title: 'Active Conjunctions',
+        body: 'Count of conjunction events within the screening volume: miss distance <5km and time of closest approach (TCA) within 72 hours. Each event requires monitoring, analysis, and potential maneuver planning. High counts strain operator attention and may indicate a debris-generating event.',
+        thresholds: '🟢 <5 routine | 🟡 5-15 elevated ops tempo | 🔴 >15 surge — possible debris event'
+    },
+    gpu: {
+        title: 'Cloud GPU Utilization',
+        body: 'Mean GPU load across the cloud Kubernetes cluster running the PINN orbit propagator, FNO atmospheric density model, and Koopman conjunction screener. Not the edge Jetson GPUs — this is the cloud-side inference engine. High utilization means screening and propagation jobs are queuing.',
+        thresholds: '🟢 <80% headroom | 🟡 80-95% busy | 🔴 >95% saturated — screening latency increasing'
+    },
+    kafkaLag: {
+        title: 'Kafka Pipeline Lag',
+        body: 'Unconsumed messages in the edge→cloud Apache Kafka pipeline. Each TDM (Tracking Data Message) from every edge node flows through Kafka before cloud ingestion. Lag means the cloud is not keeping up with edge output — observations queue up, and real-time situational awareness degrades.',
+        thresholds: '🟢 <10 msgs real-time | 🟡 10-100 msgs minor lag | 🔴 >100 msgs pipeline stall'
+    },
+    densityErr: {
+        title: 'Atmospheric Density Model Error',
+        body: 'RMS prediction error of the ML-corrected NRLMSISE-00 atmospheric density model. Density drives drag calculations for LEO objects. During geomagnetic storms (high Kp), density becomes unpredictable, degrading orbit prediction and reentry forecasts. Lower is better.',
+        thresholds: '🟢 <25% good | 🟡 25-50% storm impact | 🔴 >50% LEO predictions unreliable'
+    }
+};
+
+function showGaugeDetail(key) {
+    // Remove existing popup
+    const old = document.getElementById('gaugeDetailPopup');
+    if(old) { old.remove(); return; } // toggle off if same gauge clicked
+
+    const info = GAUGE_KNOWLEDGE[key];
+    if(!info) return;
+    const g = STATE.gauges.find(x => x.key === key);
+    if(!g) return;
+
+    let color;
+    if(g.invert) { color = g.value <= g.green ? '#00e676' : g.value <= g.yellow ? '#ffab00' : '#ff1744'; }
+    else { color = g.value >= g.green ? '#00e676' : g.value >= g.yellow ? '#ffab00' : '#ff1744'; }
+
+    const popup = document.createElement('div');
+    popup.id = 'gaugeDetailPopup';
+    popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10001;background:#0d1117;border:1px solid ' + color + '44;border-radius:14px;padding:20px 24px;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.7),0 0 30px ' + color + '15;animation:fadeIn .25s ease';
+
+    popup.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-size:15px;font-weight:800;color:${color}">${info.title}</div>
+            <button onclick="document.getElementById('gaugeDetailPopup').remove()" style="background:none;border:1px solid rgba(255,255,255,0.12);color:#78909c;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+        <div style="font-size:14px;font-weight:900;color:${color};font-family:'JetBrains Mono',monospace;margin-bottom:10px">${g.value}${g.unit ? ' ' + g.unit : ''}</div>
+        <div style="font-size:11px;color:#b0bec5;line-height:1.7;margin-bottom:12px">${info.body}</div>
+        <div style="padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;font-size:10px;color:#78909c;line-height:1.6">${info.thresholds}</div>
+    `;
+
+    // Click outside to close
+    const overlay = document.createElement('div');
+    overlay.id = 'gaugeDetailOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)';
+    overlay.onclick = () => { overlay.remove(); popup.remove(); };
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
 }
 
 // ── Ground Sites ────────────────────────────────────
