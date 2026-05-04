@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelForge — Slingshot Programmer's Reference</title>
+    <meta name="description" content="Software engineering reference for Slingshot ground station edge pipeline — REST APIs, CUDA configuration, data flow architecture, and deployment procedures">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#07090f; color:#b0bec5; font-family:'Inter',sans-serif; min-height:100vh; }
+        body::before { content:''; position:fixed; top:0; left:0; width:100%; height:100%; background:
+            radial-gradient(ellipse 60% 40% at 20% 30%, rgba(0,229,255,0.03), transparent),
+            radial-gradient(ellipse 50% 50% at 80% 70%, rgba(124,77,255,0.03), transparent);
+            pointer-events:none; z-index:0; }
+
+        .nav { display:flex; align-items:center; gap:16px; padding:12px 32px; background:rgba(10,12,20,0.95); border-bottom:1px solid rgba(0,229,255,0.08); position:sticky; top:0; z-index:100; backdrop-filter:blur(20px); }
+        .nav .logo { font-size:15px; font-weight:900; color:#00e5ff; letter-spacing:1.5px; text-transform:uppercase; }
+        .nav .logo span { color:#b0bec5; font-weight:400; font-size:12px; margin-left:8px; letter-spacing:0; text-transform:none; }
+        .nav .spacer { flex:1; }
+        .nav a { color:#546e7a; font-size:10px; text-decoration:none; padding:5px 12px; border:1px solid rgba(255,255,255,0.06); border-radius:4px; transition:all .2s; text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+        .nav a:hover { color:#e8eaf6; border-color:rgba(0,229,255,0.3); background:rgba(0,229,255,0.08); }
+
+        .hero { padding:48px 32px 24px; text-align:center; position:relative; z-index:1; }
+        .hero h1 { font-size:28px; font-weight:900; background:linear-gradient(135deg,#00e5ff,#7c4dff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px; letter-spacing:-.5px; }
+        .hero .subtitle { font-size:13px; color:#78909c; max-width:700px; margin:0 auto 24px; line-height:1.7; }
+
+        .content { max-width:1100px; margin:0 auto; padding:0 32px 40px; position:relative; z-index:1; }
+        .section { margin-bottom:32px; }
+        .section h2 { font-size:16px; font-weight:800; color:#00e5ff; margin-bottom:12px; display:flex; align-items:center; gap:8px; padding-bottom:6px; border-bottom:1px solid rgba(0,229,255,0.1); }
+
+        .spec-table { width:100%; border-collapse:collapse; margin-top:8px; }
+        .spec-table td { padding:6px 12px; font-size:11px; border-bottom:1px solid rgba(255,255,255,0.03); vertical-align:top; }
+        .spec-table td:first-child { color:#546e7a; font-weight:600; width:180px; white-space:nowrap; }
+        .spec-table td:last-child { color:#e8eaf6; }
+        .spec-table tr:hover { background:rgba(0,229,255,0.02); }
+
+        code { color:#76ff03; background:rgba(118,255,3,0.08); padding:1px 6px; border-radius:3px; font-size:10px; font-family:'JetBrains Mono',monospace; }
+        code.post { color:#ffd740; background:rgba(255,215,64,0.08); }
+        code.put { color:#ff9100; background:rgba(255,145,0,0.08); }
+        code.del { color:#ff5252; background:rgba(255,82,82,0.08); }
+        code.mod { color:#b388ff; background:rgba(179,136,255,0.08); }
+
+        .yaml-block { background:rgba(10,12,20,0.9); border:1px solid rgba(100,160,255,0.08); border-radius:8px; padding:14px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#b0bec5; line-height:1.9; overflow-x:auto; white-space:pre; margin-top:8px; }
+        .yaml-key { color:#7c4dff; }
+        .yaml-sub { color:#00e5ff; }
+        .yaml-val { color:#ffd740; }
+        .yaml-cmt { color:#546e7a; }
+
+        .info-box { background:rgba(0,229,255,0.04); border:1px solid rgba(0,229,255,0.1); border-radius:8px; padding:12px 16px; font-size:11px; color:#80deea; line-height:1.7; margin:12px 0; }
+        .info-box strong { color:#00e5ff; }
+        .warning-box { background:rgba(255,23,68,0.05); border:1px solid rgba(255,23,68,0.12); border-radius:8px; padding:12px 16px; font-size:11px; color:#ff8a80; line-height:1.7; margin:12px 0; }
+        .warning-box strong { color:#ff5252; }
+
+        .footer { padding:12px 32px; font-size:9px; color:#263238; border-top:1px solid rgba(255,255,255,0.03); text-align:center; position:relative; z-index:1; }
+
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-thumb { background:rgba(0,229,255,0.2); border-radius:3px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+
+        @media (max-width:768px) {
+            .nav, .content, .hero { padding-left:16px; padding-right:16px; }
+            .hero h1 { font-size:22px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="logo">SENTINELFORGE<span>Programmer's Reference</span></div>
+        <div class="spacer"></div>
+        <a href="sentinel_ops.html">← Ops Center</a>
+        <a href="sentinel_slingshot_catalog.html">🛰 Ground Stations</a>
+        <a href="sentinel_slingshot_technician.html">🔧 Technician Guide</a>
+        <a href="sentinel_portal.html">📖 Portal</a>
+    </nav>
+
+    <section class="hero">
+        <h1>💻 Programmer's Integration Reference</h1>
+        <p class="subtitle">REST API endpoints, edge pipeline configuration, CUDA deployment, data transport, and debug tooling for all 20 Slingshot ground station nodes.</p>
+    </section>
+
+    <div class="content">
+
+        <!-- Data Flow Schematic -->
+        <div class="section">
+            <h2>📐 Edge-to-Cloud Data Flow Architecture</h2>
+            <div style="background:rgba(10,12,20,0.9);border:1px solid rgba(0,229,255,0.08);border-radius:10px;padding:16px;text-align:center">
+                <img src="img/programmer_schematic.png" alt="Edge-to-Cloud Pipeline Schematic" style="width:100%;max-width:900px;border-radius:8px;opacity:0.95" />
+                <div style="margin-top:10px;font-size:9px;color:#546e7a;font-family:'JetBrains Mono',monospace;line-height:1.6">
+                    FIG 1 — SGSN DATA FLOW ARCHITECTURE · Edge Node → CUDA Pipeline → Kafka Transport → Cloud Catalog<br>
+                    CCD Frame (32MB) → Calibration → Streak Detection → Source Extraction → Plate Solve → TDM (10KB) → Cloud Ingest
+                </div>
+            </div>
+            <div class="info-box" style="margin-top:12px">
+                <strong>ARCHITECTURE:</strong> Each site reduces raw imagery (32MB/frame at 1Hz) to structured Tracking Data Messages (10KB) using the on-site NVIDIA Jetson AGX Orin GPU. Only derived measurements traverse the WAN — a 3,200:1 data compression ratio that enables the network to operate over Starlink or cellular uplinks.
+            </div>
+        </div>
+
+        <!-- REST API -->
+        <div class="section">
+            <h2>🔌 REST API Endpoints (Per Site)</h2>
+            <div class="info-box">
+                <strong>BASE URL:</strong> <code>https://beacon-api.slingshot.cloud/api/v2/sites/{site_slug}</code><br>
+                Replace <code>{site_slug}</code> with the lowercase site code (e.g., <code>co1</code>, <code>tx</code>, <code>au1</code>, <code>hi</code>). Auth: Bearer token via Slingshot Beacon SSO.
+            </div>
+            <table class="spec-table">
+                <tr><td>Health Check</td><td><code>GET /api/v2/sites/{slug}/health</code> — Returns uptime, GPU temp, dome state, weather safety</td></tr>
+                <tr><td>Telemetry Stream</td><td><code>GET /api/v2/sites/{slug}/telemetry?interval=5s</code> — SSE stream of real-time site telemetry</td></tr>
+                <tr><td>Submit TDM</td><td><code class="post">POST /api/v2/sites/{slug}/tdm</code> — Ingest Tracking Data Message (CCSDS TDM/JSON)</td></tr>
+                <tr><td>Queue Status</td><td><code>GET /api/v2/sites/{slug}/queue</code> — Pending observation tasks with priority</td></tr>
+                <tr><td>Task Schedule</td><td><code class="put">PUT /api/v2/sites/{slug}/schedule</code> — Push new observation schedule to edge node</td></tr>
+                <tr><td>Calibration Data</td><td><code>GET /api/v2/sites/{slug}/calibration</code> — Latest dark/flat/bias frames metadata</td></tr>
+                <tr><td>Edge Logs</td><td><code>GET /api/v2/sites/{slug}/logs?tail=500</code> — Most recent pipeline log entries</td></tr>
+                <tr><td>Detection History</td><td><code>GET /api/v2/sites/{slug}/detections?hours=24</code> — Recent detection catalog</td></tr>
+                <tr><td>Force Reboot</td><td><code class="del">POST /api/v2/sites/{slug}/reboot</code> — Requires Tier 3 auth. Triggers safe shutdown + restart</td></tr>
+            </table>
+        </div>
+
+        <!-- Edge Pipeline Config -->
+        <div class="section">
+            <h2>⚙️ Edge Pipeline Configuration</h2>
+            <div class="yaml-block"><span class="yaml-cmt"># /opt/slingshot/config/site.yaml — Standard edge node configuration</span>
+
+<span class="yaml-key">site:</span>
+  <span class="yaml-sub">id:</span> <span class="yaml-val">SLING-NUM-{CODE}</span>
+  <span class="yaml-sub">name:</span> <span class="yaml-val">{Site Name}</span>
+  <span class="yaml-sub">lat:</span> {latitude}
+  <span class="yaml-sub">lon:</span> {longitude}
+
+<span class="yaml-key">edge_compute:</span>
+  <span class="yaml-sub">platform:</span> <span class="yaml-val">jetson_agx_orin_64gb</span>
+  <span class="yaml-sub">cuda_version:</span> <span class="yaml-val">12.2</span>
+  <span class="yaml-sub">tensorrt:</span> <span class="yaml-val">8.6.1</span>
+  <span class="yaml-sub">jetpack:</span> <span class="yaml-val">6.0</span>
+  <span class="yaml-sub">gpu_budget_pct:</span> <span class="yaml-val">80</span>
+
+<span class="yaml-key">pipeline:</span>
+  <span class="yaml-sub">streak_detect:</span>
+    <span class="yaml-sub">model:</span> <span class="yaml-val">pinn_streak_v3.2.engine</span>
+    <span class="yaml-sub">filter_bank:</span> <span class="yaml-val">J2-J6_matched</span>
+    <span class="yaml-sub">min_snr:</span> 3.5
+    <span class="yaml-sub">max_streak_length_px:</span> 2048
+  <span class="yaml-sub">photometry:</span>
+    <span class="yaml-sub">aperture_radii:</span> <span class="yaml-val">[3, 5, 7]</span>
+    <span class="yaml-sub">catalog:</span> <span class="yaml-val">gaia_dr3</span>
+    <span class="yaml-sub">zeropoint_band:</span> <span class="yaml-val">V</span>
+
+<span class="yaml-key">transport:</span>
+  <span class="yaml-sub">kafka:</span>
+    <span class="yaml-sub">brokers:</span> <span class="yaml-val">[beacon-ingest-01.slingshot.cloud:9092]</span>
+    <span class="yaml-sub">topic:</span> <span class="yaml-val">site.{slug}.tdm</span>
+    <span class="yaml-sub">compression:</span> <span class="yaml-val">zstd</span>
+    <span class="yaml-sub">batch_size:</span> <span class="yaml-val">16384</span>
+    <span class="yaml-sub">linger_ms:</span> <span class="yaml-val">100</span>
+
+<span class="yaml-key">camera:</span>
+  <span class="yaml-sub">model:</span> <span class="yaml-val">ZWO_ASI6200MM_Pro</span>
+  <span class="yaml-sub">interface:</span> <span class="yaml-val">USB3.0</span>
+  <span class="yaml-sub">readout_mode:</span> <span class="yaml-val">low_noise</span>
+  <span class="yaml-sub">cooling_setpoint_c:</span> <span class="yaml-val">-20</span>
+  <span class="yaml-sub">gain:</span> <span class="yaml-val">100</span>
+  <span class="yaml-sub">binning:</span> <span class="yaml-val">1x1</span></div>
+        </div>
+
+        <!-- Key Modules -->
+        <div class="section">
+            <h2>📦 Key Python / CUDA Modules</h2>
+            <table class="spec-table">
+                <tr><td><code class="mod">streak_detect.cu</code></td><td>PINN-accelerated matched-filter streak detection. CUDA kernel uses J2-J6 perturbation bank for LEO rate-matching. 900 filter orientations, &lt;3ms per frame on Orin.</td></tr>
+                <tr><td><code class="mod">calibration.cu</code></td><td>GPU-accelerated CCD calibration: bias subtraction, dark current, flat fielding, background estimation. Processes 9576×6388 frames in &lt;2ms.</td></tr>
+                <tr><td><code class="mod">plate_solver.cpp</code></td><td>Astrometric plate solving via Gaia DR3 triangle matching. Pixel→RA/Dec WCS transform with SIP distortion model. &lt;50ms cold start.</td></tr>
+                <tr><td><code class="mod">photometry.cpp</code></td><td>Aperture and PSF photometry with Tycho-2 zeropoint calibration. Outputs instrumental and calibrated magnitudes (BVRI).</td></tr>
+                <tr><td><code class="mod">bayesian_iod.py</code></td><td>Initial Orbit Determination from 3+ tracklets. Gauss method + UKF refinement. Outputs state vector in TEME frame.</td></tr>
+                <tr><td><code class="mod">catalog_lifecycle.py</code></td><td>UCT → TENTATIVE → CATALOGED state machine. Mahalanobis distance correlation with existing catalog objects.</td></tr>
+                <tr><td><code class="mod">kafka_transport.py</code></td><td>Edge→Cloud Kafka producer. Protobuf TDMs with zstd compression. Offline queueing with SQLite fallback.</td></tr>
+                <tr><td><code class="mod">site_monitor.py</code></td><td>Health daemon: GPU temp/util, dome state, weather, queue depth. JSON telemetry broadcast every 5s.</td></tr>
+                <tr><td><code class="mod">scheduler.py</code></td><td>Priority-weighted observation scheduler. Beacon targets + horizon mask + weather forecast integration.</td></tr>
+                <tr><td><code class="mod">ascom_hal.py</code></td><td>Hardware Abstraction Layer for mount, camera, dome, focuser, filter wheel. ASCOM Alpaca/COM interface with simulation mode.</td></tr>
+            </table>
+        </div>
+
+        <!-- SSH & Debug -->
+        <div class="section">
+            <h2>🛠️ SSH & Debug Commands</h2>
+            <table class="spec-table">
+                <tr><td>SSH Access</td><td><code class="post">ssh edge@{slug}.slingshot.internal -p 2222</code></td></tr>
+                <tr><td>GPU Status</td><td><code>jetson_health --diag --json</code></td></tr>
+                <tr><td>Pipeline Status</td><td><code>systemctl status slingshot-pipeline</code></td></tr>
+                <tr><td>Restart Pipeline</td><td><code class="del">sudo systemctl restart slingshot-pipeline</code></td></tr>
+                <tr><td>Tail Detections</td><td><code>journalctl -u slingshot-pipeline -f --output=json</code></td></tr>
+                <tr><td>Kafka Lag</td><td><code>kafka-consumer-groups --describe --group site-{slug}</code></td></tr>
+                <tr><td>GPU Utilization</td><td><code>tegrastats --interval 1000</code></td></tr>
+                <tr><td>Camera Test</td><td><code>python3 -m ascom_hal --self-test</code></td></tr>
+                <tr><td>Dark Calibration</td><td><code>cam_cal --darks --count=100 --output=/opt/slingshot/cal/</code></td></tr>
+                <tr><td>Force TDM Flush</td><td><code class="del">kafka_transport.py --flush-queue --force</code></td></tr>
+            </table>
+            <div class="warning-box" style="margin-top:12px">
+                <strong>⚠ CAUTION:</strong> Commands marked in <span style="color:#ff5252">red</span> are destructive or require elevated privileges. Always verify the site is not mid-observation before restarting services. Check queue depth first: <code>GET /api/v2/sites/{slug}/queue</code>
+            </div>
+        </div>
+
+        <!-- Deployment Workflow -->
+        <div class="section">
+            <h2>🚀 Deployment Workflow</h2>
+            <table class="spec-table">
+                <tr><td>1. Build</td><td><code>cmake --build build/ --target streak_detect -- -j$(nproc)</code> — Cross-compile for sm_87 (Orin) on x86 host</td></tr>
+                <tr><td>2. Package</td><td><code>dpkg-deb --build slingshot-edge_3.2.1_arm64</code> — Debian package for Jetson</td></tr>
+                <tr><td>3. Stage</td><td><code class="post">scp slingshot-edge_3.2.1_arm64.deb edge@{slug}.slingshot.internal:/tmp/</code></td></tr>
+                <tr><td>4. Pre-flight</td><td><code>ssh edge@{slug} "slingshot-preflight --check-queue --check-weather"</code></td></tr>
+                <tr><td>5. Deploy</td><td><code class="del">ssh edge@{slug} "sudo dpkg -i /tmp/slingshot-edge_3.2.1_arm64.deb"</code></td></tr>
+                <tr><td>6. Verify</td><td><code>ssh edge@{slug} "slingshot-pipeline --self-test --timeout=30"</code></td></tr>
+                <tr><td>7. Rollback</td><td><code class="del">ssh edge@{slug} "sudo apt install slingshot-edge=3.2.0"</code> — Downgrade to previous version</td></tr>
+            </table>
+            <div class="info-box">
+                <strong>CI/CD:</strong> Production deploys are staged through Beacon's fleet management portal. Manual SSH deploys are only for emergency hotfixes. All packages are signed with the Slingshot GPG key and verified on the edge node before installation.
+            </div>
+        </div>
+
+        <!-- Slingshot Alignment -->
+        <div class="section">
+            <h2>🎯 SentinelForge Module Alignment</h2>
+            <table class="spec-table">
+                <tr><td>orbit_propagator.py</td><td>Kepler + J2-J6 secular propagation. Feeds the observation scheduler's pass prediction engine.</td></tr>
+                <tr><td>conjunction_screener.py</td><td>Foster-Estes collision probability. Ingests fused orbits from multi_sensor_fusion for Pc calculation.</td></tr>
+                <tr><td>multi_sensor_fusion.py</td><td>Extended Kalman Filter fusing observations from multiple sites into unified state estimates.</td></tr>
+                <tr><td>light_curve_analyzer.py</td><td>FFT spin-period estimation + GNN embedding for object characterization and identification.</td></tr>
+                <tr><td>graph_associator.py</td><td>GNN-based tracklet association. Links uncorrelated tracks across sites using graph neural networks.</td></tr>
+                <tr><td>koopman_propagator.py</td><td>EDMD linearized propagation for fast covariance forecasting in conjunction screening.</td></tr>
+                <tr><td>cislunar_dynamics.py</td><td>CR3BP Lagrange points and manifold computation for cislunar domain awareness.</td></tr>
+                <tr><td>data_assimilation_engine.py</td><td>Global catalog assimilation — merges observations from all 20 sites into unified catalog state.</td></tr>
+            </table>
+        </div>
+
+        <!-- Page Navigation -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:24px">
+            <a href="sentinel_slingshot_technician.html" style="color:#ffd740;font-size:11px;text-decoration:none;padding:6px 16px;border:1px solid rgba(255,215,64,0.2);border-radius:6px;transition:all .2s;background:rgba(255,215,64,0.04)" onmouseover="this.style.background='rgba(255,215,64,0.12)';this.style.borderColor='rgba(255,215,64,0.4)'" onmouseout="this.style.background='rgba(255,215,64,0.04)';this.style.borderColor='rgba(255,215,64,0.2)'">🔧 Onsite Technician Guide</a>
+            <a href="sentinel_slingshot_catalog.html" style="color:#b388ff;font-size:11px;text-decoration:none;padding:6px 16px;border:1px solid rgba(179,136,255,0.2);border-radius:6px;transition:all .2s;background:rgba(179,136,255,0.04)" onmouseover="this.style.background='rgba(179,136,255,0.12)';this.style.borderColor='rgba(179,136,255,0.4)'" onmouseout="this.style.background='rgba(179,136,255,0.04)';this.style.borderColor='rgba(179,136,255,0.2)'">🛰 Ground Station Catalog</a>
+            <a href="sentinel_ops.html" style="color:#00e5ff;font-size:11px;text-decoration:none;padding:6px 16px;border:1px solid rgba(0,229,255,0.2);border-radius:6px;transition:all .2s;background:rgba(0,229,255,0.04)" onmouseover="this.style.background='rgba(0,229,255,0.12)';this.style.borderColor='rgba(0,229,255,0.4)'" onmouseout="this.style.background='rgba(0,229,255,0.04)';this.style.borderColor='rgba(0,229,255,0.2)'">← Ops Center</a>
+        </div>
+    </div>
+
+    <div class="footer">SentinelForge Programmer's Integration Reference — Slingshot Global Sensor Network. Edge pipeline architecture modeled from public Slingshot Aerospace / Numerica documentation.</div>
+</body>
+</html>

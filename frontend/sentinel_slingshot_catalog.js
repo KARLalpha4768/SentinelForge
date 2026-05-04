@@ -208,7 +208,7 @@ function openDetail(s) {
 
         <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <span style="color:#546e7a;font-size:9px;text-transform:uppercase;letter-spacing:.5px">Navigate:</span>
-            <button onclick="openProgrammerPanel('${s.id}')" style="color:#00e5ff;font-size:10px;padding:4px 12px;border:1px solid rgba(0,229,255,0.2);border-radius:4px;background:rgba(0,229,255,0.04);cursor:pointer;font-family:inherit;font-weight:600;transition:all .2s" onmouseover="this.style.background='rgba(0,229,255,0.12)';this.style.borderColor='rgba(0,229,255,0.4)'" onmouseout="this.style.background='rgba(0,229,255,0.04)';this.style.borderColor='rgba(0,229,255,0.2)'">\ud83d\udcbb Programmer's Sheet</button>
+            <a href="sentinel_slingshot_programmer.html" style="color:#00e5ff;font-size:10px;text-decoration:none;padding:4px 12px;border:1px solid rgba(0,229,255,0.2);border-radius:4px;background:rgba(0,229,255,0.04);font-weight:600;transition:all .2s" onmouseover="this.style.background='rgba(0,229,255,0.12)';this.style.borderColor='rgba(0,229,255,0.4)'" onmouseout="this.style.background='rgba(0,229,255,0.04)';this.style.borderColor='rgba(0,229,255,0.2)'">\ud83d\udcbb Programmer's Reference</a>
             <a href="sentinel_slingshot_technician.html" style="color:#ffd740;font-size:10px;text-decoration:none;padding:4px 12px;border:1px solid rgba(255,215,64,0.2);border-radius:4px;background:rgba(255,215,64,0.04);font-weight:600;transition:all .2s" onmouseover="this.style.background='rgba(255,215,64,0.12)'" onmouseout="this.style.background='rgba(255,215,64,0.04)'">\ud83d\udd27 Onsite Technician</a>
         </div>
     `;
