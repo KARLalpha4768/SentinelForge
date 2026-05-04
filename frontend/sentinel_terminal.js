@@ -365,6 +365,27 @@ df(){
 };
 
 // ── Natural Language Processing Layer ──
+// Known project keywords for fuzzy matching
+const PROJECT_WORDS=['koopman','kepler','orbit','propagat','conjunct','screener','fusion','sensor',
+  'light','curve','graph','associat','bayesian','iod','cislunar','dynamics','assimilat','pinn',
+  'coordinate','frame','streak','detect','calibrat','plate','solver','photometry','kafka',
+  'transport','monitor','scheduler','ascom','hal','pipeline','sentinel','cuda','tensorrt'];
+
+function extractSubject(s){
+  // Pull meaningful words that aren't stop words
+  const stop='the a an is are was were do does did we need to me my you your show can could would should will shall have has had been being get got let make i it this that these those in on at for of with from by about how what where when why which who whom'.split(' ');
+  return s.toLowerCase().split(/\s+/).filter(w=>w.length>2&&!stop.includes(w));
+}
+
+function findProjectMatch(words){
+  for(const w of words){
+    for(const kw of PROJECT_WORDS){
+      if(w.includes(kw)||kw.includes(w)) return kw;
+    }
+  }
+  return null;
+}
+
 function nlp(input){
   const s=input.toLowerCase().trim();
   // Direct command passthrough — if first word is a known command, skip NLP
@@ -374,20 +395,54 @@ function nlp(input){
   // File extraction helper
   const fileMatch=input.match(/[\w\-\/]+\.(?:py|cu|cpp|html|js|txt|json|yaml|md)/i);
   const fileName=fileMatch?fileMatch[0]:null;
+  const words=extractSubject(s);
+  const projMatch=findProjectMatch(words);
 
-  // ── Intent patterns (ordered by specificity) ──
+  // ── Intent patterns ──
 
-  // Show/view/open/read/display file
-  if(/(?:show|view|open|read|display|print|what(?:'s| is| does)? (?:in|inside))\b/.test(s)&&fileName)
+  // Show/view/open/read file (with filename)
+  if(/(?:show|view|open|read|display|print|see|look at|check out|inspect)\b/.test(s)&&fileName)
     return {cmd:'cat',args:[fileName],narr:`Reading ${fileName}...`};
-  if(/(?:show|view|open|read|display|what(?:'s| is))\s+(?:the\s+)?(?:source|code|contents?)\s+(?:of|for|in)\b/.test(s)&&fileName)
-    return {cmd:'cat',args:[fileName],narr:`Opening ${fileName}...`};
 
-  // Edit/modify/change file
+  // "show me X files" / "show me X" → search for X
+  if(/(?:show|view|see|display|list|give|get)\s+(?:me\s+)?(?:the\s+)?/.test(s)){
+    if(fileName) return {cmd:'cat',args:[fileName],narr:`Reading ${fileName}...`};
+    if(/(?:files|directory|folder|contents|listing)/.test(s)&&!projMatch)
+      return {cmd:'ls',args:[],narr:'Listing directory...'};
+    if(/(?:structure|tree|layout|hierarchy|overview)/.test(s))
+      return {cmd:'tree',args:[],narr:'Showing project structure...'};
+    // "show me koopman files" / "show me the propagator"
+    if(projMatch)
+      return {cmd:'find',args:[projMatch],narr:`Searching for "${projMatch}"...`};
+    // "show me X" where X is any word → try find
+    const showMatch=s.match(/(?:show|view|see|display)\s+(?:me\s+)?(?:the\s+)?(.+?)(?:\s+files?|\s+code|\s+source)?$/i);
+    if(showMatch){
+      const q=showMatch[1].replace(/^(?:the|a|all|any)\s+/i,'').trim();
+      if(q.length>1) return {cmd:'find',args:[q],narr:`Searching for "${q}"...`};
+    }
+  }
+
+  // Edit/modify/change (with file)
   if(/(?:edit|modify|change|update|fix|write|open.*editor)\b/.test(s)&&fileName)
     return {cmd:'nano',args:[fileName],narr:`Opening ${fileName} in editor...`};
-  if(/(?:edit|modify|change|update)\s+(?:the\s+)?(?:code|file|source)/i.test(s)&&fileName)
-    return {cmd:'nano',args:[fileName],narr:`Opening ${fileName} for editing...`};
+
+  // Questions about modifying/editing code (no specific file)
+  if(/(?:modify|edit|change|update|fix)\s+(?:any|the|some|our)?\s*(?:code|files?|source|scripts?)/i.test(s)||
+     /(?:need|want|should|can|could)\s+(?:we\s+)?(?:to\s+)?(?:modify|edit|change|update|fix)/i.test(s)){
+    return {cmd:'_narr',args:[],narr:null,custom:()=>{
+      addLine('To modify code, specify a file:','info');
+      addLine('  nano main.py                    — open in editor','out');
+      addLine('  edit orbit_propagator.py         — same as nano','out');
+      addLine('  cat main.py                     — view first, then edit','out');
+      addLine('Or ask: "show me the kepler code" to find relevant files.','out');
+      addLine('','out');
+      addLine('Key editable files:','info');
+      addLine('  main.py                          — entry point','file');
+      addLine('  output/builds/src/science/*.py    — science modules','file');
+      addLine('  output/builds/src/hardware/*.cu   — CUDA kernels','file');
+      addLine('  output/builds/src/edge/*.py       — edge pipeline','file');
+    }};
+  }
 
   // Run/execute scripts
   if(/(?:run|execute|start|launch)\s+(?:the\s+)?(?:test|tests|test suite|unit tests)/i.test(s))
@@ -401,11 +456,7 @@ function nlp(input){
   if(/(?:run|execute|start|launch)\b/.test(s)&&fileName)
     return {cmd:'python',args:[fileName],narr:`Running ${fileName}...`};
 
-  // List/show files and directories
-  if(/(?:list|show|what(?:'s| are))\s+(?:the\s+)?(?:files|contents?|directory|dir|folder|what(?:'s)? (?:here|in here))/i.test(s))
-    return {cmd:'ls',args:[],narr:'Listing directory...'};
-  if(/(?:show|list|what(?:'s| are))\s+(?:the\s+)?(?:project|file)?\s*(?:structure|tree|layout|hierarchy)/i.test(s))
-    return {cmd:'tree',args:[],narr:'Showing project structure...'};
+  // "where am i" / pwd
   if(/(?:where am i|current dir|pwd|what dir|which dir|what folder)/i.test(s))
     return {cmd:'pwd',args:[],narr:null};
 
@@ -419,7 +470,7 @@ function nlp(input){
   if(/(?:go\s+)?home/i.test(s))
     return {cmd:'cd',args:['~'],narr:'Going home...'};
 
-  // Search/find
+  // Search/find (explicit)
   if(/(?:search|find|look for|locate|where(?:'s| is))\s+(.+)/i.test(s)){
     const m=s.match(/(?:search|find|look for|locate|where(?:'s| is))\s+(.+)/i);
     const q=m[1].replace(/^(?:the|a|file|files)\s+/i,'').trim();
@@ -491,7 +542,7 @@ function nlp(input){
     return {cmd:'_narr',args:[],narr:null,custom:()=>{
       addLine('Hello! I\'m the SentinelForge edge terminal.','info');
       addLine('You can use natural language or standard Unix commands.','out');
-      addLine('Try: "show me the project files" or "run the tests"','out');
+      addLine('Try: "show me the koopman files" or "run the tests"','out');
     }};
   if(/(?:thanks|thank you|thx|cheers)/i.test(s))
     return {cmd:'_narr',args:[],narr:null,custom:()=>{
@@ -505,11 +556,23 @@ function nlp(input){
       addLine('Backed by a simulated 20-node edge processing network.','out');
     }};
 
-  // Catch-all question about specific files
+  // ── Fuzzy catch-alls ──
+
+  // If input contains a known project keyword, search for it
+  if(projMatch)
+    return {cmd:'find',args:[projMatch],narr:`Searching for "${projMatch}"...`};
+
+  // If a filename was mentioned anywhere, show it
   if(fileName)
     return {cmd:'cat',args:[fileName],narr:`Showing ${fileName}...`};
 
-  return null; // No NLP match — fall through to raw command parser
+  // Yes/no/ok responses
+  if(/^(?:yes|no|ok|okay|sure|nah|nope|yep|yeah|y|n)$/i.test(s))
+    return {cmd:'_narr',args:[],narr:null,custom:()=>{
+      addLine('Ready for your next command or question.','info');
+    }};
+
+  return null; // No NLP match
 }
 
 // Boot message
