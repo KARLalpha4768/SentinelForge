@@ -774,15 +774,155 @@ function processQuery(query) {
         STATE.ucts.forEach(u => { r += `• <b>${u.id}</b>: ${u.passes} passes, ${u.sma}km, ${u.inc}°<br>`; });
         return r;
     }
+    // ── OPTICS & TELESCOPE ──
+    if(q.match(/optic|telescope|aperture|lens|mirror|focal|mount|tube|cdk|rasa|planewave/)) {
+        return `<b>🔭 Slingshot Optics & Telescopes:</b><br><br>` +
+            `<b>Primary Apertures:</b> 14-inch (0.35m) to 20-inch (0.5m) COTS optical tubes — Celestron RASA 14" f/2 astrographs and PlaneWave CDK20 (0.5m f/6.8 corrected Dall-Kirkham) operating in tandem arrays.<br><br>` +
+            `<b>Tracking Mounts:</b> Direct-drive equatorial mounts with >5°/sec slew rate, zero gear backlash. LEO rate-tracking follows objects at angular rates up to 2°/sec. GEO uses sidereal tracking (stars fixed, satellites streak).<br><br>` +
+            `<b>Detectors:</b> Back-illuminated sCMOS (Scientific CMOS) sensors — high QE (~95%), low read noise (<1e⁻), running at 25-100 fps. Short integration times freeze fast LEO objects while maintaining SNR >3.5.<br><br>` +
+            `<b>Filter System:</b> Multi-position filter wheels — broadband (V, R, I) for nighttime photometry + narrow-band SWIR/NIR filters for patented daylight tracking. Automatic swap at dawn/dusk transitions.<br><br>` +
+            `<b>Design Philosophy:</b> Multiple small COTS apertures in tandem > single expensive monolithic aperture. Wider field of regard, redundancy, and 10x lower cost than DoD equivalents.`;
+    }
+    // ── DAYLIGHT TRACKING ──
+    if(q.match(/daylight|daytime|dawn|dusk|swir|narrow.?band|sunlit/)) {
+        return `<b>☀️ Daylight Satellite Tracking:</b><br><br>` +
+            `Slingshot's differentiator — tracking satellites against the <b>bright daytime sky</b>. Traditional optical stations only work at night; Slingshot eliminates the dawn/dusk gap.<br><br>` +
+            `<b>How it works:</b><br>` +
+            `1. <b>Narrow-band SWIR/NIR filters</b> isolate reflected sunlight from satellite surfaces<br>` +
+            `2. <b>High-dynamic-range sCMOS</b> sensors handle extreme contrast ratio (sunlit sky vs dim satellite)<br>` +
+            `3. <b>Matched-filter algorithms</b> extract streak signal from sky background noise<br>` +
+            `4. <b>Rate-tracking</b> — mount follows predicted trajectory so satellite appears as a point, stars streak<br><br>` +
+            `<b>Coverage gain:</b> ~18h/day observation vs ~8h for traditional night-only sites. Critical for GEO persistence and LEO revisit rates.`;
+    }
+    // ── EDGE COMPUTE / GPU ──
+    if(q.match(/edge|jetson|orin|gpu|cuda|tensorrt|compute|pipeline|streak/)) {
+        return `<b>⚡ Edge Compute Pipeline:</b><br><br>` +
+            `<b>Hardware:</b> NVIDIA Jetson AGX Orin (64GB) at each site — 275 TOPS AI, 2048 CUDA cores, 12.2 toolkit<br><br>` +
+            `<b>Pipeline stages:</b><br>` +
+            `1. <b>streak_detect.cu</b> — PINN-accelerated matched-filter streak detection. J2-J6 perturbation bank for LEO rate-matching. Min SNR=3.5, max streak width 12px<br>` +
+            `2. <b>Astrometry</b> — local astrometry.net solver, plate-solving each frame for sub-arcsecond pointing<br>` +
+            `3. <b>Photometry</b> — aperture photometry (radii 3,5,8 px), Tycho-2 zeropoint calibration<br>` +
+            `4. <b>bayesian_iod.py</b> — Initial Orbit Determination (Gauss + UKF), 3+ tracklets → 6-element state vector in TEME frame<br>` +
+            `5. <b>catalog_lifecycle.py</b> — UCT→TENTATIVE→CATALOGED state machine, Mahalanobis distance correlation<br>` +
+            `6. <b>kafka_transport.py</b> — TDMs serialized to Protobuf, zstd compressed, batch=100, linger=500ms<br><br>` +
+            `<b>Key metric:</b> Raw frames (GB/min) reduced to TDMs (KB) in milliseconds at the edge. Only metadata crosses the WAN.`;
+    }
+    // ── SLINGSHOT COMPANY ──
+    if(q.match(/slingshot|beacon|numerica|spacetrak|seradata/)) {
+        return `<b>🚀 Slingshot Aerospace:</b><br><br>` +
+            `Founded <b>2017</b> in Austin, TX. Combines 130+ commercial optical sensors with the <b>Numerica</b> orbit determination engine for high-accuracy SDA.<br><br>` +
+            `<b>Key products:</b><br>` +
+            `• <b>Beacon</b> — Multi-sensor fusion platform. Fuses proprietary + third-party observations. AI-driven analytics with actionable maneuver recommendations<br>` +
+            `• <b>Seradata SpaceTrak</b> — Launch and deorbit intelligence for commercial and DoD customers<br>` +
+            `• <b>Ground Network</b> — 20 globally distributed optical sites, 24/7 autonomous ops<br><br>` +
+            `<b>Coverage:</b> LEO, MEO, GEO — including daylight passes. Patented narrow-band daylight tracking eliminates the traditional optical observation gap.<br><br>` +
+            `<b>Customers:</b> USSF, NRO, commercial operators (SES, Intelsat, Eutelsat), allied MoDs. SentinelForge integrates via REST API for multi-sensor fusion.`;
+    }
+    // ── ORBITAL MECHANICS ──
+    if(q.match(/orbit|kepler|propagat|tle|sgp4|j2|perturbat|inclination|apogee|perigee|semi.?major|eccentricity|raan|mean.?motion/)) {
+        return `<b>🌍 Orbital Mechanics in SentinelForge:</b><br><br>` +
+            `<b>Propagation:</b> SGP4/SDP4 for TLE-based prediction + custom PINN (Physics-Informed Neural Network) propagator for high-fidelity work.<br><br>` +
+            `<b>Perturbation model (J2-J6):</b><br>` +
+            `• J2 (Earth oblateness) — dominant, causes RAAN drift ~7°/day for LEO<br>` +
+            `• J3 (N-S asymmetry) — pear-shaped correction<br>` +
+            `• J4-J6 — higher-order geopotential harmonics for precise GEO station-keeping<br>` +
+            `• Atmospheric drag — exponential density model + F10.7 solar proxy<br>` +
+            `• Solar radiation pressure — area-to-mass ratio dependent<br><br>` +
+            `<b>Coordinate frames:</b> TEME (True Equator Mean Equinox) for TLEs, J2000/GCRF for high-fidelity, ITRF for ground stations. Proper frame transforms via IAU-2006/2000A nutation model.<br><br>` +
+            `<b>State estimation:</b> UKF (Unscented Kalman Filter) for non-linear orbit determination. Covariance realism validated via NEES (Normalized Estimation Error Squared) — target NEES ≈ 3.0.`;
+    }
+    // ── COVARIANCE / NEES ──
+    if(q.match(/covariance|nees|kalman|uncertainty|sigma|filter|estimation/)) {
+        return `<b>📊 Covariance & State Estimation:</b><br><br>` +
+            `<b>Filter:</b> UKF (Unscented Kalman Filter) — handles non-linear dynamics without Jacobians. 6-element state (pos+vel) with 6×6 covariance matrix.<br><br>` +
+            `<b>NEES (Normalized Estimation Error Squared):</b> Key metric for covariance realism. NEES ≈ 3.0 means filter is well-calibrated. Current fleet average: ${STATE.gauges?.find(g=>g.label?.includes('NEES'))?.value || '3.1'}<br><br>` +
+            `<b>Covariance sources of error:</b><br>` +
+            `• Atmospheric density uncertainty (±30% during Kp>5 storms)<br>` +
+            `• Sparse observations — fewer passes = larger covariance<br>` +
+            `• Maneuver detection lag — unmodeled thrust corrupts prediction<br>` +
+            `• Solar radiation pressure — unknown area-to-mass ratio for debris<br><br>` +
+            `<b>SentinelForge approach:</b> Fuse observations from multiple networks (Slingshot, ExoAnalytic, USSF-SSN, LeoLabs) to tighten covariance. More sensors = smaller uncertainty ellipsoid = better Pc estimates.`;
+    }
+    // ── CODE / API ──
+    if(q.match(/code|api|endpoint|rest|python|module|script|yaml|config|kafka|protobuf/)) {
+        return `<b>💻 SentinelForge Code & API:</b><br><br>` +
+            `<b>Edge modules (per site):</b><br>` +
+            `• <code>streak_detect.cu</code> — CUDA streak detection (PINN + J2-J6 matched filter)<br>` +
+            `• <code>bayesian_iod.py</code> — Gauss + UKF initial orbit determination<br>` +
+            `• <code>catalog_lifecycle.py</code> — UCT→TENTATIVE→CATALOGED state machine<br>` +
+            `• <code>kafka_transport.py</code> — Protobuf TDM producer, zstd compression<br>` +
+            `• <code>site_monitor.py</code> — Health telemetry daemon (5s interval)<br>` +
+            `• <code>scheduler.py</code> — Priority-weighted observation scheduler<br>` +
+            `• <code>flat_field.py</code> — Twilight/dome flat calibration pipeline<br><br>` +
+            `<b>REST API (per site):</b><br>` +
+            `• <code>GET /api/v2/sites/{id}/health</code><br>` +
+            `• <code>GET /api/v2/sites/{id}/telemetry?interval=5s</code><br>` +
+            `• <code>POST /api/v2/sites/{id}/tdm</code><br>` +
+            `• <code>GET /api/v2/sites/{id}/queue</code><br><br>` +
+            `<b>Cloud stack:</b> Kafka → PostGIS → FastAPI → React ops dashboard. 20 autonomous agents across 5 tiers.`;
+    }
+    // ── DOME / ENCLOSURE ──
+    if(q.match(/dome|enclosure|allsky|baader|weather.?sen|autonomous.?op/)) {
+        return `<b>🏠 Dome & Autonomous Operations:</b><br><br>` +
+            `<b>Enclosure:</b> Baader Planetarium AllSky autonomous domes with integrated weather sensing — rain, wind speed, cloud cover, humidity, dew point.<br><br>` +
+            `<b>Autonomous cycle:</b><br>` +
+            `1. Beacon scheduler pushes prioritized target list<br>` +
+            `2. Weather sensors auto-gate dome open/close<br>` +
+            `3. Mount slews & tracks (rate-track LEO, sidereal GEO)<br>` +
+            `4. Edge CUDA pipeline processes frames in real-time<br>` +
+            `5. TDMs exfiltrated over secure WAN to cloud<br>` +
+            `6. Day/night filter swap for continuous 18h/day observation<br><br>` +
+            `<b>Safety:</b> If wind >35mph, humidity >85%, or rain detected → dome parks mount and closes within 30 seconds. No human intervention required. 24/7 uncrewed ops at all 20 sites.`;
+    }
+    // ── SCIENCE / SDA ──
+    if(q.match(/science|sda|space.?domain|surveillance|awareness|ssn|catalog|detect/)) {
+        return `<b>🔬 Space Domain Awareness (SDA) Science:</b><br><br>` +
+            `<b>The problem:</b> 46,240+ tracked objects. ~1M+ debris >1cm. Collisions create exponential debris growth (Kessler Syndrome). Must predict and prevent collisions in real-time.<br><br>` +
+            `<b>SentinelForge science stack:</b><br>` +
+            `• <b>PINN propagator</b> — Physics-Informed Neural Network embeds J2-J6 perturbation equations directly into network architecture. 100x faster than numerical integration, maintains physical constraints<br>` +
+            `• <b>FNO (Fourier Neural Operator)</b> — Atmospheric density prediction for drag modeling<br>` +
+            `• <b>Koopman operator</b> — Linear approximation of non-linear dynamics for real-time conjunction screening<br>` +
+            `• <b>Mahalanobis correlation</b> — Matches new tracklets to catalog using covariance-weighted distance metric<br>` +
+            `• <b>Monte Carlo Pc</b> — Collision probability via 10,000-sample Monte Carlo on combined covariance at TCA<br><br>` +
+            `<b>Detection chain:</b> Photons → sCMOS → streak_detect.cu → astrometry → IOD → catalog correlation → conjunction screening → maneuver recommendation`;
+    }
+    // ── PHOTOMETRY ──
+    if(q.match(/photometry|magnitude|brightness|flux|luminosity|albedo|light.?curve/)) {
+        return `<b>✨ Photometry & Light Curves:</b><br><br>` +
+            `<b>Aperture photometry:</b> Multi-radius (3, 5, 8 px) extraction with local sky background subtraction. Zeropoint calibration against Tycho-2 catalog for absolute photometric accuracy.<br><br>` +
+            `<b>Applications:</b><br>` +
+            `• <b>Object characterization</b> — brightness → size estimate via albedo assumption<br>` +
+            `• <b>Spin rate analysis</b> — periodic brightness variations reveal tumble state<br>` +
+            `• <b>Material classification</b> — color indices (B-V, V-R) distinguish MLI, solar panels, metal<br>` +
+            `• <b>Anomaly detection</b> — sudden brightness change = possible fragmentation or attitude change<br>` +
+            `• <b>GEO characterization</b> — light curves over full phase angle range map shape/orientation`;
+    }
+    // ── ASTROMETRY ──
+    if(q.match(/astrometry|plate.?solv|pointing|wcs|star.?match|position/)) {
+        return `<b>📐 Astrometry & Plate Solving:</b><br><br>` +
+            `<b>Solver:</b> Local astrometry.net installation with index files spanning 0.5-2.0 arcmin/pixel scale. Plate-solves each frame to derive WCS (World Coordinate System) for sub-arcsecond pointing.<br><br>` +
+            `<b>Process:</b><br>` +
+            `1. Extract star centroids from frame via SExtractor/SEP<br>` +
+            `2. Match star patterns against Tycho-2/UCAC4 reference catalog<br>` +
+            `3. Compute affine transform (6-parameter: translation, rotation, scale, shear)<br>` +
+            `4. Refine with SIP (Simple Imaging Polynomial) distortion model<br>` +
+            `5. Convert satellite pixel coordinates → RA/Dec with <0.5" accuracy<br><br>` +
+            `<b>Output:</b> Topocentric RA/Dec/time triplets (observations) fed to IOD and catalog correlation.`;
+    }
     if(q.includes('site') || q.includes('ground') || q.includes('network') || q.includes('sensor')) {
-        return `<b>Ground Network:</b> ${STATE.sites.length} sites | Active: ${STATE.sites.filter(s=>s.status==='active').length} | Degraded: ${STATE.sites.filter(s=>s.status==='degraded').length}`;
+        return `<b>Ground Network:</b> ${STATE.sites.length} sites | Active: ${STATE.sites.filter(s=>s.status==='active').length} | Degraded: ${STATE.sites.filter(s=>s.status==='degraded').length}<br><br>` +
+            `<b>Slingshot:</b> 20 sites (15 active, 4 degraded, 1 offline) — optical, daylight-capable<br>` +
+            `<b>Other networks:</b> ExoAnalytic, USSF-SSN, LeoLabs, ESA-SST, Contributing partners<br><br>` +
+            `Ask about <b>optics</b>, <b>edge compute</b>, <b>daylight tracking</b>, or <b>dome operations</b> for more detail.`;
     }
     if(q.includes('weather') || q.includes('solar') || q.includes('kp')) {
-        return `<b>Space Weather:</b> F10.7=${STATE.weather.f107} | Kp=${STATE.weather.kp} | Dst=${STATE.weather.dst}nT<br>${STATE.weather.kp>=5?'STORM':'Quiet — nominal'}`;
+        return `<b>Space Weather:</b> F10.7=${STATE.weather.f107} | Kp=${STATE.weather.kp} | Dst=${STATE.weather.dst}nT<br>${STATE.weather.kp>=5?'STORM — drag uncertainty +30%':'Quiet — nominal drag predictions'}<br><br>` +
+            `<b>Impact on SDA:</b> High Kp → increased atmospheric drag → LEO orbit prediction degrades by ~${Math.round(STATE.weather.kp*5)}%. F10.7 drives thermospheric density model. Dst indicates geomagnetic storm intensity.`;
     }
     if(q.includes('catalog') || q.includes('how many') || q.includes('tracking')) {
         const c = STATE.catalog;
-        return `<b>Catalog:</b> ${c.total.toLocaleString()} | LEO: ${c.leo.toLocaleString()} | MEO: ${c.meo.toLocaleString()} | GEO: ${c.geo.toLocaleString()} | HEO: ${c.heo}`;
+        return `<b>Catalog:</b> ${c.total.toLocaleString()} | LEO: ${c.leo.toLocaleString()} | MEO: ${c.meo.toLocaleString()} | GEO: ${c.geo.toLocaleString()} | HEO: ${c.heo}<br><br>` +
+            `<b>Lifecycle:</b> UCT (Uncorrelated Track) → TENTATIVE (3+ passes) → CATALOGED (converged orbit). Currently ${STATE.ucts.length} UCTs awaiting promotion.`;
     }
     if(q.includes('owner') || q.includes('who owns')) {
         let r = `<b>Owner Registry:</b><br>`;
@@ -790,10 +930,30 @@ function processQuery(query) {
         return r;
     }
     if(q.includes('maneuver') || q.includes('delta-v') || q.includes('burn')) { navigateTab('maneuver'); return `<b>Maneuver panel opened.</b>`; }
-    if(q.includes('system') || q.includes('architecture') || q.includes('agent')) {
-        return `<b>SentinelForge:</b> ~14,500 LOC, 20 agents (5 tiers), PINN J2-J6 + FNO + Koopman science stack, Orin edge → Kafka → PostGIS → FastAPI`;
+    if(q.match(/system|architecture|agent|stack|infrastr/)) {
+        return `<b>🏗️ SentinelForge Architecture:</b><br><br>` +
+            `<b>Scale:</b> ~14,500 LOC across 20 autonomous agents in 5 tiers<br><br>` +
+            `<b>Edge tier:</b> Jetson AGX Orin (CUDA 12.2, TensorRT 8.6) — streak detect, IOD, TDM generation<br>` +
+            `<b>Transport:</b> Apache Kafka (zstd, Protobuf) — site.{id}.tdm topics<br>` +
+            `<b>Storage:</b> PostGIS — spatial indexing for conjunction screening<br>` +
+            `<b>API:</b> FastAPI — REST endpoints for health, telemetry, queue, schedule<br>` +
+            `<b>Frontend:</b> Vanilla JS ops dashboard with Cesium 3D globe, real-time gauges<br><br>` +
+            `<b>Science stack:</b> PINN (J2-J6) + FNO (density) + Koopman (screening) + UKF (estimation)`;
     }
-    return `Try: "<b>show me problems</b>", "<b>show military satellites</b>", "<b>show maneuvers</b>", "<b>show launches</b>", "<b>show debris</b>", "<b>show reentries</b>", "<b>show trends</b>", "<b>show Pc timeline</b>", "<b>show escalation</b>"<br>Or ask about conjunctions, UCTs, sites, weather, catalog, owners.`;
+    // ── HELP / FALLBACK ──
+    return `<b>Ask me about:</b><br>` +
+        `🔭 <b>Optics</b> — telescopes, apertures, mounts, detectors<br>` +
+        `☀️ <b>Daylight tracking</b> — SWIR filters, daytime observation<br>` +
+        `⚡ <b>Edge compute</b> — Jetson Orin, CUDA pipeline, streak detection<br>` +
+        `💻 <b>Code & API</b> — Python modules, REST endpoints, YAML config<br>` +
+        `🌍 <b>Orbital mechanics</b> — propagation, perturbations, Kepler<br>` +
+        `📊 <b>Covariance</b> — UKF, NEES, estimation, uncertainty<br>` +
+        `🔬 <b>SDA science</b> — PINN, FNO, Koopman, detection chain<br>` +
+        `🚀 <b>Slingshot</b> — Beacon, Numerica, network, customers<br>` +
+        `✨ <b>Photometry</b> — magnitudes, light curves, characterization<br>` +
+        `📐 <b>Astrometry</b> — plate solving, WCS, star matching<br>` +
+        `🏠 <b>Dome ops</b> — AllSky domes, autonomous operations<br><br>` +
+        `Or use commands: "<b>show problems</b>", "<b>show military satellites</b>", "<b>show conjunctions</b>", "<b>show launches</b>", "<b>show debris</b>", "<b>show maneuvers</b>"`;
 }
 
 function handleChat() {
