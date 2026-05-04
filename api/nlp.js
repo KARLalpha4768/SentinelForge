@@ -84,7 +84,7 @@ Examples:
     if (!response.ok) {
       const errText = await response.text();
       console.error('Gemini API error:', errText);
-      return res.status(502).json({ error: 'Gemini API error' });
+      return res.status(502).json({ error: 'Gemini API error', detail: errText.substring(0, 500) });
     }
 
     const data = await response.json();
