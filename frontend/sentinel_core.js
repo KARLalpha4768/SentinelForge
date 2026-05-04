@@ -1870,6 +1870,127 @@ function renderInventory(tab) {
                     </div>
                 </div>
             </div>`;
+    } else if(tab === 'ssot') {
+        // ── Sovereign Space Object Tracking ──
+        // Mirrors Slingshot's SSOT product: independent catalog sovereignty
+        const sovereignty = {
+            totalCatalog: 46218,
+            independentlyTracked: 38491,
+            dependentOn18SDS: 5842,
+            noRecentObs: 1885,
+            coveragePct: function() { return ((this.independentlyTracked / this.totalCatalog) * 100).toFixed(1); },
+            leoIndependent: 89.2,
+            meoIndependent: 72.4,
+            geoIndependent: 61.8,
+            heoIndependent: 44.1,
+            cislunarIndependent: 12.3,
+        };
+        const sources = [
+            {name:'SGSN (Slingshot Optical)',obs:'2.4M',latency:'< 12 min',coverage:'LEO/MEO/GEO',reliability:'99.7%',color:'#ffd740',icon:'📡'},
+            {name:'CelesTrak / Space-Track',obs:'1.8M',latency:'4-12 hrs',coverage:'Full catalog',reliability:'99.9%',color:'#448aff',icon:'🌐'},
+            {name:'18th SDS (DoD)',obs:'1.2M',latency:'6-24 hrs',coverage:'Full SSN',reliability:'99.5%',color:'#78909c',icon:'🛡️'},
+            {name:'LeoLabs (Commercial Radar)',obs:'890K',latency:'< 30 min',coverage:'LEO (< 2000km)',reliability:'98.1%',color:'#00e676',icon:'📊'},
+            {name:'ExoAnalytic (Optical)',obs:'620K',latency:'< 45 min',coverage:'GEO belt',reliability:'97.8%',color:'#e040fb',icon:'🔭'},
+            {name:'ISON (Russia/Intl)',obs:'340K',latency:'2-8 hrs',coverage:'GEO/HEO',reliability:'94.2%',color:'#ff9100',icon:'🌍'},
+            {name:'Numerica (Optical)',obs:'410K',latency:'< 20 min',coverage:'LEO/GEO',reliability:'98.5%',color:'#00e5ff',icon:'⭐'},
+            {name:'EU SST (EUSST)',obs:'280K',latency:'1-6 hrs',coverage:'LEO/GEO',reliability:'96.7%',color:'#b388ff',icon:'🇪🇺'},
+        ];
+        const regimes = [
+            {name:'LEO (200-2000 km)',total:31420,independent:28027,pct:sovereignty.leoIndependent,color:'#00e5ff',bar:89},
+            {name:'MEO (2000-35786 km)',total:4891,independent:3541,pct:sovereignty.meoIndependent,color:'#76ff03',bar:72},
+            {name:'GEO (35786 ± 200 km)',total:7214,independent:4458,pct:sovereignty.geoIndependent,color:'#ffd740',bar:62},
+            {name:'HEO / Molniya',total:1847,independent:815,pct:sovereignty.heoIndependent,color:'#ff9100',bar:44},
+            {name:'Cislunar / Beyond',total:846,independent:104,pct:sovereignty.cislunarIndependent,color:'#e040fb',bar:12},
+        ];
+        const staleness = [
+            {age:'< 1 hour',count:18420,pct:39.9,color:'#00e676'},
+            {age:'1-6 hours',count:14280,pct:30.9,color:'#76ff03'},
+            {age:'6-24 hours',count:8910,pct:19.3,color:'#ffd740'},
+            {age:'1-3 days',count:2823,pct:6.1,color:'#ff9100'},
+            {age:'3-7 days',count:1200,pct:2.6,color:'#ff5252'},
+            {age:'> 7 days (STALE)',count:585,pct:1.3,color:'#d50000'},
+        ];
+
+        el.innerHTML = `
+            <div style="padding:4px 8px;font-size:11px;color:var(--text-secondary);margin-bottom:6px">
+                <b style="color:#e040fb">Sovereign Space Object Tracking (SSOT)</b> — Independent catalog sovereignty assessment
+            </div>
+
+            <!-- Sovereignty Score -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;padding:0 8px;margin-bottom:10px">
+                <div style="background:rgba(224,64,251,0.06);border:1px solid rgba(224,64,251,0.15);border-radius:6px;padding:8px;text-align:center">
+                    <div style="font-size:22px;font-weight:800;color:#e040fb;font-family:JetBrains Mono,mono">${sovereignty.coveragePct()}%</div>
+                    <div style="font-size:8px;color:#78909c;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Catalog Sovereignty</div>
+                </div>
+                <div style="background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);border-radius:6px;padding:8px;text-align:center">
+                    <div style="font-size:22px;font-weight:800;color:#00e676;font-family:JetBrains Mono,mono">${sovereignty.independentlyTracked.toLocaleString()}</div>
+                    <div style="font-size:8px;color:#78909c;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Independently Tracked</div>
+                </div>
+                <div style="background:rgba(255,82,82,0.06);border:1px solid rgba(255,82,82,0.15);border-radius:6px;padding:8px;text-align:center">
+                    <div style="font-size:22px;font-weight:800;color:#ff5252;font-family:JetBrains Mono,mono">${sovereignty.dependentOn18SDS.toLocaleString()}</div>
+                    <div style="font-size:8px;color:#78909c;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">18th SDS Dependent</div>
+                </div>
+                <div style="background:rgba(120,144,156,0.06);border:1px solid rgba(120,144,156,0.15);border-radius:6px;padding:8px;text-align:center">
+                    <div style="font-size:22px;font-weight:800;color:#78909c;font-family:JetBrains Mono,mono">${sovereignty.noRecentObs.toLocaleString()}</div>
+                    <div style="font-size:8px;color:#78909c;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">No Recent Obs</div>
+                </div>
+            </div>
+
+            <!-- Regime Sovereignty Bars -->
+            <h3 style="color:var(--text-primary);font-size:11px;margin:8px 8px 4px;border-bottom:1px solid rgba(224,64,251,0.1);padding-bottom:4px">🛰 Sovereignty by Orbital Regime</h3>
+            <div style="padding:0 8px">
+                ${regimes.map(r => `<div style="margin-bottom:6px">
+                    <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+                        <span style="color:#e8eaf6">${r.name}</span>
+                        <span style="font-family:JetBrains Mono,mono"><span style="color:${r.color};font-weight:700">${r.pct}%</span> <span style="color:#546e7a">(${r.independent.toLocaleString()}/${r.total.toLocaleString()})</span></span>
+                    </div>
+                    <div style="height:14px;background:rgba(255,255,255,0.04);border-radius:4px;overflow:hidden;position:relative">
+                        <div style="height:100%;width:${r.bar}%;background:linear-gradient(90deg,${r.color},${r.color}88);border-radius:4px;transition:width .6s"></div>
+                        ${r.pct < 50 ? `<span style="position:absolute;right:6px;top:1px;font-size:8px;color:#ff5252;font-weight:600">⚠ GAP</span>` : ''}
+                    </div>
+                </div>`).join('')}
+            </div>
+
+            <!-- Data Sources -->
+            <h3 style="color:var(--text-primary);font-size:11px;margin:10px 8px 4px;border-bottom:1px solid rgba(224,64,251,0.1);padding-bottom:4px">📡 Data Source Provenance</h3>
+            <table class="inv-table" style="font-size:10px">
+                <thead><tr><th></th><th>Source</th><th>Obs/Month</th><th>Latency</th><th>Coverage</th><th>Reliability</th></tr></thead>
+                <tbody>${sources.map(s => `<tr>
+                    <td>${s.icon}</td>
+                    <td style="color:${s.color};font-weight:600">${s.name}</td>
+                    <td style="font-family:JetBrains Mono,mono;color:#e8eaf6">${s.obs}</td>
+                    <td style="font-family:JetBrains Mono,mono;color:${s.latency.includes('<') ? '#00e676' : '#ffd740'}">${s.latency}</td>
+                    <td style="font-size:9px;color:#b0bec5">${s.coverage}</td>
+                    <td style="font-family:JetBrains Mono,mono;color:${parseFloat(s.reliability)>98?'#00e676':'#ffd740'}">${s.reliability}</td>
+                </tr>`).join('')}</tbody>
+            </table>
+
+            <!-- Catalog Staleness Distribution -->
+            <h3 style="color:var(--text-primary);font-size:11px;margin:10px 8px 4px;border-bottom:1px solid rgba(224,64,251,0.1);padding-bottom:4px">⏱ Catalog Freshness Distribution</h3>
+            <div style="padding:0 8px">
+                ${staleness.map(s => `<div style="display:flex;align-items:center;margin-bottom:4px;font-size:10px">
+                    <span style="width:90px;color:#b0bec5">${s.age}</span>
+                    <div style="flex:1;height:12px;background:rgba(255,255,255,0.04);border-radius:3px;margin:0 8px;overflow:hidden">
+                        <div style="height:100%;width:${s.pct}%;background:${s.color};border-radius:3px;opacity:0.8"></div>
+                    </div>
+                    <span style="width:50px;text-align:right;font-family:JetBrains Mono,mono;color:${s.color}">${s.count.toLocaleString()}</span>
+                    <span style="width:35px;text-align:right;color:#546e7a;font-size:9px">${s.pct}%</span>
+                </div>`).join('')}
+            </div>
+
+            <!-- SSOT Key Insight -->
+            <div style="padding:8px;margin-top:8px;border-top:1px solid rgba(224,64,251,0.1)">
+                <div style="background:rgba(224,64,251,0.04);border:1px solid rgba(224,64,251,0.12);border-radius:6px;padding:10px">
+                    <div style="font-size:10px;color:#e040fb;font-weight:700;margin-bottom:4px">🔑 SSOT Strategy</div>
+                    <div style="font-size:10px;color:#b0bec5;line-height:1.6">
+                        <b style="color:#e8eaf6">Goal:</b> Achieve <b style="color:#00e676">95% catalog sovereignty</b> by fusing 8+ independent data sources, eliminating single-point dependency on the U.S. SSN.
+                        The <b style="color:#ffd740">SGSN optical network</b> provides the fastest independent observations (<12 min latency), while
+                        <b style="color:#448aff">Space-Track</b> serves as the authoritative baseline for cross-validation.
+                        <b style="color:#ff5252">HEO/cislunar gaps</b> (44%/12% sovereignty) are the critical expansion targets —
+                        <b style="color:#e040fb">dedicated GEO-belt survey telescopes</b> and <b style="color:#e040fb">cislunar radar</b> are planned for Phase 2.
+                    </div>
+                </div>
+            </div>`;
     }
 }
 
