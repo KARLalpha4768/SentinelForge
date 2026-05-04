@@ -65,6 +65,15 @@ try {
         return 'unknown';
     }
 
+    // Generate realistic NORAD IDs per regime
+    const noradBase = { leo: 40000, meo: 28000, geo: 36000 };
+    const satPrefixes = {
+        payload: ['STARLINK','ONEWEB','IRIDIUM','COSMOS','GLOBALSTAR','ORBCOMM','SPACEBEE','LEMUR','DOVE','HAWK'],
+        rocketbody: ['CZ-2C R/B','FALCON 9 R/B','H-2A R/B','ATLAS V R/B','SOYUZ R/B','DELTA 4 R/B','PROTON R/B'],
+        debris: ['CZ-6A DEB','FENGYUN 1C DEB','COSMOS 2251 DEB','IRIDIUM 33 DEB','NOAA 16 DEB'],
+        unknown: ['TBA - TO BE ASSIGNED']
+    };
+
     function addSimSats(regime, count, alt, incRange) {
         for(let i=0; i<count; i++) {
             const inc = (Math.random()*incRange - incRange/2) * Math.PI/180;
@@ -75,9 +84,30 @@ try {
             const objType = pickType(regime);
             const tc = typeConfig[objType];
             const bc = regimeBaseColors[regime];
-            // Debris is dimmer, payloads are brighter
             const color = Cesium.Color.fromBytes(bc[0], bc[1], bc[2], Math.round(255 * tc.alpha));
+            const norad = noradBase[regime] + i;
+            const names = satPrefixes[objType];
+            const satName = `${names[Math.floor(Math.random()*names.length)]}-${1000+Math.floor(Math.random()*9000)}`;
+            const altKm = alt + Math.floor(Math.random()*50 - 25);
+            const incDeg = Math.abs(lat * 1.2 + Math.random()*10).toFixed(1);
+            const period = (2 * Math.PI * Math.sqrt(Math.pow((6371+altKm),3) / 398600) / 60).toFixed(1);
+
             const e = viewer.entities.add({
+                name: `${satName}`,
+                description: new Cesium.ConstantProperty(
+                    `<div style="font-family:Inter,sans-serif;font-size:12px;line-height:1.6;color:#e8eaf6">
+                    <div style="font-size:14px;font-weight:700;color:${objType==='debris'?'#ff5252':objType==='payload'?'#76ff03':'#ffd740'};margin-bottom:6px">${satName}</div>
+                    <table style="width:100%;border-collapse:collapse">
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">NORAD ID</td><td style="font-family:monospace;color:#80cbc4">${norad}</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Type</td><td>${objType.toUpperCase()}</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Regime</td><td>${regime.toUpperCase()}</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Altitude</td><td>${altKm.toLocaleString()} km</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Inclination</td><td>${incDeg}°</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Period</td><td>${period} min</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Status</td><td style="color:${objType==='debris'?'#ff5252':'#00e676'}">${objType==='debris'?'TRACKED DEBRIS':objType==='rocketbody'?'SPENT STAGE':'ACTIVE'}</td></tr>
+                    </table>
+                    </div>`
+                ),
                 position: Cesium.Cartesian3.fromDegrees(lon % 360 - 180, lat, alt * 1000),
                 point: {
                     pixelSize: tc.size,
@@ -87,6 +117,7 @@ try {
                 },
             });
             e._sfType = objType; // tag for filtering
+            e._norad = norad;
             globeLayers[regime].push(e);
         }
     }
