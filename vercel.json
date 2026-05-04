@@ -3,14 +3,12 @@
   "name": "sentinelforge",
   "builds": [
     { "src": "frontend/**", "use": "@vercel/static" },
-    { "src": "api/*.js", "use": "@vercel/node" }
+    { "src": "api/nlp.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/api/nlp", "dest": "/api/nlp.js" },
+    { "src": "/", "dest": "/frontend/sentinel_ops.html" },
     { "src": "/(.*)", "dest": "/frontend/$1" }
-  ],
-  "rewrites": [
-    { "source": "/", "destination": "/frontend/sentinel_ops.html" }
   ],
   "headers": [
     {
@@ -25,12 +23,6 @@
       "source": "/img/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/(.*).js",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
       ]
     }
   ]
