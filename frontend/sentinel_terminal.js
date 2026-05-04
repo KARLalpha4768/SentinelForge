@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', function(){
 const termOutput = document.getElementById('termOutput');
 const termInput = document.getElementById('termInput');
 const termBody = document.getElementById('termBody');
-const promptPathEl = document.querySelector('.promptPath');
-if(!termOutput||!termInput||!termBody) return;
+const promptPathEl = document.getElementById('termPromptPath');
+if(!termOutput||!termInput||!termBody){ console.error('Terminal: DOM elements not found'); return; }
 
 const FS={
 '~':{type:'dir',children:{'sentinelforge':{type:'dir',children:{
