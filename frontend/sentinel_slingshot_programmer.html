@@ -34,6 +34,16 @@
         .spec-table td:first-child { color:#546e7a; font-weight:600; width:180px; white-space:nowrap; }
         .spec-table td:last-child { color:#e8eaf6; }
         .spec-table tr:hover { background:rgba(0,229,255,0.02); }
+        .spec-table tr[data-dd] { cursor:pointer; position:relative; }
+        .spec-table tr[data-dd] td:first-child::before { content:'\25B6'; font-size:7px; margin-right:5px; color:#00e5ff; opacity:0.5; transition:transform .2s; display:inline-block; }
+        .spec-table tr[data-dd].open td:first-child::before { transform:rotate(90deg); }
+        .dd-row { display:none; }
+        .dd-row.open { display:table-row; }
+        .dd-row td { padding:8px 12px 12px 28px; font-size:10px; color:#80deea; line-height:1.7; background:rgba(0,229,255,0.02); border-left:2px solid rgba(0,229,255,0.15); border-bottom:1px solid rgba(0,229,255,0.06); }
+        .yaml-line { cursor:pointer; display:inline; }
+        .yaml-line:hover { background:rgba(0,229,255,0.06); border-radius:2px; }
+        .yaml-dd { display:none; padding:4px 8px; margin:2px 0; background:rgba(0,229,255,0.04); border-left:2px solid rgba(0,229,255,0.2); color:#80deea; font-size:9px; line-height:1.6; border-radius:0 4px 4px 0; }
+        .yaml-dd.open { display:block; }
 
         code { color:#76ff03; background:rgba(118,255,3,0.08); padding:1px 6px; border-radius:3px; font-size:10px; font-family:'JetBrains Mono',monospace; }
         code.post { color:#ffd740; background:rgba(255,215,64,0.08); }
@@ -240,5 +250,129 @@
     </div>
 
     <div class="footer">SentinelForge Programmer's Integration Reference — Slingshot Global Sensor Network. Edge pipeline architecture modeled from public Slingshot Aerospace / Numerica documentation.</div>
+
+    <script>
+    const DD = {
+        // REST API
+        'Health Check': 'Returns a JSON object with uptime seconds, GPU junction temperature, dome shutter state (open/closed/moving), current weather safety evaluation, and last detection timestamp. Used by the NOC dashboard to paint site status indicators green/amber/red in real time.',
+        'Telemetry Stream': 'Opens a Server-Sent Events (SSE) connection that pushes telemetry frames every N seconds. Each frame contains GPU utilization, CCD temperature, mount RA/Dec, queue depth, and Kafka producer lag. Essential for live ops dashboards and alerting pipelines.',
+        'Submit TDM': 'Accepts a CCSDS-standard Tracking Data Message in JSON format containing right ascension, declination, time tag, SNR, and calibrated magnitude. Validated against schema before Kafka ingest. Returns correlation ID for downstream tracking through the orbit determination pipeline.',
+        'Queue Status': 'Returns the prioritized observation task queue showing object ID, priority score, predicted pass time, elevation, and estimated integration time. Programmers use this to verify that the Beacon scheduler is correctly populating the edge node before an observation window.',
+        'Task Schedule': 'Pushes a new observation schedule to the edge node, replacing the current queue. Schedule entries include target RA/Dec, time window, filter selection, exposure duration, and priority. The edge scheduler merges with weather constraints and horizon masks before execution.',
+        'Calibration Data': 'Returns metadata about the most recent calibration frames: dark frame timestamp, flat field uniformity score, bias level, and bad pixel map version. Field engineers use this to verify calibration freshness before deploying updated detection models.',
+        'Edge Logs': 'Retrieves the most recent pipeline log entries in structured JSON format. Each entry includes timestamp, severity, module name, and message. Supports filtering by module (streak_detect, photometry, transport) and severity (DEBUG, INFO, WARN, ERROR).',
+        'Detection History': 'Returns all detection events from the past N hours, including RA/Dec, calibrated magnitude, SNR, streak length, and correlation status (UCT/TENTATIVE/CATALOGED). Used for post-pass analysis and detection performance auditing.',
+        'Force Reboot': 'Triggers a safe shutdown sequence: flush Kafka queue, park mount, close dome, then power-cycle the Jetson. Requires Tier 3 authentication (VP-level). The edge node auto-boots into a self-test routine and reports health within 90 seconds of restart.',
+
+        // Modules
+        'streak_detect.cu': 'The core CUDA kernel that runs 900 matched filters simultaneously on each incoming frame. Each filter corresponds to a specific angular rate predicted by the J2-J6 perturbation model for LEO objects at various altitudes. Uses shared memory tiling for 3ms/frame throughput on Orin.',
+        'calibration.cu': 'GPU-parallel CCD calibration kernel. Subtracts a master dark frame, divides by a normalized flat field, estimates sky background via sigma-clipped median, and flags hot/dead pixels using a pre-computed bad pixel map. Runs before streak detection in the pipeline.',
+        'plate_solver.cpp': 'Implements the quad-hash astrometric solver. Builds triangle invariants from detected star centroids, matches against a local Gaia DR3 index, and fits a WCS solution with SIP polynomial distortion terms. Critical for converting pixel coordinates to on-sky RA/Dec.',
+        'photometry.cpp': 'Performs aperture photometry at three radii (3, 5, 7 px) and PSF-fitted photometry on each detected source. Cross-matches against Tycho-2 catalog stars in the field to derive a photometric zeropoint, then outputs calibrated BVRI magnitudes for each detection.',
+        'bayesian_iod.py': 'Takes three or more angular observations (tracklets) and solves for an initial Keplerian orbit using the Gauss method. Refines with an Unscented Kalman Filter incorporating J2 perturbations. Outputs a 6-element state vector and 6x6 covariance in the TEME reference frame.',
+        'catalog_lifecycle.py': 'Manages the object lifecycle state machine. New detections enter as Uncorrelated Tracks (UCT), get promoted to TENTATIVE after 3+ tracklet associations via Mahalanobis distance, and reach CATALOGED status after orbit determination convergence below 100m 1-sigma.',
+        'kafka_transport.py': 'Serializes Tracking Data Messages into Protobuf format, compresses with zstd, and publishes to the site-specific Kafka topic. Maintains an SQLite write-ahead queue for offline resilience — if the WAN link drops, messages queue locally and flush automatically on reconnect.',
+        'site_monitor.py': 'A background daemon that samples system health every 5 seconds: GPU temperature/utilization via tegrastats, dome shutter position, weather sensor readings, observation queue depth, and Kafka producer lag. Broadcasts a JSON telemetry frame to the /telemetry SSE endpoint.',
+        'scheduler.py': 'Receives target lists from Beacon, merges with the local horizon mask and weather forecast, and generates an optimized observation schedule. Uses priority-weighted scoring: conjunction screening targets get highest priority, followed by custody maintenance, then survey tasks.',
+        'ascom_hal.py': 'Hardware Abstraction Layer that wraps ASCOM Alpaca REST calls (or COM on Windows) for telescope mount, camera, dome, focuser, and filter wheel control. Includes a high-fidelity simulation mode that models slew times, LEO tracking rates, and weather safety interlocks.',
+
+        // SSH Commands
+        'SSH Access': 'Connects to the edge node over the Slingshot VPN on non-standard port 2222. Requires SSH key authentication (no passwords). The edge user has sudo access for pipeline management but not for OS-level changes. Session logging is enabled for audit compliance.',
+        'GPU Status': 'Runs the Jetson-native health diagnostic tool, outputting GPU temperature, power draw, memory utilization, CUDA core frequency, and NVMe health status in structured JSON. The NOC uses this output to detect thermal throttling before it impacts detection throughput.',
+        'Pipeline Status': 'Queries the systemd service unit for the main pipeline process. Shows whether it is running, how long since last restart, memory consumption, and recent log entries. A "failed" status triggers automatic Tier 1 alerting in the Beacon monitoring stack.',
+        'Restart Pipeline': 'Sends a SIGTERM to the pipeline process, waits for Kafka queue flush (up to 30s), then restarts. This is a destructive operation that interrupts any in-progress observation. Always check queue depth and active tracking status before executing.',
+        'Tail Detections': 'Streams the systemd journal for the pipeline service in real-time JSON format. Each detection event includes timestamp, object RA/Dec, magnitude, SNR, and correlation status. Invaluable for debugging false positives or missed detections during live passes.',
+        'Kafka Lag': 'Reports the consumer group lag for the site-specific Kafka topic. A lag greater than 20 messages indicates the cloud ingest pipeline is falling behind. Common causes: network congestion, broker rebalancing, or a stalled cloud-side consumer.',
+        'GPU Utilization': 'Streams Jetson tegrastats output at 1-second intervals showing GPU %, CPU %, GPU temperature, power consumption, and memory bandwidth. Used to validate that the GPU budget allocation in site.yaml matches actual runtime utilization.',
+        'Camera Test': 'Executes the ASCOM HAL self-test routine: connects to mount/camera/dome, takes a 1-second test exposure, verifies readout, checks CCD temperature stability, and runs a V-curve autofocus. Reports pass/fail for each subsystem.',
+        'Dark Calibration': 'Acquires 100 dark frames at the current CCD temperature with the shutter closed, computes a master dark via median combination, and saves to the calibration directory. Should be run after any CCD temperature setpoint change or at the start of each observing night.',
+        'Force TDM Flush': 'Forces immediate transmission of all queued Tracking Data Messages, bypassing the normal batching window. Used after network recovery to clear the offline queue. The --force flag skips the confirmation prompt — use with caution during active observations.',
+
+        // Deployment
+        '1. Build': 'Cross-compiles the CUDA streak detection kernel and C++ modules for the Jetson Orin\'s sm_87 GPU architecture. Uses CMake with the NVIDIA CUDA cross-compilation toolchain installed on an x86 build server. Parallel build with -j flag for speed.',
+        '2. Package': 'Creates a Debian .deb package containing the compiled binaries, Python modules, systemd service files, and default configuration. The package includes pre/post-install scripts that handle service shutdown, file placement, and service restart automatically.',
+        '3. Stage': 'Securely copies the package to the edge node\'s /tmp directory over the Slingshot VPN. SCP uses the same SSH key authentication as interactive access. Large packages (>100MB) should use rsync with --partial for resume capability over unreliable links.',
+        '4. Pre-flight': 'Runs automated pre-deployment checks: verifies the observation queue is empty (no active passes), weather is safe (dome can close), disk space is sufficient, and the current pipeline version matches the expected upgrade-from version.',
+        '5. Deploy': 'Installs the Debian package via dpkg, which triggers the pre-install script (stop pipeline, park mount, close dome), replaces binaries and configs, then triggers the post-install script (start pipeline, run self-test). Requires sudo.',
+        '6. Verify': 'Runs the pipeline self-test suite with a 30-second timeout. Tests include: CUDA kernel launch, camera connection, mount communication, Kafka producer connectivity, and a synthetic frame processing end-to-end test. All must pass before declaring success.',
+        '7. Rollback': 'Downgrades to the previous package version using apt\'s version pinning. The previous .deb is cached in /var/cache/apt/archives/. This triggers the same pre/post-install lifecycle as a fresh deploy, ensuring clean state restoration.',
+
+        // Module Alignment
+        'orbit_propagator.py': 'Implements Kepler equation solving via Newton-Raphson iteration plus J2 through J6 secular perturbation terms. Propagates TLE-derived state vectors forward in time for pass prediction. Feeds the observation scheduler with predicted rise/set times and maximum elevation for each target.',
+        'conjunction_screener.py': 'Computes Foster-Estes 2D collision probability (Pc) for close-approach events. Takes two state vectors with covariance matrices, projects into the B-plane, and integrates the probability density function over the combined hard-body radius. Flags events above 1e-4 threshold.',
+        'multi_sensor_fusion.py': 'Implements a 6-state Extended Kalman Filter that fuses observations from multiple ground stations into a single optimal state estimate. Handles asynchronous measurements with different noise characteristics and automatically detects/rejects outlier observations.',
+        'light_curve_analyzer.py': 'Extracts time-series brightness measurements, computes FFT to estimate spin period, and generates a GNN embedding vector that encodes the object\'s photometric signature. Used for satellite identification and anomaly detection (tumbling, breakup events).',
+        'graph_associator.py': 'Constructs a graph where nodes are individual tracklets and edges represent potential associations. A trained Graph Neural Network scores edge likelihoods based on orbital mechanics consistency. Replaces traditional gating-based association for improved performance on dense catalogs.',
+        'koopman_propagator.py': 'Uses Extended Dynamic Mode Decomposition (EDMD) to build a linearized Koopman operator from historical state data. Enables fast, GPU-parallel covariance propagation for thousands of objects simultaneously — critical for real-time conjunction screening workloads.',
+        'cislunar_dynamics.py': 'Solves the Circular Restricted Three-Body Problem (CR3BP) for the Earth-Moon system. Computes all five Lagrange points, generates stable/unstable manifold trajectories, and provides Jacobi constant evaluation for cislunar domain awareness and transfer orbit design.',
+        'data_assimilation_engine.py': 'The global catalog fusion engine that ingests observations from all 20 sites, performs multi-hypothesis correlation, updates orbital state estimates via batch least-squares, and maintains the authoritative SentinelForge object catalog with full covariance history.'
+    };
+
+    // YAML drill-down data
+    const YAML_DD = {
+        'id:': 'Unique station identifier following the SLING-NUM-{CODE} convention. Used as the primary key across all APIs, Kafka topics, and monitoring dashboards. Must match the Beacon fleet registry exactly.',
+        'name:': 'Human-readable site name used in NOC displays and alert notifications. Typically the nearest city plus country code.',
+        'lat:': 'WGS-84 geodetic latitude in decimal degrees. Used for horizon mask computation, satellite pass prediction, and atmospheric refraction correction.',
+        'lon:': 'WGS-84 geodetic longitude in decimal degrees. Combined with latitude for precise ground station positioning in the observation scheduler.',
+        'platform:': 'The NVIDIA Jetson AGX Orin 64GB provides 275 TOPS AI performance with 2048 CUDA cores and 64 Tensor cores. The 64GB unified memory eliminates PCIe bottlenecks for the frame processing pipeline.',
+        'cuda_version:': 'CUDA 12.2 is required for sm_87 compute capability targeting. Must match the cross-compilation toolchain on the build server exactly to avoid kernel launch failures.',
+        'tensorrt:': 'TensorRT 8.6.1 optimizes the PINN streak detection model from PyTorch ONNX to a fused FP16 engine file. Reduces inference latency from 12ms to under 3ms per frame.',
+        'jetpack:': 'JetPack 6.0 is the NVIDIA SDK that bundles the Linux kernel, CUDA toolkit, cuDNN, TensorRT, and multimedia APIs for the Jetson platform. All edge nodes must run the same JetPack version.',
+        'gpu_budget_pct:': 'Maximum GPU utilization percentage allocated to the detection pipeline. The remaining 20% is reserved for system overhead, telemetry, and burst headroom during multi-target tracking.',
+        'model:': 'The TensorRT-optimized PINN streak detection engine file. Version 3.2 includes improved false-positive rejection for geostationary objects and better performance on elongated streaks.',
+        'filter_bank:': 'The matched filter bank uses J2 through J6 zonal harmonics to predict angular rates for satellites at different altitudes and inclinations. 900 discrete filters cover the full LEO-to-GEO rate space.',
+        'min_snr:': 'Minimum signal-to-noise ratio threshold for a detection to be reported. Setting this below 3.0 dramatically increases false positives from cosmic rays and hot pixels.',
+        'max_streak_length_px:': 'Maximum streak length in pixels before the detection is flagged as an artifact. Streaks longer than the sensor width are physically impossible and indicate a processing error.',
+        'aperture_radii:': 'Three concentric aperture radii (in pixels) for photometric measurement. The optimal radius depends on seeing conditions — the pipeline selects the aperture with the best SNR.',
+        'catalog:': 'Gaia Data Release 3 provides the reference star catalog for both astrometric plate solving and photometric zeropoint calibration. Contains 1.8 billion sources with sub-milliarcsecond positions.',
+        'zeropoint_band:': 'The photometric band used for zeropoint calibration. V-band (550nm) is standard for visible-light observations and enables direct comparison with historical catalog magnitudes.',
+        'brokers:': 'The Kafka broker address for the Beacon cloud ingest cluster. All TDMs are published here with site-specific topic partitioning for parallel consumption by the orbit determination pipeline.',
+        'topic:': 'Kafka topic name following the site.{slug}.tdm convention. Each site has a dedicated topic with 3 partitions and a 7-day retention policy for replay capability.',
+        'compression:': 'Zstandard (zstd) compression reduces TDM message size by approximately 60% compared to uncompressed JSON, critical for bandwidth-constrained Starlink and cellular uplinks.',
+        'batch_size:': 'Kafka producer batch size in bytes. The producer accumulates messages up to this size before sending, amortizing network overhead. 16KB balances latency vs throughput for typical TDM sizes.',
+        'linger_ms:': 'Maximum time in milliseconds the producer waits before sending a batch. 100ms adds negligible latency while allowing message batching during burst detection periods.',
+        'interface:': 'USB 3.0 (5 Gbps) provides sufficient bandwidth for full-frame readout at 1 Hz. USB is preferred over Ethernet for camera connectivity due to simpler driver support on JetPack.',
+        'readout_mode:': 'Low-noise readout mode prioritizes read noise (1.2e-) over frame rate. Used for nighttime deep-space observations where integration times exceed 1 second.',
+        'cooling_setpoint_c:': 'CCD temperature setpoint. -20C reduces dark current to negligible levels. The TEC cooler achieves delta-35C from ambient, so this setpoint works up to 15C ambient temperature.',
+        'gain:': 'Camera gain setting (unitless). Gain 100 provides a good balance between read noise (1.2e-) and full-well capacity (51,400e-) for typical sky background levels.',
+        'binning:': '1x1 binning (no pixel combining) preserves full spatial resolution. 2x2 binning quadruples sensitivity but halves angular resolution — used only for deep-space faint object tracking.'
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Wire up spec-table rows
+        document.querySelectorAll('.spec-table tr').forEach(tr => {
+            const label = tr.querySelector('td:first-child');
+            if (!label) return;
+            const key = label.textContent.trim();
+            if (!DD[key]) return;
+            tr.setAttribute('data-dd', key);
+            const ddRow = document.createElement('tr');
+            ddRow.className = 'dd-row';
+            ddRow.innerHTML = `<td colspan="2">${DD[key]}</td>`;
+            tr.after(ddRow);
+            tr.addEventListener('click', () => {
+                const isOpen = tr.classList.toggle('open');
+                ddRow.classList.toggle('open', isOpen);
+            });
+        });
+
+        // Wire up YAML lines
+        const yamlBlock = document.querySelector('.yaml-block');
+        if (yamlBlock) {
+            const html = yamlBlock.innerHTML;
+            const lines = html.split('\n');
+            const newLines = lines.map(line => {
+                for (const [yamlKey, desc] of Object.entries(YAML_DD)) {
+                    if (line.includes(yamlKey) && line.includes('yaml-sub')) {
+                        const ddId = 'ydd-' + yamlKey.replace(/[^a-z]/gi,'');
+                        return `<span class="yaml-line" onclick="document.getElementById('${ddId}').classList.toggle('open')">${line}</span>\n<div class="yaml-dd" id="${ddId}">${desc}</div>`;
+                    }
+                }
+                return line;
+            });
+            yamlBlock.innerHTML = newLines.join('\n');
+        }
+    });
+    </script>
 </body>
 </html>
