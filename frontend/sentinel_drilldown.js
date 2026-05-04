@@ -555,7 +555,7 @@ window.openNetworkDrilldown = function(networkName) {
         `<div style="margin-top:14px;padding:10px;background:rgba(100,160,255,0.06);border:1px solid rgba(100,160,255,0.12);border-radius:8px;font-size:10px;color:#78909c;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
             <span style="color:#546e7a;font-size:9px;text-transform:uppercase;letter-spacing:.5px">Navigate:</span>
             <a href="sentinel_slingshot_technician.html" style="color:#ffd740;text-decoration:none;padding:3px 10px;border:1px solid rgba(255,215,64,0.2);border-radius:4px;transition:all .2s" onmouseover="this.style.background='rgba(255,215,64,0.1)';this.style.borderColor='rgba(255,215,64,0.4)'" onmouseout="this.style.background='';this.style.borderColor='rgba(255,215,64,0.2)'">🔧 Onsite Technician</a>
-            <a href="sentinel_slingshot_catalog.html" style="color:#00e5ff;text-decoration:none;padding:3px 10px;border:1px solid rgba(0,229,255,0.2);border-radius:4px;transition:all .2s" onmouseover="this.style.background='rgba(0,229,255,0.1)';this.style.borderColor='rgba(0,229,255,0.4)'" onmouseout="this.style.background='';this.style.borderColor='rgba(0,229,255,0.2)'">💻 Programmer's Specs</a>
+            <span style="color:#546e7a;font-size:9px;font-style:italic">Click a site row above for station-specific Programmer's Specs</span>
         </div>`;
     modal.style.display = 'flex';
 };
