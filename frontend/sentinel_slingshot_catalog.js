@@ -319,6 +319,8 @@ function openProgrammerPanel(stationId) {
             <a href="sentinel_slingshot_technician.html" style="color:#ffd740;font-size:10px;text-decoration:none;padding:4px 12px;border:1px solid rgba(255,215,64,0.2);border-radius:4px;background:rgba(255,215,64,0.04);font-weight:600;transition:all .2s" onmouseover="this.style.background='rgba(255,215,64,0.12)'" onmouseout="this.style.background='rgba(255,215,64,0.04)'">🔧 Onsite Technician</a>
         </div>
     `;
+    detailOverlay.classList.add('open');
+    detailPanel.classList.add('open');
     detailPanel.scrollTop = 0;
 }
 
