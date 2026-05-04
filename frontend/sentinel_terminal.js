@@ -526,7 +526,7 @@ function nlp(input){
     return {cmd:'whoami',args:[],narr:null};
   if(/(?:what time|date|current time)/i.test(s))
     return {cmd:'date',args:[],narr:null};
-  if(/(?:system|os|kernel|uname|what system)/i.test(s))
+  if(/(?:uname|operating system|kernel version|what (?:os|linux|distro))/i.test(s))
     return {cmd:'uname',args:['-a'],narr:null};
 
   // Help
@@ -593,7 +593,7 @@ async function geminiNLU(input){
 
     if(data.cmd==='_reply'){
       // Conversational response from Gemini
-      (data.text||'').split('\\n').forEach(l=>addLine(l,l.startsWith('•')?'info':'out'));
+      (data.text||'').split(/\\n|\n/).forEach(l=>addLine(l,l.startsWith('•')?'info':'out'));
     } else if(data.cmd&&CMDS[data.cmd]){
       if(data.narr) addLine(data.narr,'info');
       CMDS[data.cmd](data.args||[]);
