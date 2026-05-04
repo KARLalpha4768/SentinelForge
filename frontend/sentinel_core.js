@@ -1,9 +1,10 @@
 /**
  * SentinelForge Operations Center — Core Engine
  * @module sentinel_core
- * @description 2,300+ line mission operations dashboard engine.
- * Manages system state, gauge rendering, ground network visualization,
- * inventory panels, conjunction decision support, and alert management.
+ * @description 2,640-line mission operations dashboard engine.
+ * Manages gauge rendering, ground network visualization, inventory panels,
+ * conjunction decision support, alert management, and live telemetry simulation.
+ * System state defined in sentinel_state.js (loaded first).
  * 
  * @author Karl David / Kham Enterprises LLC
  * @version 1.0.0

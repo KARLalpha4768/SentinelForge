@@ -5,3 +5,6 @@ __pycache__/
 fix*.js
 fix*.ps1
 *.tmp
+data/real_frame.fits
+data/synthetic_frame.raw
+benchmarks/benchmark_results.json
