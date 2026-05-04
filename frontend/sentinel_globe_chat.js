@@ -26,10 +26,30 @@ try {
         const src = (typeof STATE !== 'undefined' && STATE.sites.length > 0) ? STATE.sites : [];
         src.forEach(s => {
             const col = siteColors[s.status] || siteColors.active;
+            const statusColor = s.status==='active'?'#00e676':s.status==='degraded'?'#ffab00':'#ff5252';
+            const statusLabel = s.status==='active'?'● OPERATIONAL':s.status==='degraded'?'◐ DEGRADED':'○ OFFLINE';
             const e = viewer.entities.add({
+                name: `📡 ${s.name}`,
+                description: new Cesium.ConstantProperty(
+                    `<div style="font-family:Inter,sans-serif;font-size:12px;line-height:1.7;color:#e8eaf6">
+                    <div style="font-size:15px;font-weight:700;color:#ffd740;margin-bottom:4px">${s.name}</div>
+                    <div style="font-size:11px;color:${statusColor};margin-bottom:8px;font-weight:600">${statusLabel}</div>
+                    <table style="width:100%;border-collapse:collapse">
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Network</td><td style="color:#80cbc4">${s.network}</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Sensor</td><td>${s.type==='radar'?'🔭 RADAR':'🔭 OPTICAL'} (${s.gen || 'Gen-3'})</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Coordinates</td><td style="font-family:monospace">${s.lat.toFixed(3)}°N, ${s.lon.toFixed(3)}°E</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">GPU Load</td><td>${s.gpu || '—'}%</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Seeing</td><td>${s.see || '—'}"</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Det. Rate</td><td>${s.detRate || s.det || '—'} obj/hr</td></tr>
+                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Ops Mode</td><td>${s.ops || 'Autonomous'}</td></tr>
+                    </table>
+                    ${s.network==='Slingshot' ? '<div style="margin-top:8px;padding:4px 8px;background:rgba(255,215,64,0.08);border:1px solid rgba(255,215,64,0.2);border-radius:4px;font-size:10px;color:#ffd740">⚡ SLINGSHOT NETWORK NODE — Edge compute active</div>' : ''}
+                    </div>`
+                ),
                 position: Cesium.Cartesian3.fromDegrees(s.lon, s.lat, 0),
-                point: { pixelSize: s.type === 'radar' ? 5 : 4, color: col, outlineColor: Cesium.Color.WHITE.withAlpha(0.2), outlineWidth: 1 },
+                point: { pixelSize: s.type === 'radar' ? 7 : 5, color: col, outlineColor: Cesium.Color.WHITE.withAlpha(0.3), outlineWidth: 1 },
             });
+            e._siteId = s.id;
             globeLayers.sites.push(e);
         });
     }
