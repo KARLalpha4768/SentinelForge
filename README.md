@@ -2,6 +2,8 @@
 
 **Enterprise Architecture Demonstration — Space Domain Awareness (SDA)**
 
+> **🚀 Live Demo:** [**sentinelforge.vercel.app**](https://sentinelforge.vercel.app/sentinel_ops.html) — Full operations center with CesiumJS 3D globe, live CelesTrak satellite data, and real-time telemetry simulation. No login required.
+
 SentinelForge is a full-stack space surveillance pipeline that pushes ML inference to the edge, fuses multi-sensor observations in the cloud, and applies state-of-the-art astrophysics to solve the catalog staleness problem plaguing the U.S. Space Surveillance Network.
 
 **19,000+ lines of code** across **85+ files** — Python, C++/CUDA, HTML/JS, Terraform, Kubernetes.
@@ -73,13 +75,19 @@ sentinelforge/
 │
 ├── frontend/                            # VISUALIZATION & OPS CENTER
 │   ├── sentinel_ops.html                #   S. Operations Center (mission ops dashboard)
-│   ├── sentinel_ops.css                 #   S. Ops Center design system (300 lines)
-│   ├── sentinel_core.js                 #   S. Ops Center engine (2,300+ lines)
-│   ├── sentinel_globe_chat.js           #   CesiumJS 3D globe + AI chat overlay
+│   ├── sentinel_ops.css                 #   S. Ops Center design system (1,280 lines)
+│   ├── sentinel_state.js                #   Centralized system state (260 lines)
+│   ├── sentinel_core.js                 #   S. Ops Center engine (2,400+ lines)
+│   ├── sentinel_globe_chat.js           #   CesiumJS 3D globe + AI chat (11 knowledge domains)
+│   ├── sentinel_drilldown.js            #   Network modal drill-down + site detail
+│   ├── sentinel_slingshot_catalog.html   #   20-station Slingshot technology catalog
+│   ├── sentinel_slingshot_catalog.js     #   Catalog grid + detail slide-over + programmer sheet
+│   ├── sentinel_slingshot_technician.html #   Onsite technician field guide
 │   ├── sentinel_celestrak.js            #   CelesTrak GP data integration (live satellite catalog)
 │   ├── sentinel_resilience.js           #   Self-healing engine (10 subsystems, fleet resilience)
+│   ├── sentinel_catalog.html            #   Object catalog search
+│   ├── sentinel_portal.html             #   Engineering reference portal
 │   ├── site_registry.json               #   172 ground station definitions
-│   ├── dashboard.html                   #   Legacy operations dashboard
 │   └── digital_twin.html               #   E. CesiumJS 3D globe + WebSocket
 │
 ├── terraform/                           # INFRASTRUCTURE AS CODE
@@ -152,6 +160,20 @@ Raw CCD Frame (32 MB)
 ---
 
 ## Quick Start
+
+### Option A: Live Demo (Instant — No Setup)
+
+Visit the hosted Operations Center at **[sentinelforge.vercel.app](https://sentinelforge.vercel.app/sentinel_ops.html)** — zero install, zero login.
+
+| Page | URL |
+|------|-----|
+| **Operations Center** | [sentinelforge.vercel.app/sentinel_ops.html](https://sentinelforge.vercel.app/sentinel_ops.html) |
+| **Slingshot Catalog** | [sentinelforge.vercel.app/sentinel_slingshot_catalog.html](https://sentinelforge.vercel.app/sentinel_slingshot_catalog.html) |
+| **Object Catalog** | [sentinelforge.vercel.app/sentinel_catalog.html](https://sentinelforge.vercel.app/sentinel_catalog.html) |
+| **Engineering Portal** | [sentinelforge.vercel.app/sentinel_portal.html](https://sentinelforge.vercel.app/sentinel_portal.html) |
+| **Technician Guide** | [sentinelforge.vercel.app/sentinel_slingshot_technician.html](https://sentinelforge.vercel.app/sentinel_slingshot_technician.html) |
+
+### Option B: Run Locally
 
 ```bash
 # 1. Clone
