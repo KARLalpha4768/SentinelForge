@@ -159,6 +159,53 @@ Raw CCD Frame (32 MB)
 
 ---
 
+## Performance Benchmarks
+
+Measured on Python 3.13 / NumPy 2.4 (single-thread, no GPU). Run `python run_benchmarks.py` to reproduce.
+
+| Module | Latency | Throughput | Notes |
+|--------|---------|------------|-------|
+| **Orbit Propagator** (J2–J6+Drag) | 0.04 ms/orbit | 25,000 obj/s | Kepler + secular perturbations |
+| **Orbit Propagator** (100-object batch) | 0.61 ms total | 163,934 obj/s | Batch amortized |
+| **Conjunction Screener** (Foster-Estes 2D) | 4.21 ms/pair | 237 pairs/s | Full Pc computation + RTN covariance |
+| **Multi-Sensor Fusion** (EKF) | < 0.01 ms/ingest | > 100K/s | Extended Kalman filter track update |
+| **Observation Scheduler** | 0.02 ms/schedule | 50,000 sched/s | Priority queue + visibility check |
+| **Coordinate Transforms** (J2000→TEME→ITRF) | 66 µs/transform | 15,151/s | Precession + nutation + sidereal |
+| **Atmospheric Refraction** (Bennett 1982) | 0.38 µs/correction | 2.6M/s | Used in plate solver astrometry |
+| **Initial Orbit Determination** | < 0.01 ms | Instant | 3-obs angles-only Gauss method |
+| **Knowledge Base Search** | 1.15 ms/query | 869 queries/s | Full-text domain knowledge lookup |
+
+### End-to-End Test
+
+```
+$ python end_to_end_test.py
+[1] Knowledge Base...         PASS
+[2] Orbit Propagator...       PASS (ISS at r=6778 km, v=7668 m/s)
+[3] Conjunction Screener...   PASS (Pc=8.94e-02, miss=0.510 km, alert=EMERGENCY)
+[4] Multi-Sensor Fusion...    PASS (1 tracks, multi-site)
+[5] Observation Scheduler...  PASS (4/4 tasks scheduled)
+[6] Initial Orbit Determ...   PASS (altitude=380 km, period=92 min)
+RESULTS: 6/6 PASSED ✓
+```
+
+---
+
+## Quick Tour
+
+### 🌐 Operations Center
+Interactive 3D CesiumJS globe with 10,000+ satellites from CelesTrak live data. Click any dot — satellites show NORAD ID, orbit parameters, and classification. Ground stations show sensor type, GPU load, and network affiliation. Conjunction events open detailed modal with Pc, miss distance, escalation protocol, and maneuver decision support.
+
+### 📊 Telemetry & Diagnostics
+8 real-time gauges with mean-reverting drift simulation. Priority reacquisition queue for stale/lost objects. SOTA module health monitoring with latency tracking. Dynamic alert system with toast notifications and drill-down escalation tiers.
+
+### 💻 Programmer's Terminal (Gemini NLU)
+Embedded terminal with 3-layer intelligence: direct commands, regex NLP, and **Gemini 2.5 Flash** LLM reasoning. Type natural language — *"show me the orbit code"* — and it translates to the correct command. Serverless backend on Vercel with 3-model fallback chain for resilience.
+
+### 📋 3-Tier Field Documentation
+**Tier 1:** Site Tech Catalog → **Tier 2:** Technician Upgrade Sheet → **Tier 3:** Programmer Integration Reference. Each tier drills down from the previous with back-navigation. Built for analysts, field techs, and remote software engineers respectively.
+
+---
+
 ## Quick Start
 
 ### Option A: Live Demo (Instant — No Setup)
