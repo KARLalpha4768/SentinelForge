@@ -1,5 +1,12 @@
 // SentinelForge Antigravity IDE Terminal Emulator
 (function(){
+document.addEventListener('DOMContentLoaded', function(){
+const termOutput = document.getElementById('termOutput');
+const termInput = document.getElementById('termInput');
+const termBody = document.getElementById('termBody');
+const promptPathEl = document.querySelector('.promptPath');
+if(!termOutput||!termInput||!termBody) return;
+
 const FS={
 '~':{type:'dir',children:{'sentinelforge':{type:'dir',children:{
 'README.md':{type:'file',size:'22KB'},
@@ -96,10 +103,10 @@ function getDirNode(path){
   return node;
 }
 
-const out=document.getElementById('termOutput');
-const inp=document.getElementById('termInput');
-const body=document.getElementById('termBody');
-const promptPath=document.querySelector('.promptPath');
+const out=termOutput;
+const inp=termInput;
+const body=termBody;
+const promptPath=promptPathEl;
 
 function addLine(text,cls='out'){
   const d=document.createElement('div');
@@ -412,4 +419,5 @@ document.getElementById('termMax').addEventListener('click',()=>{
 });
 document.getElementById('terminal').addEventListener('click',()=>inp.focus());
 scroll();
+}); // DOMContentLoaded
 })();
