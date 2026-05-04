@@ -64,37 +64,45 @@ Examples:
   "how's the gpu?" → {"cmd":"jetson_health","args":[],"narr":"Running GPU diagnostics..."}
   "hello" → {"cmd":"_reply","text":"Hello! I'm the SentinelForge terminal. Ask me anything about the codebase, or tell me what to run."}`;
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\nUser input: "${input}"` }] }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 256,
-            responseMimeType: 'application/json'
-          }
-        })
-      }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('Gemini API error:', errText);
-      return res.status(502).json({ error: 'Gemini API error', detail: errText.substring(0, 500) });
+  const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-lite'];
+  const reqBody = JSON.stringify({
+    contents: [{ parts: [{ text: `${systemPrompt}\n\nUser input: "${input}"` }] }],
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 256,
+      responseMimeType: 'application/json'
     }
+  });
 
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) return res.status(502).json({ error: 'Empty Gemini response' });
+  for (const model of models) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: reqBody }
+      );
 
-    const parsed = JSON.parse(text);
-    return res.status(200).json(parsed);
-  } catch (err) {
-    console.error('NLP error:', err);
-    return res.status(500).json({ error: 'NLP processing failed' });
+      if (response.status === 503 || response.status === 429) {
+        console.log(`${model}: ${response.status}, trying next model...`);
+        continue; // Try next model
+      }
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`${model} error:`, errText);
+        continue;
+      }
+
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) continue;
+
+      const parsed = JSON.parse(text);
+      return res.status(200).json(parsed);
+    } catch (err) {
+      console.error(`${model} failed:`, err.message);
+      continue;
+    }
   }
+
+  return res.status(502).json({ error: 'All models unavailable. Try again in a moment.' });
 }
