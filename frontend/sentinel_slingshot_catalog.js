@@ -152,35 +152,35 @@ function openDetail(s) {
         <div class="detail-section">
             <h3><span class="icon">[SYS]</span> Site Metrics & Connectivity</h3>
             <div class="tech-spec-grid">
-                <div class="tech-spec-item">
-                    <div class="ts-label">Edge GPU Load</div>
+                <div class="tech-spec-item hw-clickable" onclick="openComponentDetail('jetson')">
+                    <div class="ts-label">Edge GPU Load ▸</div>
                     <div class="ts-value" style="color:#00e5ff">${s.gpu}%</div>
                 </div>
-                <div class="tech-spec-item">
-                    <div class="ts-label">Current Seeing</div>
+                <div class="tech-spec-item hw-clickable" onclick="openComponentDetail('weather')">
+                    <div class="ts-label">Current Seeing ▸</div>
                     <div class="ts-value">${s.seeing} arcsec</div>
                 </div>
-                <div class="tech-spec-item">
-                    <div class="ts-label">Task Queue</div>
+                <div class="tech-spec-item hw-clickable" onclick="openComponentDetail('focuser')">
+                    <div class="ts-label">Task Queue ▸</div>
                     <div class="ts-value">${s.queue} pending</div>
                 </div>
-                <div class="tech-spec-item">
-                    <div class="ts-label">Network Uplink</div>
+                <div class="tech-spec-item hw-clickable" onclick="openComponentDetail('networking')">
+                    <div class="ts-label">Network Uplink ▸</div>
                     <div class="ts-value" style="color:#00e676">Secure WAN (IPsec)</div>
                 </div>
             </div>
         </div>
 
         <div class="detail-section">
-            <h3><span class="icon">[HW]</span> Hardware & Technology Profile</h3>
+            <h3><span class="icon">[HW]</span> Hardware & Technology Profile <span style="font-size:9px;color:#00e5ff;font-weight:400;margin-left:8px">— Click any row for deep specs</span></h3>
             <table class="detail-table">
                 <tbody>
-                    <tr><td>Sensor Array</td><td>${NETWORK_TECH_SPECS.optics}</td></tr>
-                    <tr><td>Tracking Mounts</td><td>${NETWORK_TECH_SPECS.mounts}</td></tr>
-                    <tr><td>Detectors</td><td>${NETWORK_TECH_SPECS.detectors}</td></tr>
-                    <tr><td>Daylight Tracking</td><td>${NETWORK_TECH_SPECS.daylight}</td></tr>
-                    <tr><td>Enclosure</td><td>${NETWORK_TECH_SPECS.enclosures}</td></tr>
-                    <tr><td>Edge Compute</td><td>${NETWORK_TECH_SPECS.edgeCompute}</td></tr>
+                    <tr class="hw-clickable" onclick="openComponentDetail('telescope')"><td>Sensor Array ▸</td><td>${NETWORK_TECH_SPECS.optics}</td></tr>
+                    <tr class="hw-clickable" onclick="openComponentDetail('mount')"><td>Tracking Mounts ▸</td><td>${NETWORK_TECH_SPECS.mounts}</td></tr>
+                    <tr class="hw-clickable" onclick="openComponentDetail('camera')"><td>Detectors ▸</td><td>${NETWORK_TECH_SPECS.detectors}</td></tr>
+                    <tr class="hw-clickable" onclick="openComponentDetail('filterwheel')"><td>Daylight Tracking ▸</td><td>${NETWORK_TECH_SPECS.daylight}</td></tr>
+                    <tr class="hw-clickable" onclick="openComponentDetail('dome')"><td>Enclosure ▸</td><td>${NETWORK_TECH_SPECS.enclosures}</td></tr>
+                    <tr class="hw-clickable" onclick="openComponentDetail('jetson')"><td>Edge Compute ▸</td><td>${NETWORK_TECH_SPECS.edgeCompute}</td></tr>
                 </tbody>
             </table>
         </div>
@@ -367,6 +367,9 @@ function openProgrammerPanel(stationId) {
                 </div>
             </div>
         </div>
+
+        <!-- Component Detail Panel (for programmer view drill-downs) -->
+        <div id="componentDetailPanel" style="display:none;margin-top:10px;background:rgba(10,12,20,0.95);border:1px solid rgba(0,229,255,0.2);border-radius:8px;padding:14px;animation:fadeIn 0.3s ease"></div>
 
         <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <span style="color:#546e7a;font-size:9px;text-transform:uppercase;letter-spacing:.5px">Navigate:</span>
