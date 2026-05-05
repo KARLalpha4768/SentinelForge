@@ -1412,9 +1412,17 @@ function renderInventory(tab) {
                     <span class="rq-filter-btn" data-filter="IN PROGRESS" onclick="filterReacqQueue('IN PROGRESS')" style="cursor:pointer;padding:2px 6px;border-radius:3px;border:1px solid rgba(0,230,118,0.3);color:#00e676;font-weight:600;transition:all .2s">${rqInProg} ACTIVE</span>
                 </div>
             </div>
-            <table class="inv-table" style="font-size:9px">
+            <table class="inv-table" style="font-size:9px" id="rqTable">
                 <thead><tr>
-                    <th>NORAD</th><th>Object</th><th>Regime</th><th>State</th><th>Days</th><th>Priority</th><th>Reason</th><th>Tasking</th><th>Status</th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortReacqQueue('norad')" title="Sort by NORAD ID">NORAD <span class="rq-sort-ind" data-col="norad"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortReacqQueue('name')" title="Sort by Object Name">Object <span class="rq-sort-ind" data-col="name"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortReacqQueue('regime')" title="Sort by Orbital Regime">Regime <span class="rq-sort-ind" data-col="regime"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortReacqQueue('state')" title="Sort by Custody State">State <span class="rq-sort-ind" data-col="state"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortReacqQueue('days')" title="Sort by Days Since Last Obs">Days <span class="rq-sort-ind" data-col="days"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortReacqQueue('priority')" title="Sort by Priority Level">Priority <span class="rq-sort-ind" data-col="priority"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortReacqQueue('reason')" title="Sort by Reason">Reason <span class="rq-sort-ind" data-col="reason"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortReacqQueue('tasking')" title="Sort by Tasking Site">Tasking <span class="rq-sort-ind" data-col="tasking"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortReacqQueue('status')" title="Sort by Status">Status <span class="rq-sort-ind" data-col="status"></span></th>
                 </tr></thead>
                 <tbody id="rqTableBody">
                     ${rq.sort((a,b) => {
@@ -1428,7 +1436,7 @@ function renderInventory(tab) {
                         const daysCol = r.daysSince > 14 ? '#ff1744' : r.daysSince > 7 ? '#ffab00' : '#b0bec5';
                         const ownerCol = r.owner.includes('PRC')||r.owner.includes('Russia')?'#ff5252':r.owner.includes('USA')||r.owner==='USSF'||r.owner==='USN'?'#448aff':r.owner==='UCT'?'#e040fb':'#b0bec5';
                         const taskCol = r.taskingStatus.includes('PROGRESS')?'#00e676':r.taskingStatus.includes('PRIORITY')?'#ffd740':r.taskingStatus.includes('BLOCKED')?'#ff1744':r.taskingStatus==='DEFERRED'?'#78909c':'#b0bec5';
-                        return `<tr data-priority="${r.priority}" data-state="${r.state}" data-tasking="${r.taskingStatus}" title="Owner: ${r.owner} | RCS: ${r.rcs} m² | Last: ${r.lastObs} | Window: ${r.custodyWindow}" style="cursor:pointer" onclick="openReacqDetail(${rq.indexOf(r)})">
+                        return `<tr data-priority="${r.priority}" data-state="${r.state}" data-tasking="${r.taskingStatus}" data-norad="${r.norad}" data-name="${r.name}" data-regime="${r.regime}" data-days="${r.daysSince}" data-reason="${r.reason}" data-tasksite="${r.taskingSite}" data-status="${r.taskingStatus}" title="Owner: ${r.owner} | RCS: ${r.rcs} m² | Last: ${r.lastObs} | Window: ${r.custodyWindow}" style="cursor:pointer" onclick="openReacqDetail(${rq.indexOf(r)})">
                             <td style="font-family:JetBrains Mono,mono;color:#78909c">${r.norad}</td>
                             <td style="color:#e8eaf6;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name}</td>
                             <td style="color:${r.regime==='LEO'?'var(--color-leo)':r.regime==='GEO'?'var(--color-geo)':r.regime==='MEO'?'var(--color-meo)':'var(--color-heo)'}">${r.regime}</td>
@@ -2031,6 +2039,48 @@ function filterReacqQueue(filter) {
         const match = pri === filter || state === filter || tasking.includes(filter);
         row.style.display = match ? '' : 'none';
     });
+}
+
+// ── Reacquisition Queue Column Sort ──
+let _rqSortCol = null;
+let _rqSortAsc = true;
+function sortReacqQueue(col) {
+    const tbody = document.getElementById('rqTableBody');
+    if(!tbody) return;
+    // Toggle direction
+    if(_rqSortCol === col) { _rqSortAsc = !_rqSortAsc; }
+    else { _rqSortCol = col; _rqSortAsc = true; }
+    // Update indicators
+    document.querySelectorAll('.rq-sort-ind').forEach(s => {
+        s.textContent = s.dataset.col === col ? (_rqSortAsc ? '▲' : '▼') : '';
+        s.style.color = s.dataset.col === col ? '#00e5ff' : '';
+    });
+    // Get rows as array
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const priOrder = {CRITICAL:0,HIGH:1,MEDIUM:2,LOW:3};
+    const regOrder = {LEO:0,MEO:1,GEO:2,HEO:3};
+    rows.sort((a,b) => {
+        let va, vb;
+        if(col === 'norad' || col === 'days') {
+            va = parseInt(a.dataset[col]) || 0;
+            vb = parseInt(b.dataset[col]) || 0;
+            return _rqSortAsc ? va - vb : vb - va;
+        } else if(col === 'priority') {
+            va = priOrder[a.dataset.priority] ?? 4;
+            vb = priOrder[b.dataset.priority] ?? 4;
+            return _rqSortAsc ? va - vb : vb - va;
+        } else if(col === 'regime') {
+            va = regOrder[a.dataset.regime] ?? 5;
+            vb = regOrder[b.dataset.regime] ?? 5;
+            return _rqSortAsc ? va - vb : vb - va;
+        } else {
+            const key = col === 'tasking' ? 'tasksite' : col;
+            va = (a.dataset[key] || '').toLowerCase();
+            vb = (b.dataset[key] || '').toLowerCase();
+            return _rqSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        }
+    });
+    rows.forEach(r => tbody.appendChild(r));
 }
 
 // ── Slingshot Station Detail Modal ──────────────────
