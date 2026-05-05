@@ -100,6 +100,14 @@
         .promptUser { color:#00e676; font-weight:600; }
         .promptPath { color:#82b1ff; }
         #termInput { flex:1; background:transparent; border:none; outline:none; color:#e8eaf6; font-family:'JetBrains Mono',monospace; font-size:11px; caret-color:#00e5ff; }
+
+        /* ── Pipeline Schematic Hotspots ── */
+        .pipe-hotspot { position:absolute; border:1px solid transparent; border-radius:4px; cursor:pointer; transition:all .25s; z-index:5; }
+        .pipe-hotspot:hover { background:rgba(0,229,255,0.12); border-color:rgba(0,229,255,0.45); box-shadow:0 0 14px rgba(0,229,255,0.18); }
+        .pipe-hotspot.edge:hover { background:rgba(0,229,255,0.12); border-color:rgba(0,229,255,0.45); }
+        .pipe-hotspot.transport:hover { background:rgba(255,215,64,0.12); border-color:rgba(255,215,64,0.45); box-shadow:0 0 14px rgba(255,215,64,0.18); }
+        .pipe-hotspot.cloud:hover { background:rgba(0,230,118,0.12); border-color:rgba(0,230,118,0.45); box-shadow:0 0 14px rgba(0,230,118,0.18); }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
     </style>
 </head>
 <body>
@@ -121,14 +129,37 @@
 
         <!-- Data Flow Schematic -->
         <div class="section">
-            <h2>📐 Edge-to-Cloud Data Flow Architecture</h2>
-            <div style="background:rgba(10,12,20,0.9);border:1px solid rgba(0,229,255,0.08);border-radius:10px;padding:16px;text-align:center">
-                <img src="img/programmer_schematic.png" alt="Edge-to-Cloud Pipeline Schematic" style="width:100%;max-width:900px;border-radius:8px;opacity:0.95" />
+            <h2>📐 Edge-to-Cloud Data Flow Architecture <span style="font-size:10px;color:#00e5ff;font-weight:400;margin-left:8px">— Click any stage for deep specs</span></h2>
+            <div style="position:relative;background:rgba(10,12,20,0.9);border:1px solid rgba(0,229,255,0.08);border-radius:10px;padding:16px;text-align:center;overflow:hidden">
+                <img src="img/programmer_schematic.png" alt="Edge-to-Cloud Pipeline Schematic" style="width:100%;max-width:900px;border-radius:8px;opacity:0.95;display:block;margin:0 auto" />
+                <!-- Hotspot overlay -->
+                <div style="position:absolute;top:16px;left:0;right:0;bottom:16px;display:flex;justify-content:center">
+                    <div style="position:relative;width:100%;max-width:900px">
+                        <!-- EDGE NODE stages (left column) -->
+                        <div class="pipe-hotspot edge" onclick="openPipelineDetail('ccd_readout')" title="CCD Readout" style="top:2%;left:1%;width:28%;height:10%"></div>
+                        <div class="pipe-hotspot edge" onclick="openPipelineDetail('calibration')" title="Calibration" style="top:16%;left:1%;width:28%;height:10%"></div>
+                        <div class="pipe-hotspot edge" onclick="openPipelineDetail('streak_detect')" title="Streak Detection" style="top:30%;left:1%;width:28%;height:12%"></div>
+                        <div class="pipe-hotspot edge" onclick="openPipelineDetail('source_extract')" title="Source Extraction" style="top:46%;left:1%;width:28%;height:10%"></div>
+                        <div class="pipe-hotspot edge" onclick="openPipelineDetail('plate_solver')" title="Plate Solver" style="top:60%;left:1%;width:28%;height:12%"></div>
+                        <div class="pipe-hotspot edge" onclick="openPipelineDetail('photometry')" title="Photometry" style="top:76%;left:1%;width:28%;height:12%"></div>
+                        <!-- TRANSPORT stages (center column) -->
+                        <div class="pipe-hotspot transport" onclick="openPipelineDetail('kafka_producer')" title="Kafka Producer" style="top:5%;left:34%;width:20%;height:14%"></div>
+                        <div class="pipe-hotspot transport" onclick="openPipelineDetail('tdm_message')" title="TDM Message" style="top:25%;left:34%;width:20%;height:12%"></div>
+                        <div class="pipe-hotspot transport" onclick="openPipelineDetail('encrypted_wan')" title="Encrypted WAN" style="top:42%;left:34%;width:20%;height:10%"></div>
+                        <div class="pipe-hotspot transport" onclick="openPipelineDetail('kafka_consumer')" title="Kafka Consumer" style="top:58%;left:34%;width:20%;height:14%"></div>
+                        <!-- CLOUD stages (right column) -->
+                        <div class="pipe-hotspot cloud" onclick="openPipelineDetail('correlator')" title="Correlator" style="top:2%;left:58%;width:28%;height:14%"></div>
+                        <div class="pipe-hotspot cloud" onclick="openPipelineDetail('bayesian_iod')" title="Bayesian IOD" style="top:24%;left:58%;width:28%;height:14%"></div>
+                        <div class="pipe-hotspot cloud" onclick="openPipelineDetail('conj_screener')" title="Conjunction Screener" style="top:48%;left:58%;width:28%;height:14%"></div>
+                        <div class="pipe-hotspot cloud" onclick="openPipelineDetail('obs_scheduler')" title="Observation Scheduler" style="top:72%;left:58%;width:28%;height:14%"></div>
+                    </div>
+                </div>
                 <div style="margin-top:10px;font-size:9px;color:#546e7a;font-family:'JetBrains Mono',monospace;line-height:1.6">
-                    FIG 1 — SGSN DATA FLOW ARCHITECTURE · Edge Node → CUDA Pipeline → Kafka Transport → Cloud Catalog<br>
-                    CCD Frame (32MB) → Calibration → Streak Detection → Source Extraction → Plate Solve → TDM (10KB) → Cloud Ingest
+                    FIG 1 — SGSN DATA FLOW ARCHITECTURE · Click any stage for implementation deep-dive
                 </div>
             </div>
+            <!-- Pipeline Detail Panel -->
+            <div id="pipelineDetailPanel" style="display:none;margin-top:10px;background:rgba(10,12,20,0.95);border:1px solid rgba(0,229,255,0.2);border-radius:8px;padding:14px;animation:fadeIn 0.3s ease"></div>
             <div class="info-box" style="margin-top:12px">
                 <strong>ARCHITECTURE:</strong> Each site reduces raw imagery (32MB/frame at 1Hz) to structured Tracking Data Messages (10KB) using the on-site NVIDIA Jetson AGX Orin GPU. Only derived measurements traverse the WAN — a 3,200:1 data compression ratio that enables the network to operate over Starlink or cellular uplinks.
             </div>
@@ -435,6 +466,46 @@
             yamlBlock.innerHTML = newLines.join('\n');
         }
     });
+
+    // ── Pipeline Data Flow Stage Drill-Down ──
+    const PIPE = {
+        ccd_readout:{title:'CCD Readout',icon:'📷',color:'#00e5ff',zone:'EDGE NODE',specs:[['Input','Photon exposure on Sony IMX455 sensor (9576×6388 px)'],['Output','32MB raw FITS frame (16-bit ADC)'],['Timing','1 Hz sustained (1 frame/sec), 26 fps in ROI crop mode'],['Read Noise','1.2 e⁻ RMS @ low-noise mode'],['Interface','USB 3.0 Gen 1 → Jetson Orin (5 Gbps)'],['Module','ascom_hal.py → ZWO SDK driver']],failures:['USB disconnect under vibration','TEC cooling failure → elevated dark current','Buffer overflow at >2 fps full-frame']},
+        calibration:{title:'Calibration',icon:'⚙️',color:'#00e5ff',zone:'EDGE NODE',specs:[['Input','32MB raw frame + master dark + flat field + bad pixel map'],['Output','32MB calibrated frame (bias/dark/flat corrected)'],['Timing','<2ms on Orin GPU (CUDA kernel)'],['Method','Bias subtraction → dark subtraction → flat division → background estimation'],['Module','calibration.cu (CUDA C++)'],['Calibration Update','Master darks: nightly. Flats: weekly. Bad pixel map: monthly']],failures:['Stale dark frames → systematic noise pattern','Flat field lamp failure → vignetting artifacts','NaN propagation from dead pixel clusters']},
+        streak_detect:{title:'Streak Detection',icon:'🔍',color:'#00e5ff',zone:'EDGE NODE',specs:[['Input','32MB calibrated frame'],['Output','List of candidate streaks (centroid, length, angle, SNR)'],['Timing','<3ms on Orin GPU (900 filters in parallel)'],['Method','PINN-accelerated matched filter bank (J2-J6 perturbation rates)'],['Filter Bank','900 orientations covering LEO 0.1°/s to GEO sidereal rate'],['Min SNR','3.5 (configurable in site.yaml)'],['Module','streak_detect.cu (TensorRT engine v3.2)']],failures:['False positives from cosmic rays (mitigated by temporal filtering)','Missed streaks at SNR 3.0-3.5 boundary','Filter bank gaps at unusual inclinations']},
+        source_extract:{title:'Source Extraction',icon:'🎯',color:'#00e5ff',zone:'EDGE NODE',specs:[['Input','Candidate streak list + calibrated frame'],['Output','Centroid (x,y), flux, FWHM, ellipticity, SNR per detection'],['Timing','<1ms (CPU, vectorized NumPy)'],['Method','Gaussian centroiding with iterative sigma-clipping background'],['Sub-pixel','Parabolic interpolation for 0.1px centroid accuracy'],['Module','source_extraction.py']],failures:['Blended sources near galactic plane','Hot pixel false positives (post-calibration residuals)','Saturation artifacts from bright stars']},
+        plate_solver:{title:'Plate Solver',icon:'🗺️',color:'#00e5ff',zone:'EDGE NODE',specs:[['Input','Star centroids from source extraction'],['Output','WCS solution (RA/Dec for every pixel) + SIP distortion model'],['Timing','<50ms cold start, <5ms warm (cached index)'],['Method','Quad-hash triangle matching against Gaia DR3 local index'],['Accuracy','0.05 arcsec RMS astrometric residual'],['Module','plate_solver.cpp (C++)']],failures:['Solve failure in sparse star fields (high galactic latitude)','Incorrect WCS from ambiguous quad matches','Index file corruption → full re-download required']},
+        photometry:{title:'Photometry',icon:'📊',color:'#00e5ff',zone:'EDGE NODE',specs:[['Input','Detected sources + WCS solution + calibrated frame'],['Output','Calibrated BVRI magnitudes, instrumental magnitudes, zeropoint'],['Timing','<3ms per frame (all sources)'],['Method','Aperture photometry (3,5,7 px radii) + PSF fitting'],['Zeropoint','Tycho-2 / Gaia DR3 cross-match for photometric calibration'],['Module','photometry.cpp (C++)']],failures:['Zeropoint drift in poor seeing (>3 arcsec)','Saturation for V<8 catalog stars','Color term systematic for non-stellar sources']},
+        kafka_producer:{title:'Kafka Producer',icon:'📤',color:'#ffd740',zone:'TRANSPORT',specs:[['Input','Extracted TDM (astrometry + photometry + metadata)'],['Output','Protobuf-serialized message → Kafka topic'],['Compression','zstd (~60% reduction)'],['Batch','16KB batch size, 100ms linger window'],['Offline Queue','SQLite write-ahead log (survives WAN outage)'],['Module','kafka_transport.py']],failures:['Broker unreachable → SQLite queue grows (monitor disk)','Message schema mismatch after pipeline upgrade','Partition rebalancing during high-throughput bursts']},
+        tdm_message:{title:'TDM Message (10KB)',icon:'📋',color:'#ffd740',zone:'TRANSPORT',specs:[['Format','CCSDS Tracking Data Message (TDM) in Protobuf/JSON'],['Size','~10KB per observation (vs 32MB raw frame = 3,200:1 ratio)'],['Contents','Timestamp, RA, Dec, calibrated mag, SNR, streak length, site ID'],['Schema','sentinelforge.tdm.v2 (Protobuf schema registry)'],['Validation','JSON Schema validation before Kafka publish']],failures:['Schema version mismatch between edge and cloud','Timestamp drift if GPS sync lost (>100ms = rejected)','Corrupted Protobuf from interrupted serialization']},
+        encrypted_wan:{title:'Encrypted WAN',icon:'🔒',color:'#ffd740',zone:'TRANSPORT',specs:[['Protocol','WireGuard VPN tunnel (ChaCha20-Poly1305)'],['Primary Link','Site-specific (fiber 1Gbps or Starlink 100Mbps)'],['Failover','Automatic dual-WAN switchover via Ubiquiti router'],['Latency','5-25ms (fiber), 25-60ms (Starlink)'],['Bandwidth Need','~50 KB/s sustained (TDMs only, not raw frames)'],['Endpoint','Azure West US 2 → Beacon ingest cluster']],failures:['Starlink weather degradation (rain fade)','VPN tunnel flap from IP change (Starlink)','Certificate expiry → tunnel drops silently']},
+        kafka_consumer:{title:'Kafka Consumer',icon:'📥',color:'#ffd740',zone:'TRANSPORT',specs:[['Input','TDM messages from all 20 site topics'],['Output','Deserialized observations → Cloud pipeline queue'],['Consumer Group','sentinelforge-ingest (3 consumers, 60 partitions)'],['Throughput','~10,000 TDMs/min aggregate across all sites'],['Retention','7-day topic retention for replay capability'],['Module','cloud_ingest.py (Azure Kubernetes Service)']],failures:['Consumer lag >20 messages → cloud falling behind','Partition rebalancing → brief processing gap','Deserialization failure from schema evolution']},
+        correlator:{title:'Correlator (Mahalanobis)',icon:'🔗',color:'#00e676',zone:'CLOUD',specs:[['Input','New TDM observation + existing catalog state vectors'],['Output','Correlation decision: matched object ID or new UCT'],['Method','Mahalanobis distance in (RA, Dec, dRA/dt, dDec/dt) space'],['Threshold','χ² < 9.49 (95% confidence, 4 DOF) for association'],['Catalog Size','~48,000 tracked objects (LEO+MEO+GEO+HEO)'],['Module','catalog_lifecycle.py → correlator stage']],failures:['Stale covariance → false non-correlation','Maneuver detection lag → object mismatch','Dense catalog regions (GEO belt) → ambiguous matches']},
+        bayesian_iod:{title:'Bayesian IOD (MCMC)',icon:'🌐',color:'#00e676',zone:'CLOUD',specs:[['Input','3+ correlated tracklets (angles-only observations)'],['Output','6-element state vector + 6×6 covariance matrix (TEME frame)'],['Method','Gauss initial guess → UKF refinement with J2-J6 perturbations'],['Convergence','Typically 5-10 UKF iterations, <500ms per object'],['Output Format','TEME state vector → convertible to TLE or OEM'],['Module','bayesian_iod.py']],failures:['Insufficient tracklet arc → non-convergent orbit','Atmospheric drag uncertainty for <300km LEO','Multiple hypothesis ambiguity for newly detected objects']},
+        conj_screener:{title:'Conjunction Screener (Pc)',icon:'⚠️',color:'#00e676',zone:'CLOUD',specs:[['Input','All catalog state vectors + covariance matrices'],['Output','Conjunction Data Messages (CDMs) for events with Pc > 1e-7'],['Method','Foster-Estes 2D collision probability in B-plane'],['Screening Volume','All-on-all for objects within 25km miss distance'],['Threshold','Alert at Pc > 1e-4, Watch at Pc > 1e-5'],['Module','conjunction_screener.py']],failures:['Covariance realism errors → Pc over/under-estimation','Maneuver not modeled → phantom conjunction','Screening lag during catalog update surge']},
+        obs_scheduler:{title:'Observation Scheduler',icon:'📅',color:'#00e676',zone:'CLOUD',specs:[['Input','Priority target list + site capabilities + weather forecast'],['Output','Per-site observation schedule pushed to edge nodes'],['Method','Priority-weighted scoring: conjunction > custody > survey'],['Horizon Mask','Per-site topographic mask (buildings, mountains)'],['Weather Gate','Cloud cover forecast integration (12-hour lookahead)'],['Module','scheduler.py → Beacon fleet management']],failures:['Weather forecast error → wasted observation window','Priority inversion during multi-conjunction events','Schedule push failure to offline edge node']},
+    };
+    function openPipelineDetail(stageId) {
+        const c = PIPE[stageId]; if(!c) return;
+        const panel = document.getElementById('pipelineDetailPanel'); if(!panel) return;
+        const zoneColors = {'EDGE NODE':'#00e5ff','TRANSPORT':'#ffd740','CLOUD':'#00e676'};
+        const zc = zoneColors[c.zone] || '#78909c';
+        const specsHtml = c.specs.map(s => '<tr><td style="color:#78909c;width:150px;vertical-align:top;white-space:nowrap">' + s[0] + '</td><td style="color:#e8eaf6">' + s[1] + '</td></tr>').join('');
+        const failHtml = c.failures.map(f => '<li style="margin-bottom:4px;color:#ffab00">' + f + '</li>').join('');
+        panel.style.display = 'block';
+        panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+            + '<div style="display:flex;align-items:center;gap:8px">'
+            + '<span style="font-size:18px">' + c.icon + '</span>'
+            + '<span style="font-size:14px;font-weight:800;color:' + c.color + '">' + c.title + '</span>'
+            + '<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:' + zc + '15;color:' + zc + ';border:1px solid ' + zc + '30;font-weight:700">' + c.zone + '</span>'
+            + '</div>'
+            + '<button onclick="document.getElementById(\'pipelineDetailPanel\').style.display=\'none\'" style="background:none;border:1px solid rgba(255,255,255,0.1);color:#78909c;cursor:pointer;padding:2px 8px;border-radius:4px;font-family:inherit;font-size:10px">✕ Close</button>'
+            + '</div>'
+            + '<table class="spec-table" style="margin-bottom:12px"><tbody>' + specsHtml + '</tbody></table>'
+            + '<div style="background:rgba(255,171,0,0.04);border:1px solid rgba(255,171,0,0.12);border-radius:6px;padding:8px">'
+            + '<div style="font-size:9px;color:#ffab00;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">⚠️ Known Failure Modes</div>'
+            + '<ul style="margin:0;padding-left:14px;font-size:10px;line-height:1.6">' + failHtml + '</ul></div>';
+        panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
     </script>
 </body>
 </html>
