@@ -1400,19 +1400,23 @@ function renderInventory(tab) {
                 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--status-critical)">
                     🔍 Priority Reacquisition Queue — ${rq.length} Objects
                 </div>
-                <div style="display:flex;gap:6px;font-size:9px">
-                    <span style="color:#ff1744;font-weight:600">${rqCrit} CRITICAL</span>
-                    <span style="color:#ff5252">${rqHigh} HIGH</span>
-                    <span style="color:#ffab00">${rqLost} LOST</span>
-                    <span style="color:#448aff">${rqStale} STALE</span>
-                    <span style="color:#00e676">${rqInProg} IN PROGRESS</span>
+                <div style="display:flex;gap:4px;font-size:9px" id="rqFilters">
+                    <span class="rq-filter-btn rq-filter-active" data-filter="ALL" onclick="filterReacqQueue('ALL')" style="cursor:pointer;padding:2px 6px;border-radius:3px;border:1px solid rgba(255,255,255,0.15);color:#e8eaf6;font-weight:600;transition:all .2s">ALL ${rq.length}</span>
+                    <span class="rq-filter-btn" data-filter="CRITICAL" onclick="filterReacqQueue('CRITICAL')" style="cursor:pointer;padding:2px 6px;border-radius:3px;border:1px solid rgba(255,23,68,0.3);color:#ff1744;font-weight:600;transition:all .2s">${rqCrit} CRITICAL</span>
+                    <span class="rq-filter-btn" data-filter="HIGH" onclick="filterReacqQueue('HIGH')" style="cursor:pointer;padding:2px 6px;border-radius:3px;border:1px solid rgba(255,82,82,0.3);color:#ff5252;font-weight:600;transition:all .2s">${rqHigh} HIGH</span>
+                    <span class="rq-filter-btn" data-filter="MEDIUM" onclick="filterReacqQueue('MEDIUM')" style="cursor:pointer;padding:2px 6px;border-radius:3px;border:1px solid rgba(255,171,0,0.3);color:#ffab00;font-weight:600;transition:all .2s">${rq.filter(r=>r.priority==='MEDIUM').length} MED</span>
+                    <span class="rq-filter-btn" data-filter="LOW" onclick="filterReacqQueue('LOW')" style="cursor:pointer;padding:2px 6px;border-radius:3px;border:1px solid rgba(68,138,255,0.3);color:#448aff;font-weight:600;transition:all .2s">${rq.filter(r=>r.priority==='LOW').length} LOW</span>
+                    <span style="color:#546e7a">│</span>
+                    <span class="rq-filter-btn" data-filter="LOST" onclick="filterReacqQueue('LOST')" style="cursor:pointer;padding:2px 6px;border-radius:3px;border:1px solid rgba(255,23,68,0.3);color:#ff1744;font-weight:600;transition:all .2s">${rqLost} LOST</span>
+                    <span class="rq-filter-btn" data-filter="STALE" onclick="filterReacqQueue('STALE')" style="cursor:pointer;padding:2px 6px;border-radius:3px;border:1px solid rgba(68,138,255,0.3);color:#448aff;font-weight:600;transition:all .2s">${rqStale} STALE</span>
+                    <span class="rq-filter-btn" data-filter="IN PROGRESS" onclick="filterReacqQueue('IN PROGRESS')" style="cursor:pointer;padding:2px 6px;border-radius:3px;border:1px solid rgba(0,230,118,0.3);color:#00e676;font-weight:600;transition:all .2s">${rqInProg} ACTIVE</span>
                 </div>
             </div>
             <table class="inv-table" style="font-size:9px">
                 <thead><tr>
                     <th>NORAD</th><th>Object</th><th>Regime</th><th>State</th><th>Days</th><th>Priority</th><th>Reason</th><th>Tasking</th><th>Status</th>
                 </tr></thead>
-                <tbody>
+                <tbody id="rqTableBody">
                     ${rq.sort((a,b) => {
                         const pOrder = {CRITICAL:0,HIGH:1,MEDIUM:2,LOW:3};
                         return (pOrder[a.priority]||4) - (pOrder[b.priority]||4) || b.daysSince - a.daysSince;
@@ -1424,7 +1428,7 @@ function renderInventory(tab) {
                         const daysCol = r.daysSince > 14 ? '#ff1744' : r.daysSince > 7 ? '#ffab00' : '#b0bec5';
                         const ownerCol = r.owner.includes('PRC')||r.owner.includes('Russia')?'#ff5252':r.owner.includes('USA')||r.owner==='USSF'||r.owner==='USN'?'#448aff':r.owner==='UCT'?'#e040fb':'#b0bec5';
                         const taskCol = r.taskingStatus.includes('PROGRESS')?'#00e676':r.taskingStatus.includes('PRIORITY')?'#ffd740':r.taskingStatus.includes('BLOCKED')?'#ff1744':r.taskingStatus==='DEFERRED'?'#78909c':'#b0bec5';
-                        return `<tr title="Owner: ${r.owner} | RCS: ${r.rcs} m² | Last: ${r.lastObs} | Window: ${r.custodyWindow}" style="cursor:pointer" onclick="openReacqDetail(${rq.indexOf(r)})">
+                        return `<tr data-priority="${r.priority}" data-state="${r.state}" data-tasking="${r.taskingStatus}" title="Owner: ${r.owner} | RCS: ${r.rcs} m² | Last: ${r.lastObs} | Window: ${r.custodyWindow}" style="cursor:pointer" onclick="openReacqDetail(${rq.indexOf(r)})">
                             <td style="font-family:JetBrains Mono,mono;color:#78909c">${r.norad}</td>
                             <td style="color:#e8eaf6;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name}</td>
                             <td style="color:${r.regime==='LEO'?'var(--color-leo)':r.regime==='GEO'?'var(--color-geo)':r.regime==='MEO'?'var(--color-meo)':'var(--color-heo)'}">${r.regime}</td>
@@ -2004,6 +2008,30 @@ document.querySelectorAll('.inv-tab').forEach(tab => {
 });
 
 // Globe layer toggles — wired in sentinel_globe_chat.js
+
+// ── Reacquisition Queue Filter ──
+function filterReacqQueue(filter) {
+    const rows = document.querySelectorAll('#rqTableBody tr');
+    const btns = document.querySelectorAll('.rq-filter-btn');
+    // Update active button
+    btns.forEach(b => {
+        b.classList.remove('rq-filter-active');
+        b.style.background = 'transparent';
+        if(b.dataset.filter === filter) {
+            b.classList.add('rq-filter-active');
+            b.style.background = 'rgba(255,255,255,0.08)';
+        }
+    });
+    // Filter rows
+    rows.forEach(row => {
+        if(filter === 'ALL') { row.style.display = ''; return; }
+        const pri = row.dataset.priority || '';
+        const state = row.dataset.state || '';
+        const tasking = row.dataset.tasking || '';
+        const match = pri === filter || state === filter || tasking.includes(filter);
+        row.style.display = match ? '' : 'none';
+    });
+}
 
 // ── Slingshot Station Detail Modal ──────────────────
 function openSlingshotDetail(stationId) {
