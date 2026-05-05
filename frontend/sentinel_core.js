@@ -2056,9 +2056,16 @@ function renderInventory(tab) {
 
             <!-- Data Sources -->
             <h3 style="color:var(--text-primary);font-size:11px;margin:10px 8px 4px;border-bottom:1px solid rgba(224,64,251,0.1);padding-bottom:4px">📡 Data Source Provenance</h3>
-            <table class="inv-table" style="font-size:10px">
-                <thead><tr><th></th><th>Source</th><th>Obs/Month</th><th>Latency</th><th>Coverage</th><th>Reliability</th></tr></thead>
-                <tbody>${sources.map(s => `<tr>
+            <table class="inv-table" style="font-size:10px" id="ssotProvTable">
+                <thead><tr>
+                    <th></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortSsotProv('source')" title="Sort by Source">Source <span class="prov-sort-ind" data-col="source"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortSsotProv('obs')" title="Sort by Observations/Month">Obs/Month <span class="prov-sort-ind" data-col="obs"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortSsotProv('latency')" title="Sort by Latency">Latency <span class="prov-sort-ind" data-col="latency"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortSsotProv('coverage')" title="Sort by Coverage">Coverage <span class="prov-sort-ind" data-col="coverage"></span></th>
+                    <th style="cursor:pointer;user-select:none" onclick="sortSsotProv('reliability')" title="Sort by Reliability">Reliability <span class="prov-sort-ind" data-col="reliability"></span></th>
+                </tr></thead>
+                <tbody id="ssotProvBody">${sources.map(s => `<tr data-source="${s.name}" data-obs="${s.obs}" data-latency="${s.latency}" data-coverage="${s.coverage}" data-reliability="${s.reliability}">
                     <td>${s.icon}</td>
                     <td style="color:${s.color};font-weight:600">${s.name}</td>
                     <td style="font-family:JetBrains Mono,mono;color:#e8eaf6">${s.obs}</td>
@@ -2268,6 +2275,57 @@ function sortReacqQueue(col) {
             va = (a.dataset[key] || '').toLowerCase();
             vb = (b.dataset[key] || '').toLowerCase();
             return _rqSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        }
+    });
+    rows.forEach(r => tbody.appendChild(r));
+}
+
+// ── SSOT Data Provenance Column Sort ──
+let _provSortCol = null;
+let _provSortAsc = true;
+function sortSsotProv(col) {
+    const tbody = document.getElementById('ssotProvBody');
+    if(!tbody) return;
+    if(_provSortCol === col) { _provSortAsc = !_provSortAsc; }
+    else { _provSortCol = col; _provSortAsc = true; }
+    document.querySelectorAll('.prov-sort-ind').forEach(s => {
+        s.textContent = s.dataset.col === col ? (_provSortAsc ? '▲' : '▼') : '';
+        s.style.color = s.dataset.col === col ? '#e040fb' : '';
+    });
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const parseObs = v => {
+        if(!v) return 0;
+        const n = parseFloat(v);
+        if(v.includes('M')) return n * 1000000;
+        if(v.includes('K')) return n * 1000;
+        return n;
+    };
+    const parseLatency = v => {
+        if(!v) return 99999;
+        const m = v.match(/([\d.]+)/);
+        if(!m) return 99999;
+        let n = parseFloat(m[1]);
+        if(v.includes('hr')) n *= 60;
+        return n;
+    };
+    rows.sort((a,b) => {
+        let va, vb;
+        if(col === 'obs') {
+            va = parseObs(a.dataset.obs);
+            vb = parseObs(b.dataset.obs);
+            return _provSortAsc ? va - vb : vb - va;
+        } else if(col === 'reliability') {
+            va = parseFloat(a.dataset.reliability) || 0;
+            vb = parseFloat(b.dataset.reliability) || 0;
+            return _provSortAsc ? va - vb : vb - va;
+        } else if(col === 'latency') {
+            va = parseLatency(a.dataset.latency);
+            vb = parseLatency(b.dataset.latency);
+            return _provSortAsc ? va - vb : vb - va;
+        } else {
+            va = (a.dataset[col] || '').toLowerCase();
+            vb = (b.dataset[col] || '').toLowerCase();
+            return _provSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
         }
     });
     rows.forEach(r => tbody.appendChild(r));
