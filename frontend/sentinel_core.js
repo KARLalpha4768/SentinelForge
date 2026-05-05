@@ -1946,6 +1946,74 @@ function renderInventory(tab) {
                 + '</tr>';
         }).join('');
 
+        // Pre-build ISAM missions HTML
+        const isamHtml = (STATE.isamMissions||[]).map(m => {
+            const stCol = m.status==='ACTIVE'?'#00e676':m.status==='PRE-LAUNCH'?'#ffd740':m.status==='SCHEDULED'?'#448aff':'#78909c';
+            return '<tr title="' + m.note + '">'
+                + '<td style="color:#e8eaf6;font-weight:600">' + m.name + '</td>'
+                + '<td style="color:#b0bec5">' + m.operator + '</td>'
+                + '<td style="color:#e040fb">' + m.type + '</td>'
+                + '<td style="color:#78909c;font-size:9px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + m.target + '</td>'
+                + '<td style="color:' + stCol + ';font-weight:600">' + m.status + '</td>'
+                + '<td style="font-family:JetBrains Mono,mono;color:#b0bec5">' + m.launchDate + '</td>'
+                + '</tr>';
+        }).join('');
+
+        // Pre-build TacRS HTML
+        const tacrs = STATE.tacrs || {readiness:'NOMINAL',activePrograms:[],indicators:{}};
+        const tacrsColor = tacrs.readiness==='ELEVATED'?'#ffd740':tacrs.readiness==='HIGH'?'#ff5252':'#00e676';
+        const tacrsProgramsHtml = (tacrs.activePrograms||[]).map(p => {
+            const stCol = p.status==='ON-ORBIT'?'#00e676':p.status==='COMPLETED'?'#448aff':'#ffd740';
+            return '<tr>'
+                + '<td style="color:#e8eaf6;font-weight:600">' + p.name + '</td>'
+                + '<td style="color:#78909c">' + p.service + '</td>'
+                + '<td style="color:#b0bec5">' + p.contractor + '</td>'
+                + '<td style="color:' + stCol + ';font-weight:600">' + p.status + '</td>'
+                + '<td style="color:#ffd740;font-family:JetBrains Mono,mono">' + p.timeline + '</td>'
+                + '</tr>';
+        }).join('');
+
+        // Pre-build Sustainability HTML
+        const sus = STATE.sustainability || {overallScore:0,categories:[],topOffenders:[]};
+        const susColor = sus.overallScore >= 80 ? '#00e676' : sus.overallScore >= 60 ? '#ffd740' : '#ff5252';
+        const susCatHtml = (sus.categories||[]).map(c => {
+            return '<div style="display:flex;align-items:center;margin-bottom:4px;font-size:10px">'
+                + '<span style="width:130px;color:#b0bec5">' + c.name + '</span>'
+                + '<div style="flex:1;height:10px;background:rgba(255,255,255,0.04);border-radius:3px;margin:0 6px;overflow:hidden">'
+                + '<div style="height:100%;width:' + c.score + '%;background:' + c.color + ';border-radius:3px;opacity:0.8"></div></div>'
+                + '<span style="width:30px;text-align:right;font-family:JetBrains Mono,mono;color:' + c.color + '">' + c.score + '</span>'
+                + '</div>';
+        }).join('');
+        const susOffHtml = (sus.topOffenders||[]).map(o => {
+            const oCol = o.score < 40 ? '#ff1744' : o.score < 70 ? '#ffab00' : '#b0bec5';
+            return '<tr>'
+                + '<td style="color:' + oCol + ';font-weight:600">' + o.operator + '</td>'
+                + '<td style="font-family:JetBrains Mono,mono;color:#ff5252">' + o.debrisCount.toLocaleString() + '</td>'
+                + '<td style="color:#78909c;font-size:9px">' + o.violations + '</td>'
+                + '<td style="font-family:JetBrains Mono,mono;color:' + oCol + ';font-weight:700">' + o.score + '/100</td>'
+                + '</tr>';
+        }).join('');
+
+        // Pre-build Coordination Workflow HTML
+        const coordHtml = (STATE.conjCoordination||[]).map(c => {
+            const phCol = c.phase==='CRITICAL'?'#ff1744':c.phase==='ACTIVE'?'#ffd740':'#00e676';
+            const stepsHtml = c.steps.map(s => {
+                const sCol = s.status==='DONE'?'#00e676':s.status==='IN PROGRESS'?'#ffd740':'#546e7a';
+                const sIcon = s.status==='DONE'?'✓':s.status==='IN PROGRESS'?'◐':'○';
+                return '<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:9px">'
+                    + '<span style="color:' + sCol + ';font-weight:700;width:12px">' + sIcon + '</span>'
+                    + '<span style="color:#e8eaf6;width:160px">' + s.step + '</span>'
+                    + '<span style="color:#546e7a;width:100px;font-family:JetBrains Mono,mono;font-size:8px">' + s.time + '</span>'
+                    + '<span style="color:#78909c;font-size:8px">' + s.source + '</span>'
+                    + '</div>';
+            }).join('');
+            return '<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:8px;margin-bottom:6px">'
+                + '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+                + '<span style="color:#e8eaf6;font-weight:700;font-size:10px">' + c.conjId + '</span>'
+                + '<span style="color:' + phCol + ';font-weight:600;font-size:9px">' + c.phase + '</span></div>'
+                + stepsHtml + '</div>';
+        }).join('');
+
         el.innerHTML = `
             <div style="padding:4px 8px;font-size:11px;color:var(--text-secondary);margin-bottom:6px">
                 <b style="color:#e040fb">Sovereign Space Object Tracking (SSOT)</b> — Independent catalog sovereignty assessment
@@ -2038,6 +2106,76 @@ function renderInventory(tab) {
                         SentinelForge ingests orbital states via the <b style="color:#e8eaf6">CCSDS OMM standard</b> (JSON/XML), the modern replacement for legacy 2-line TLE format.
                         OMM supports <b style="color:#00e5ff">9-digit NORAD IDs</b> (vs TLE's 5-digit limit), extensible metadata, and structured error handling.
                         Space-Track.org began OMM migration in 2024 — SentinelForge maintains backward compatibility with TLE/3LE for allied feeds.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ISAM/OSAM Active Missions -->
+            <h3 style="color:var(--text-primary);font-size:11px;margin:10px 8px 4px;border-bottom:1px solid rgba(224,64,251,0.1);padding-bottom:4px">🛰️ ISAM/OSAM — Active Servicing & Sustainability Missions</h3>
+            <table class="inv-table" style="font-size:10px">
+                <thead><tr><th>Mission</th><th>Operator</th><th>Type</th><th>Target</th><th>Status</th><th>Launch</th></tr></thead>
+                <tbody>${isamHtml}</tbody>
+            </table>
+
+            <!-- TacRS Readiness -->
+            <h3 style="color:var(--text-primary);font-size:11px;margin:10px 8px 4px;border-bottom:1px solid rgba(224,64,251,0.1);padding-bottom:4px">⚡ Tactically Responsive Space (TacRS)</h3>
+            <div style="padding:0 8px;margin-bottom:6px">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+                    <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:6px;padding:6px;text-align:center">
+                        <div style="font-size:14px;font-weight:800;color:${tacrsColor};font-family:JetBrains Mono,mono">${tacrs.readiness}</div>
+                        <div style="font-size:8px;color:#78909c;text-transform:uppercase;letter-spacing:.5px">Readiness</div>
+                    </div>
+                    <div style="background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);border-radius:6px;padding:6px;text-align:center">
+                        <div style="font-size:14px;font-weight:800;color:#00e676;font-family:JetBrains Mono,mono">${tacrs.indicators.spacecraftReady||0}</div>
+                        <div style="font-size:8px;color:#78909c;text-transform:uppercase;letter-spacing:.5px">S/C Ready</div>
+                    </div>
+                    <div style="background:rgba(68,138,255,0.06);border:1px solid rgba(68,138,255,0.15);border-radius:6px;padding:6px;text-align:center">
+                        <div style="font-size:14px;font-weight:800;color:#448aff;font-family:JetBrains Mono,mono">${tacrs.indicators.launchVehiclesAvailable||0}</div>
+                        <div style="font-size:8px;color:#78909c;text-transform:uppercase;letter-spacing:.5px">LVs Available</div>
+                    </div>
+                    <div style="background:rgba(179,136,255,0.06);border:1px solid rgba(179,136,255,0.15);border-radius:6px;padding:6px;text-align:center">
+                        <div style="font-size:14px;font-weight:800;color:#b388ff;font-family:JetBrains Mono,mono">${tacrs.indicators.launchReadiness||'—'}</div>
+                        <div style="font-size:8px;color:#78909c;text-transform:uppercase;letter-spacing:.5px">Launch Window</div>
+                    </div>
+                </div>
+                <table class="inv-table" style="font-size:10px">
+                    <thead><tr><th>Program</th><th>Service</th><th>Contractor</th><th>Status</th><th>Timeline</th></tr></thead>
+                    <tbody>${tacrsProgramsHtml}</tbody>
+                </table>
+            </div>
+
+            <!-- Space Sustainability Scorecard -->
+            <h3 style="color:var(--text-primary);font-size:11px;margin:10px 8px 4px;border-bottom:1px solid rgba(224,64,251,0.1);padding-bottom:4px">♻️ Space Sustainability Scorecard</h3>
+            <div style="padding:0 8px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid ${susColor}33;border-radius:8px;padding:8px 14px;text-align:center">
+                        <div style="font-size:26px;font-weight:800;color:${susColor};font-family:JetBrains Mono,mono">${sus.overallScore}</div>
+                        <div style="font-size:8px;color:#78909c;text-transform:uppercase">Overall Score</div>
+                    </div>
+                    <div style="flex:1">${susCatHtml}</div>
+                </div>
+                <div style="font-size:9px;color:#78909c;margin-bottom:4px;font-weight:600">⚠️ Top Sustainability Offenders</div>
+                <table class="inv-table" style="font-size:9px">
+                    <thead><tr><th>Operator</th><th>Debris</th><th>Violations</th><th>Score</th></tr></thead>
+                    <tbody>${susOffHtml}</tbody>
+                </table>
+                <div style="font-size:8px;color:#546e7a;margin-top:4px;font-style:italic">Source: Privateer Wayfinder + ESA Space Sustainability Rating framework</div>
+            </div>
+
+            <!-- Conjunction Coordination Workflow -->
+            <h3 style="color:var(--text-primary);font-size:11px;margin:10px 8px 4px;border-bottom:1px solid rgba(224,64,251,0.1);padding-bottom:4px">🤝 Conjunction Coordination Workflow (COLA)</h3>
+            <div style="padding:0 8px">${coordHtml}</div>
+
+            <!-- Battle Management & C2 Integration -->
+            <div style="padding:4px 8px;margin-top:8px">
+                <div style="background:rgba(255,82,82,0.04);border:1px solid rgba(255,82,82,0.12);border-radius:6px;padding:8px">
+                    <div style="font-size:9px;color:#ff5252;font-weight:700;margin-bottom:3px">🎯 Battle Management & C2 Integration</div>
+                    <div style="font-size:9px;color:#b0bec5;line-height:1.5">
+                        SentinelForge interfaces with <b style="color:#e8eaf6">True Anomaly Mosaic</b> for AI-driven space superiority C2 and <b style="color:#e8eaf6">Kratos OpenSpace</b> for virtualized ground system orchestration.
+                        The <b style="color:#ff5252">Jackal AOV</b> RPO telemetry feeds directly into catalog maintenance for non-cooperative object characterization.
+                        <b style="color:#ffd740">Kayhan Pathfinder</b> and <b style="color:#ffd740">Neuraspace AI</b> provide autonomous collision avoidance coordination —
+                        enabling machine-to-machine ephemeris exchange and reducing operator response time by <b style="color:#00e676">95%</b>.
+                        <b style="color:#448aff">Ansys STK/ODTK</b> integration provides AdvCAT conjunction analysis, Astrogator maneuver planning, and high-fidelity orbit determination with realistic covariance.
                     </div>
                 </div>
             </div>

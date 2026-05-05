@@ -69,6 +69,21 @@ const STATE = {
         { id:'ESA-SST', name:'ESA SST Network', type:'allied', protocol:'CCSDS NDM', freq:'Hourly', latency:'120ms', throughput:'~2K obs/cycle', status:'active', desc:'12 EU sensors, OGS Tenerife, Fly-Eye, GRAVES radar' },
         { id:'ISON', name:'ISON Network', type:'allied', protocol:'MPC Format', freq:'Nightly', latency:'2h', throughput:'~1K obs/night', status:'active', desc:'International Scientific Optical Network, 40+ sites' },
         { id:'COMSPOC', name:'COMSPOC Analytics', type:'commercial', protocol:'REST API', freq:'On-demand', latency:'50ms', throughput:'CDMs/ephemeris', status:'active', desc:'High-definition ephemeris, Pc topology, maneuver detection' },
+        // Space-Based ISR Feeds
+        { id:'SILENTBARKER', name:'Silent Barker (USSF)', type:'allied', protocol:'CCSDS OEM', freq:'Continuous', latency:'<2min', throughput:'GEO-belt persistent', status:'active', desc:'Space-based GEO surveillance constellation — persistent custody of deep-space objects, operational since 2025' },
+        { id:'SDA-TRACK', name:'SDA Tracking Layer', type:'allied', protocol:'Link 16 / CCSDS', freq:'Continuous', latency:'<500ms', throughput:'Missile warning + custody', status:'active', desc:'Proliferated LEO constellation for missile tracking and space domain custody, 28 satellites on-orbit' },
+        { id:'DIGANTARA', name:'Digantara AIRA', type:'commercial', protocol:'REST API', freq:'Near real-time', latency:'45ms', throughput:'Space + ground fused', status:'active', desc:'Indian space-based + ground SSA platform, commercial surveillance satellite launched 2025' },
+        // Analysis Tool Integrations
+        { id:'STK-ODTK', name:'Ansys STK / ODTK', type:'internal', protocol:'CCSDS OEM/CDM', freq:'On-demand', latency:'Local', throughput:'Mission analysis', status:'active', desc:'AGI Systems Tool Kit — conjunction analysis (AdvCAT), orbit determination (ODTK), Astrogator maneuver planning, RPO simulation' },
+        { id:'KRATOS', name:'Kratos OpenSpace', type:'internal', protocol:'REST/gRPC', freq:'Continuous', latency:'5ms', throughput:'Ground ops', status:'active', desc:'Virtualized ground system orchestration — dynamic satellite pass scheduling, multi-mission antenna allocation' },
+        // Space Traffic Management & Coordination
+        { id:'KAYHAN', name:'Kayhan Space Pathfinder', type:'commercial', protocol:'REST API', freq:'On-demand', latency:'35ms', throughput:'Maneuver coord', status:'active', desc:'Autonomous collision avoidance coordination — machine-to-machine ephemeris exchange, operator-to-operator COLA workflow' },
+        { id:'NEURASPACE', name:'Neuraspace AI', type:'commercial', protocol:'REST API', freq:'Near real-time', latency:'40ms', throughput:'CDM screening', status:'active', desc:'AI-powered conjunction screening and maneuver recommendation — 500+ satellites monitored, ML-enhanced Pc refinement' },
+        // ISAM/OSAM Tracking
+        { id:'ASTROSCALE', name:'Astroscale Mission Ops', type:'commercial', protocol:'REST API', freq:'On-demand', latency:'200ms', throughput:'RPO telemetry', status:'active', desc:'ADRAS-J/ADRAS-J2 debris inspection and removal missions — RPO telemetry for catalog correlation' },
+        { id:'PRIVATEER', name:'Privateer Wayfinder', type:'commercial', protocol:'REST API', freq:'Daily', latency:'500ms', throughput:'Sustainability data', status:'active', desc:'Space environment sustainability scoring, operator responsibility metrics, transparent debris risk attribution' },
+        // Battle Management & C2
+        { id:'MOSAIC', name:'True Anomaly Mosaic', type:'allied', protocol:'Secure API', freq:'Near real-time', latency:'<50ms', throughput:'C2 fusion', status:'active', desc:'AI-driven battle management C2 for contested space ops — Jackal AOV RPO data, mission planning, threat response' },
         // Internal Pipeline
         { id:'KAFKA', name:'Kafka Message Bus', type:'internal', protocol:'SSL/Avro', freq:'Continuous', latency:'3ms', throughput:'~25K msgs/min', status:'active', desc:'Edge→Cloud streaming: observations, alerts, health, schedules' },
         { id:'POSTGIS', name:'PostGIS Catalog DB', type:'internal', protocol:'PostgreSQL', freq:'Continuous', latency:'1ms', throughput:'~500 upserts/sec', status:'active', desc:'Spatial catalog store with GIST indexes, 46K objects' },
@@ -267,5 +282,59 @@ const STATE = {
         { norad:99905, name:'UCT-2026-0601', regime:'GEO', state:'LOST', daysSince:16, priority:'CRITICAL', owner:'UCT', type:'Unknown', rcs:0.2, reason:'Possible clandestine GEO deployment — 3 detections, no catalog match', taskingSite:'Slingshot', taskingStatus:'PRIORITY TASKED', lastObs:'2026-04-15T20:10Z', custodyWindow:'N/A' },
         { norad:43235, name:'COSMOS 2535', regime:'LEO', state:'STALE', daysSince:5, priority:'HIGH', owner:'Russia/VKS', type:'Payload', rcs:1.0, reason:'Russian inspector satellite — proximity ops suspected near USA-245', taskingSite:'USSF-SSN', taskingStatus:'IN PROGRESS', lastObs:'2026-04-26T16:02Z', custodyWindow:'3 days' },
         { norad:26038, name:'FENGYUN 1C DEB #1204', regime:'LEO', state:'LOST', daysSince:25, priority:'LOW', owner:'Debris', type:'Debris', rcs:0.005, reason:'Sub-5cm fragment — below tracking threshold for most sensors', taskingSite:'Space Fence', taskingStatus:'DEFERRED', lastObs:'2026-04-06T12:30Z', custodyWindow:'N/A' },
+    ],
+    // ── ISAM/OSAM Active Missions ────────────────────────
+    isamMissions: [
+        { name:'ADRAS-J2', operator:'Astroscale', type:'Debris Removal', target:'H-IIA R/B (NORAD 25730)', regime:'LEO 600km', status:'PRE-LAUNCH', launchDate:'2027-Q2', phase:'Assembly & Test', note:'Follow-on to ADRAS-J inspection — will attempt world-first commercial debris capture' },
+        { name:'ISSA-J1', operator:'Astroscale', type:'Multi-Inspection', target:'2× retired LEO sats', regime:'LEO 500-700km', status:'PLANNING', launchDate:'2027-Q4', phase:'Mission Design', note:'First commercial multi-target inspection mission — 2 objects, single sortie' },
+        { name:'ClearSpace-1', operator:'ClearSpace SA', type:'Debris Removal', target:'PROBA-1 (ESA)', regime:'LEO 820km', status:'PRE-LAUNCH', launchDate:'2028-Q1', phase:'Integration', note:'ESA-funded active debris removal — robotic capture claw technology' },
+        { name:'RAFTI Demo GEO-1', operator:'Orbit Fab', type:'Refueling', target:'RAFTI-equipped GEO sat', regime:'GEO', status:'SCHEDULED', launchDate:'2026-Q4', phase:'Payload Ready', note:'First commercial on-orbit refueling demo — RAFTI interface standard, USSF-approved' },
+        { name:'Jackal-2 (VICTUS HAZE)', operator:'True Anomaly', type:'RPO/Inspection', target:'Non-cooperative object', regime:'LEO/MEO', status:'ACTIVE', launchDate:'2025-H2', phase:'On-Orbit Ops', note:'USSF TacRS mission — autonomous rendezvous and proximity inspection of threat objects' },
+    ],
+    // ── TacRS (Tactically Responsive Space) ──────────────
+    tacrs: {
+        readiness: 'ELEVATED',
+        activePrograms: [
+            { name:'VICTUS HAZE', service:'USSF/SSC', contractor:'True Anomaly + Firefly', status:'ON-ORBIT', vehicle:'Firefly Alpha', payload:'Jackal AOV', objective:'Rapid-launch RPO inspection of anomalous GEO object', timeline:'24h launch-to-ops' },
+            { name:'VICTUS NOX', service:'USSF/SSC', contractor:'Firefly Aerospace', status:'COMPLETED', vehicle:'Firefly Alpha', payload:'Millennium Space', objective:'Demonstrated 24-hour launch-to-contact for LEO threat response', timeline:'27h achieved (2023)' },
+        ],
+        indicators: { launchReadiness:'T-48h', spacecraftReady:2, launchVehiclesAvailable:3, groundStationsPrepped:12 },
+    },
+    // ── Space Sustainability Scoring ─────────────────────
+    sustainability: {
+        overallScore: 78,
+        categories: [
+            { name:'Disposal Compliance', score:82, max:100, desc:'% of operators with compliant end-of-life plans (25-year rule or direct deorbit)', color:'#00e676' },
+            { name:'Trackability', score:91, max:100, desc:'% of active payloads with RCS > 10cm (trackable by SSN)', color:'#00e5ff' },
+            { name:'Maneuver Transparency', score:64, max:100, desc:'% of operators sharing pre/post-maneuver ephemeris via Kayhan/Space-Track', color:'#ffd740' },
+            { name:'Collision Avoidance', score:88, max:100, desc:'% of conjunction warnings with operator response within 24h', color:'#76ff03' },
+            { name:'Debris Attribution', score:56, max:100, desc:'% of debris fragments traceable to specific breakup/launch event', color:'#ff9100' },
+            { name:'Spectrum Compliance', score:73, max:100, desc:'% of active payloads with proper ITU frequency coordination', color:'#b388ff' },
+        ],
+        topOffenders: [
+            { operator:'PRC/CASC', debrisCount:6524, violations:'Uncontrolled CZ-5B reentries, ASAT debris legacy', score:31 },
+            { operator:'Russia/Roscosmos', debrisCount:7825, violations:'Cosmos 1408 ASAT, defunct Cosmos/Meteor fleet', score:28 },
+            { operator:'OneWeb', debrisCount:12, violations:'Marginal disposal compliance in early batches', score:71 },
+        ],
+    },
+    // ── Conjunction Coordination Workflow ─────────────────
+    conjCoordination: [
+        { conjId:'EVT-2041', phase:'ACTIVE', steps:[
+            { step:'CDM Received', status:'DONE', time:'2026-05-01T08:00Z', source:'Space-Track' },
+            { step:'Ephemeris Request Sent', status:'DONE', time:'2026-05-01T08:15Z', source:'SentinelForge → 18th SDS' },
+            { step:'Owner/Operator Notified', status:'DONE', time:'2026-05-01T08:22Z', source:'Space-Track O/O Portal' },
+            { step:'Updated OD Received', status:'DONE', time:'2026-05-01T14:00Z', source:'USSF-SSN + LeoLabs fusion' },
+            { step:'Maneuver Plan Shared', status:'PENDING', time:'—', source:'Kayhan Pathfinder coordination' },
+            { step:'Go/No-Go Decision', status:'PENDING', time:'TCA-6h', source:'Mission Director' },
+        ]},
+        { conjId:'EVT-2043', phase:'CRITICAL', steps:[
+            { step:'CDM Received', status:'DONE', time:'2026-04-30T12:00Z', source:'Space-Track' },
+            { step:'FLASH Alert Issued', status:'DONE', time:'2026-04-30T12:05Z', source:'PagerDuty P1' },
+            { step:'Ephemeris Request Sent', status:'DONE', time:'2026-04-30T12:10Z', source:'SentinelForge → 18th SDS + LeoLabs' },
+            { step:'Multi-Agency Call Convened', status:'DONE', time:'2026-04-30T14:00Z', source:'NOAA + NASA CARA + USSF' },
+            { step:'Maneuver Options Computed', status:'DONE', time:'2026-04-30T16:00Z', source:'STK Astrogator' },
+            { step:'Owner/Operator Coordination', status:'IN PROGRESS', time:'Active', source:'Kayhan + Neuraspace' },
+            { step:'Go/No-Go Decision', status:'PENDING', time:'TCA-6h', source:'NOAA OSPO + NASA Goddard' },
+        ]},
     ],
 };
