@@ -1922,6 +1922,29 @@ function renderInventory(tab) {
             {age:'3-7 days',count:1200,pct:2.6,color:'#ff5252'},
             {age:'> 7 days (STALE)',count:585,pct:1.3,color:'#d50000'},
         ];
+        const boxscore = [
+            {c:'\ud83c\uddfa\ud83c\uddf8 United States',p:3415,r:1012,d:5248,color:'#448aff'},
+            {c:'\ud83c\udde8\ud83c\uddf3 China (PRC)',p:782,r:264,d:6524,color:'#ff5252'},
+            {c:'\ud83c\uddf7\ud83c\uddfa Russia/CIS',p:1547,r:1561,d:7825,color:'#ff9100'},
+            {c:'\ud83c\uddec\ud83c\udde7 United Kingdom',p:678,r:12,d:98,color:'#b388ff'},
+            {c:'\ud83c\uddef\ud83c\uddf5 Japan',p:218,r:125,d:116,color:'#00e5ff'},
+            {c:'\ud83c\uddee\ud83c\uddf3 India',p:124,r:58,d:197,color:'#76ff03'},
+            {c:'\ud83c\uddea\ud83c\uddfa ESA/Europe',p:142,r:71,d:86,color:'#ffd740'},
+            {c:'\ud83c\uddeb\ud83c\uddf7 France',p:87,r:56,d:594,color:'#e040fb'},
+            {c:'\ud83c\udf10 Other',p:1418,r:486,d:3691,color:'#78909c'},
+        ];
+        const boxscoreHtml = boxscore.map(n => {
+            const tot = n.p + n.r + n.d;
+            const pct = (tot / 462.38).toFixed(1);
+            return '<tr>'
+                + '<td style="color:' + n.color + ';font-weight:600">' + n.c + '</td>'
+                + '<td style="text-align:right;font-family:JetBrains Mono,mono;color:#00e5ff">' + n.p.toLocaleString() + '</td>'
+                + '<td style="text-align:right;font-family:JetBrains Mono,mono;color:#ffd740">' + n.r.toLocaleString() + '</td>'
+                + '<td style="text-align:right;font-family:JetBrains Mono,mono;color:#ff5252">' + n.d.toLocaleString() + '</td>'
+                + '<td style="text-align:right;font-family:JetBrains Mono,mono;color:#e8eaf6;font-weight:700">' + tot.toLocaleString() + '</td>'
+                + '<td><div style="display:flex;align-items:center;gap:4px"><div style="width:' + Math.min(pct*2,100) + 'px;height:8px;background:' + n.color + ';border-radius:2px;opacity:0.7"></div><span style="font-size:8px;color:#546e7a">' + pct + '%</span></div></td>'
+                + '</tr>';
+        }).join('');
 
         el.innerHTML = `
             <div style="padding:4px 8px;font-size:11px;color:var(--text-secondary);margin-bottom:6px">
@@ -1990,8 +2013,37 @@ function renderInventory(tab) {
                 </div>`).join('')}
             </div>
 
+            <!-- Boxscore: Country Breakdown (Space-Track product) -->
+            <h3 style="color:var(--text-primary);font-size:11px;margin:10px 8px 4px;border-bottom:1px solid rgba(224,64,251,0.1);padding-bottom:4px">\ud83c\udf0d Boxscore — Objects by Country/Organization</h3>
+            <table class="inv-table" style="font-size:10px">
+                <thead><tr><th>Country</th><th style="text-align:right">Payloads</th><th style="text-align:right">Rocket Bodies</th><th style="text-align:right">Debris</th><th style="text-align:right">Total</th><th>Share</th></tr></thead>
+                <tbody>
+                    ${boxscoreHtml}
+                    <tr style="border-top:1px solid rgba(255,255,255,0.08)">
+                        <td style="color:#e8eaf6;font-weight:700">TOTAL</td>
+                        <td style="text-align:right;font-family:JetBrains Mono,mono;color:#00e5ff;font-weight:700">8,411</td>
+                        <td style="text-align:right;font-family:JetBrains Mono,mono;color:#ffd740;font-weight:700">3,645</td>
+                        <td style="text-align:right;font-family:JetBrains Mono,mono;color:#ff5252;font-weight:700">24,379</td>
+                        <td style="text-align:right;font-family:JetBrains Mono,mono;color:#e8eaf6;font-weight:700">46,238</td>
+                        <td style="font-size:8px;color:#78909c">Source: Space-Track.org Boxscore</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- OMM Format Note -->
+            <div style="padding:4px 8px;margin-top:8px">
+                <div style="background:rgba(68,138,255,0.04);border:1px solid rgba(68,138,255,0.12);border-radius:6px;padding:8px">
+                    <div style="font-size:9px;color:#448aff;font-weight:700;margin-bottom:3px">📋 Data Format: OMM (Orbit Mean-Elements Message)</div>
+                    <div style="font-size:9px;color:#b0bec5;line-height:1.5">
+                        SentinelForge ingests orbital states via the <b style="color:#e8eaf6">CCSDS OMM standard</b> (JSON/XML), the modern replacement for legacy 2-line TLE format.
+                        OMM supports <b style="color:#00e5ff">9-digit NORAD IDs</b> (vs TLE's 5-digit limit), extensible metadata, and structured error handling.
+                        Space-Track.org began OMM migration in 2024 — SentinelForge maintains backward compatibility with TLE/3LE for allied feeds.
+                    </div>
+                </div>
+            </div>
+
             <!-- SSOT Key Insight -->
-            <div style="padding:8px;margin-top:8px;border-top:1px solid rgba(224,64,251,0.1)">
+            <div style="padding:8px;margin-top:4px;border-top:1px solid rgba(224,64,251,0.1)">
                 <div style="background:rgba(224,64,251,0.04);border:1px solid rgba(224,64,251,0.12);border-radius:6px;padding:10px">
                     <div style="font-size:10px;color:#e040fb;font-weight:700;margin-bottom:4px">🔑 SSOT Strategy</div>
                     <div style="font-size:10px;color:#b0bec5;line-height:1.6">

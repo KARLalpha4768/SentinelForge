@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SentinelForge — Centralized System State
  * @module sentinel_state
  * @description All simulated operational data: catalog, conjunctions,
@@ -56,7 +56,7 @@ const STATE = {
     siteNetworks: {},
     telemetry: [
         // External Data Feeds
-        { id:'SPACETRACK', name:'Space-Track.org', type:'external', protocol:'REST API', freq:'Every 8h', latency:'12ms', throughput:'~4,200 TLEs/cycle', status:'active', desc:'18th SDS GP catalog, CDMs, decay predictions' },
+        { id:'SPACETRACK', name:'Space-Track.org', type:'external', protocol:'REST API (OMM/JSON)', freq:'Every 8h', latency:'12ms', throughput:'~46K OMM records/cycle', status:'active', desc:'18th SDS GP catalog (OMM/TLE), CDMs, decay/TIP messages, SATCAT, Boxscore, analyst objects' },
         { id:'CELESTRAK', name:'CelesTrak', type:'external', protocol:'REST/CSV', freq:'Every 4h', throughput:'~46K TLEs/cycle', latency:'8ms', status:'active', desc:'Supplemental TLEs, Starlink/OneWeb groups, analyst sats' },
         { id:'SWPC', name:'NOAA SWPC', type:'external', protocol:'JSON API', freq:'Every 1min', latency:'45ms', throughput:'12 indices/min', status:'active', desc:'F10.7, Kp, Dst, Ap, solar wind, CME alerts' },
         { id:'USGS-EOP', name:'USGS/IERS EOP', type:'external', protocol:'FTP', freq:'Daily', latency:'200ms', throughput:'1 bulletin/day', status:'active', desc:'Earth Orientation Parameters (polar motion, UT1-UTC, LOD)' },
