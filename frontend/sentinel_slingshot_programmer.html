@@ -165,6 +165,43 @@
             </div>
         </div>
 
+        <!-- Software → Hardware Control Flow -->
+        <div class="section">
+            <h2>🔗 Software-to-Hardware Control Flow <span style="font-size:10px;color:#7c4dff;font-weight:400;margin-left:8px">— How code drives the observatory</span></h2>
+            <div style="background:rgba(10,12,20,0.9);border:1px solid rgba(124,77,255,0.08);border-radius:10px;padding:16px;text-align:center">
+                <img src="img/code_hardware_schematic.png" alt="Software-to-Hardware Control Flow — 4-layer architecture" style="width:100%;max-width:1000px;border-radius:8px;opacity:0.95;display:block;margin:0 auto" />
+                <div style="margin-top:10px;font-size:9px;color:#546e7a;font-family:'JetBrains Mono',monospace;line-height:1.6">
+                    FIG 2 — SOFTWARE → HARDWARE CONTROL FLOW · 4 Layers: Physical Hardware → HAL → Edge Compute → Cloud
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+                <div class="info-box" style="margin:0">
+                    <strong>LAYER 1 — PHYSICAL HARDWARE:</strong> 9 subsystems per site. All controlled through <code class="mod">ascom_hal.py</code> — the Hardware Abstraction Layer. No pipeline module directly touches hardware; every I/O call routes through the HAL's ASCOM Alpaca/COM interface.
+                </div>
+                <div class="info-box" style="margin:0">
+                    <strong>LAYER 2 — HAL DRIVERS:</strong> ZWO SDK (camera), ASCOM (mount), MaxDome II (dome), MoonLite (focuser), Davis WeatherLink (weather), u-blox GPS (timing). Each driver has a simulation mode for CI testing: <code>ascom_hal.py --sim</code>
+                </div>
+                <div class="info-box" style="margin:0">
+                    <strong>LAYER 3 — EDGE PIPELINE:</strong> CUDA/TensorRT kernels process frames at 1Hz on the Jetson Orin. The pipeline is a <code class="mod">systemd</code> service (<code>slingshot-pipeline.service</code>) with watchdog auto-restart. Total per-frame latency: <strong style="color:#00e676">&lt;60ms</strong>.
+                </div>
+                <div class="info-box" style="margin:0">
+                    <strong>LAYER 4 — FEEDBACK LOOP:</strong> Cloud scheduler pushes observation targets back to the edge via <code class="post">PUT /schedule</code>. The edge's <code class="mod">scheduler.py</code> translates targets into mount slew commands through the HAL — closing the autonomous loop.
+                </div>
+            </div>
+            <div style="margin-top:12px;background:rgba(124,77,255,0.04);border:1px solid rgba(124,77,255,0.12);border-radius:8px;padding:12px 16px">
+                <div style="font-size:10px;color:#b388ff;font-weight:700;margin-bottom:6px">📋 CALL CHAIN EXAMPLE: Cloud Requests New Observation</div>
+                <div style="font-size:10px;color:#b0bec5;line-height:1.8;font-family:'JetBrains Mono',monospace">
+                    <span style="color:#00e676">① Cloud scheduler.py</span> → <span style="color:#546e7a">REST</span> → <span style="color:#ffd740">PUT /api/v2/sites/co1/schedule</span><br>
+                    <span style="color:#00e676">② Edge scheduler.py</span> → parses target list, checks weather gate + horizon mask<br>
+                    <span style="color:#7c4dff">③ ascom_hal.py</span> → <span style="color:#546e7a">ASCOM</span> → <span style="color:#ffd740">mount.slew_to(ra=185.2, dec=+28.4)</span><br>
+                    <span style="color:#7c4dff">④ ascom_hal.py</span> → <span style="color:#546e7a">ASCOM</span> → <span style="color:#ffd740">dome.sync_to_mount()</span><br>
+                    <span style="color:#7c4dff">⑤ ascom_hal.py</span> → <span style="color:#546e7a">ZWO SDK</span> → <span style="color:#ffd740">camera.start_exposure(1.0s)</span><br>
+                    <span style="color:#00e5ff">⑥ CCD Readout</span> → 32MB FITS → <span style="color:#00e5ff">calibration.cu</span> → <span style="color:#00e5ff">streak_detect.cu</span> → … → 10KB TDM<br>
+                    <span style="color:#00e676">⑦ kafka_transport.py</span> → <span style="color:#546e7a">Kafka/zstd</span> → <span style="color:#00e676">Cloud catalog_lifecycle.py</span>
+                </div>
+            </div>
+        </div>
+
         <!-- REST API -->
         <div class="section">
             <h2>🔌 REST API Endpoints (Per Site)</h2>
