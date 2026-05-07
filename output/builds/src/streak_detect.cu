@@ -9,29 +9,22 @@
 #include <cstdio>
 #include <cmath>
 
-// CUDA error checking macro — Agent 19 code review fix
+// ─── Error Checking Macro ──────────────────────────────────────
 #define CUDA_CHECK(call) do { \
     cudaError_t err = (call); \
     if (err != cudaSuccess) { \
-        fprintf(stderr, "CUDA error at %s:%d — %s\n", \
+        fprintf(stderr, "[streak_detect] CUDA error at %s:%d — %s\n", \
                 __FILE__, __LINE__, cudaGetErrorString(err)); \
-        return false; \
+        return -1; \
     } \
 } while(0)
 
 #define CUDA_CHECK_VOID(call) do { \
     cudaError_t err = (call); \
     if (err != cudaSuccess) { \
-        fprintf(stderr, "CUDA error at %s:%d — %s\n", \
+        fprintf(stderr, "[streak_detect] CUDA error at %s:%d — %s\n", \
                 __FILE__, __LINE__, cudaGetErrorString(err)); \
-    } \
-} while(0)
-
-#define CUDA_LAUNCH_CHECK() do { \
-    cudaError_t err = cudaGetLastError(); \
-    if (err != cudaSuccess) { \
-        fprintf(stderr, "Kernel launch error at %s:%d — %s\n", \
-                __FILE__, __LINE__, cudaGetErrorString(err)); \
+        return; \
     } \
 } while(0)
 
@@ -228,14 +221,18 @@ struct StreakDetector {
     int* d_detection_count;
     int width, height;
     
-    bool allocate(int w, int h) {
+    int allocate(int w, int h) {
         width = w;
         height = h;
         CUDA_CHECK(cudaMalloc(&d_response, w * h * sizeof(float)));
         CUDA_CHECK(cudaMalloc(&d_noise_map, (w/32) * (h/32) * sizeof(float)));
         CUDA_CHECK(cudaMalloc(&d_detections, MAX_DETECTIONS * sizeof(Detection)));
         CUDA_CHECK(cudaMalloc(&d_detection_count, sizeof(int)));
-        return true;
+        printf("[StreakDetector] Allocated %.1f MB GPU memory\n",
+               (w * h * sizeof(float) + (w/32)*(h/32)*sizeof(float)
+                + MAX_DETECTIONS * sizeof(Detection) + sizeof(int))
+               / (1024.0f * 1024.0f));
+        return 0;
     }
     
     /**
@@ -245,7 +242,7 @@ struct StreakDetector {
      */
     int detect(const float* d_frame, Detection* h_detections, cudaStream_t stream = 0) {
         // Reset detection count
-        CUDA_CHECK_VOID(cudaMemsetAsync(d_detection_count, 0, sizeof(int), stream));
+        CUDA_CHECK(cudaMemsetAsync(d_detection_count, 0, sizeof(int), stream));
         
         dim3 block(BLOCK_DIM, BLOCK_DIM);
         dim3 grid((width + BLOCK_DIM - 1) / BLOCK_DIM,
@@ -258,7 +255,7 @@ struct StreakDetector {
         estimate_noise_kernel<<<noise_grid, 1024, 0, stream>>>(
             d_frame, d_noise_map, width, height
         );
-        CUDA_LAUNCH_CHECK();
+        CUDA_CHECK(cudaGetLastError());  // Check launch config
         
         // Step 2: Run matched filter bank
         int kernel_lengths[] = {5, 10, 20, 50, 100};
@@ -275,28 +272,30 @@ struct StreakDetector {
                     d_frame, d_response, width, height,
                     cos_a, sin_a, kernel_lengths[li]
                 );
+                CUDA_CHECK(cudaGetLastError());  // Verify kernel launch
                 
-                CUDA_LAUNCH_CHECK();  // Check matched_filter_kernel
-
                 // Extract peaks
                 peak_detect_kernel<<<grid, block, 0, stream>>>(
                     d_response, d_noise_map, d_detections, d_detection_count,
                     width, height, noise_tx, angle, (float)kernel_lengths[li],
                     SNR_THRESHOLD
                 );
-                CUDA_LAUNCH_CHECK();  // Check peak_detect_kernel
+                CUDA_CHECK(cudaGetLastError());  // Verify kernel launch
             }
         }
         
+        // Synchronize and check for async errors
+        CUDA_CHECK(cudaStreamSynchronize(stream));
+        
         // Copy results back
         int h_count = 0;
-        CUDA_CHECK_VOID(cudaMemcpyAsync(&h_count, d_detection_count, sizeof(int),
+        CUDA_CHECK(cudaMemcpyAsync(&h_count, d_detection_count, sizeof(int),
                         cudaMemcpyDeviceToHost, stream));
-        CUDA_CHECK_VOID(cudaStreamSynchronize(stream));
+        CUDA_CHECK(cudaStreamSynchronize(stream));
         
         h_count = min(h_count, MAX_DETECTIONS);
         if (h_count > 0) {
-            CUDA_CHECK_VOID(cudaMemcpy(h_detections, d_detections,
+            CUDA_CHECK(cudaMemcpy(h_detections, d_detections,
                       h_count * sizeof(Detection), cudaMemcpyDeviceToHost));
         }
         
@@ -308,5 +307,8 @@ struct StreakDetector {
         CUDA_CHECK_VOID(cudaFree(d_noise_map));
         CUDA_CHECK_VOID(cudaFree(d_detections));
         CUDA_CHECK_VOID(cudaFree(d_detection_count));
+        d_response = d_noise_map = nullptr;
+        d_detections = nullptr;
+        d_detection_count = nullptr;
     }
 };
