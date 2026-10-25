@@ -61,7 +61,6 @@ services:
       - WATCH_CONTAINER=sentinelforge-edge
       - ALERT_ENDPOINT=${ALERT_ENDPOINT}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./logs:/logs
 
   updater:
@@ -73,5 +72,3 @@ services:
       - IMAGE=slingshot-edge
       - CHECK_INTERVAL=3600
       - AUTO_ROLLBACK=true
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
