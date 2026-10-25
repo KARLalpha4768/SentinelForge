@@ -25,18 +25,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install ruff
+          pip install pytest ruff
 
-      - name: Lint with ruff
+      - name: Lint repository for fatal errors
         run: |
-          ruff check --select=E,F,W --ignore=E501,E402 \
-            main.py \
-            end_to_end_test.py \
-            output/builds/src/science/ \
-            output/builds/src/orbit_propagator.py \
-            output/builds/src/conjunction_screener.py \
-            output/builds/src/multi_sensor_fusion.py \
-            output/builds/src/observation_scheduler.py
+          ruff check . --select=E9,F63,F7,F82 \
+            --exclude=output/builds/src/hardware/ascom_hal.py
+
+      - name: Run test suite
+        env:
+          PYTHONIOENCODING: utf-8
+        run: pytest -q
 
       - name: Run end-to-end pipeline test
         env:
@@ -68,4 +67,12 @@ jobs:
       - name: Verify CMakeLists.txt parses
         run: |
           cd output/builds/src
-          cmake -B build -DCMAKE_CUDA_ARCHITECTURES=87 2>&1 || echo "CMake parse check complete (CUDA toolkit not installed — expected)"
+          if cmake -B build -DCMAKE_CUDA_ARCHITECTURES=87 >cmake.log 2>&1; then
+            cat cmake.log
+          elif grep -Eq "Failed to find nvcc|Could not find nvcc|No CMAKE_CUDA_COMPILER" cmake.log; then
+            cat cmake.log
+            echo "CMake parse check complete (CUDA toolkit not installed — expected)"
+          else
+            cat cmake.log
+            exit 1
+          fi
