@@ -32,22 +32,24 @@ data:
   PLATE_SOLVE_RESIDUAL_MAX_ARCSEC: "0.5"
   CORRELATION_MAHALANOBIS_MAX: "4.0"
   KAFKA_BOOTSTRAP: "kafka.sentinelforge.svc.cluster.local:9092"
-  POSTGIS_DSN: "postgresql://sentinelforge:sf@postgis.sentinelforge.svc:5432/catalog"
+  # POSTGIS_DSN moved to pipeline-secrets (SEC-03)
   GPU_UTILIZATION_TARGET_PCT: "40"
   FRAME_PROCESS_MAX_MS: "500"
 
 ---
-# Secret: database and Kafka credentials
-apiVersion: v1
-kind: Secret
-metadata:
-  name: pipeline-secrets
-  namespace: sentinelforge
-type: Opaque
-stringData:
-  POSTGIS_PASSWORD: "${POSTGIS_PASSWORD}"
-  KAFKA_SSL_KEY: "${KAFKA_SSL_KEY}"
-  GEMINI_API_KEY: "${GEMINI_API_KEY}"
+# Pipeline Secrets (SEC-05):
+# NOTE: Secrets must not contain unexpanded literal ${VAR} placeholders in committed manifests.
+# Provision the 'pipeline-secrets' secret externally before deploying (e.g. in GitOps/K8s cluster):
+#   kubectl create secret generic pipeline-secrets \
+#     --namespace=sentinelforge \
+#     --from-env-file=.env
+# Expected secret keys referenced by deployments and statefulsets:
+#   - POSTGIS_PASSWORD: Database user password
+#   - POSTGIS_DSN: Credentialed database connection string (moved from ConfigMap, SEC-03)
+#   - DATABASE_URL: Standard database connection string
+#   - KAFKA_SSL_KEY: SSL key for mutual TLS Kafka transport
+#   - GEMINI_API_KEY: Google Gemini API key
+#   - SF_API_KEY: SentinelForge internal API key
 
 ---
 # Edge Pipeline - DaemonSet (runs on every Jetson Orin node)
