@@ -4,187 +4,209 @@
 let viewer;
 const globeLayers = { leo: [], meo: [], geo: [], conj: [], uct: [], sites: [] };
 
-Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3Mzk4OWZlMi04ZGUyLTQ3MDgtOGEzZC0yYzdkNjgyZmIxMTkiLCJpZCI6NDI2NTE3LCJzdWIiOiJLYXJsIERhdmlkIiwiaXNzIjoiaHR0cHM6Ly9pb24uY2VzaXVtLmNvbSIsImF1ZCI6IlNlbnRpbmVsRm9yZ2UiLCJpYXQiOjE3Nzc3NTMzNDN9.udSF503y9Gx_AAARTqrbAgQ81N5gMRZIwWe4Cj77UJo';
-
-try {
-    viewer = new Cesium.Viewer('cesiumContainer', {
-        baseLayerPicker: false, geocoder: false, homeButton: false,
-        sceneModePicker: false, navigationHelpButton: false,
-        animation: false, timeline: false, fullscreenButton: false,
-        selectionIndicator: false, infoBox: false, creditContainer: document.createElement('div'),
-        skyBox: false,
-        imageryProvider: new Cesium.TileMapServiceImageryProvider({
-            url: Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII'),
-        }),
-    });
-    viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#060810');
-    viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0d1020');
-
-    // Add ground sites (from registry or fallback)
-    const siteColors = { active: Cesium.Color.fromCssColorString('#00e676'), degraded: Cesium.Color.fromCssColorString('#ffab00'), offline: Cesium.Color.fromCssColorString('#555555') };
-    function addGlobeSites() {
-        const src = (typeof STATE !== 'undefined' && STATE.sites.length > 0) ? STATE.sites : [];
-        src.forEach(s => {
-            const col = siteColors[s.status] || siteColors.active;
-            const statusColor = s.status==='active'?'#00e676':s.status==='degraded'?'#ffab00':'#ff5252';
-            const statusLabel = s.status==='active'?'● OPERATIONAL':s.status==='degraded'?'◐ DEGRADED':'○ OFFLINE';
-            const e = viewer.entities.add({
-                name: `📡 ${s.name}`,
-                description: new Cesium.ConstantProperty(
-                    `<div style="font-family:Inter,sans-serif;font-size:12px;line-height:1.7;color:#e8eaf6">
-                    <div style="font-size:15px;font-weight:700;color:#ffd740;margin-bottom:4px">${s.name}</div>
-                    <div style="font-size:11px;color:${statusColor};margin-bottom:8px;font-weight:600">${statusLabel}</div>
-                    <table style="width:100%;border-collapse:collapse">
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Network</td><td style="color:#80cbc4">${s.network}</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Sensor</td><td>${s.type==='radar'?'🔭 RADAR':'🔭 OPTICAL'} (${s.gen || 'Gen-3'})</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Coordinates</td><td style="font-family:monospace">${s.lat.toFixed(3)}°N, ${s.lon.toFixed(3)}°E</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">GPU Load</td><td>${s.gpu || '—'}%</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Seeing</td><td>${s.see || '—'}"</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Det. Rate</td><td>${s.detRate || s.det || '—'} obj/hr</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Ops Mode</td><td>${s.ops || 'Autonomous'}</td></tr>
-                    </table>
-                    ${s.network==='Slingshot' ? '<div style="margin-top:8px;padding:4px 8px;background:rgba(255,215,64,0.08);border:1px solid rgba(255,215,64,0.2);border-radius:4px;font-size:10px;color:#ffd740">⚡ SLINGSHOT NETWORK NODE — Edge compute active</div>' : ''}
-                    </div>`
-                ),
-                position: Cesium.Cartesian3.fromDegrees(s.lon, s.lat, 0),
-                point: { pixelSize: s.type === 'radar' ? 7 : 5, color: col, outlineColor: Cesium.Color.WHITE.withAlpha(0.3), outlineWidth: 1 },
-            });
-            e._siteId = s.id;
-            globeLayers.sites.push(e);
-        });
-    }
-    // Defer site loading until registry is fetched
-    window._addGlobeSites = addGlobeSites;
-
-    // Simulated satellite population — differentiated by type
-    const regimeBaseColors = {
-        leo: [0, 229, 255],   // cyan
-        meo: [118, 255, 3],   // green
-        geo: [255, 215, 64],  // gold
-    };
-    // Object type visual config: [sizeMult, alphaMult, label]
-    const typeConfig = {
-        payload:    { size: 3, alpha: 0.9 },
-        rocketbody: { size: 4, alpha: 0.75 },
-        debris:     { size: 1.5, alpha: 0.4 },
-        unknown:    { size: 2, alpha: 0.55 },
-    };
-    // Realistic type distribution per regime
-    const typeDistrib = {
-        leo: { payload: 0.35, rocketbody: 0.08, debris: 0.52, unknown: 0.05 },
-        meo: { payload: 0.40, rocketbody: 0.12, debris: 0.42, unknown: 0.06 },
-        geo: { payload: 0.55, rocketbody: 0.10, debris: 0.30, unknown: 0.05 },
-    };
-
-    function pickType(regime) {
-        const d = typeDistrib[regime];
-        const r = Math.random();
-        if (r < d.payload) return 'payload';
-        if (r < d.payload + d.rocketbody) return 'rocketbody';
-        if (r < d.payload + d.rocketbody + d.debris) return 'debris';
-        return 'unknown';
-    }
-
-    // Generate realistic NORAD IDs per regime
-    const noradBase = { leo: 40000, meo: 28000, geo: 36000 };
-    const satPrefixes = {
-        payload: ['STARLINK','ONEWEB','IRIDIUM','COSMOS','GLOBALSTAR','ORBCOMM','SPACEBEE','LEMUR','DOVE','HAWK'],
-        rocketbody: ['CZ-2C R/B','FALCON 9 R/B','H-2A R/B','ATLAS V R/B','SOYUZ R/B','DELTA 4 R/B','PROTON R/B'],
-        debris: ['CZ-6A DEB','FENGYUN 1C DEB','COSMOS 2251 DEB','IRIDIUM 33 DEB','NOAA 16 DEB'],
-        unknown: ['TBA - TO BE ASSIGNED']
-    };
-
-    function addSimSats(regime, count, alt, incRange) {
-        for(let i=0; i<count; i++) {
-            const inc = (Math.random()*incRange - incRange/2) * Math.PI/180;
-            const raan = Math.random() * 360;
-            const anom = Math.random() * 360;
-            const lon = raan + anom;
-            const lat = Math.asin(Math.sin(inc) * Math.sin(anom * Math.PI/180)) * 180/Math.PI;
-            const objType = pickType(regime);
-            const tc = typeConfig[objType];
-            const bc = regimeBaseColors[regime];
-            const color = Cesium.Color.fromBytes(bc[0], bc[1], bc[2], Math.round(255 * tc.alpha));
-            const norad = noradBase[regime] + i;
-            const names = satPrefixes[objType];
-            const satName = `${names[Math.floor(Math.random()*names.length)]}-${1000+Math.floor(Math.random()*9000)}`;
-            const altKm = alt + Math.floor(Math.random()*50 - 25);
-            const incDeg = Math.abs(lat * 1.2 + Math.random()*10).toFixed(1);
-            const period = (2 * Math.PI * Math.sqrt(Math.pow((6371+altKm),3) / 398600) / 60).toFixed(1);
-
-            const e = viewer.entities.add({
-                name: `${satName}`,
-                description: new Cesium.ConstantProperty(
-                    `<div style="font-family:Inter,sans-serif;font-size:12px;line-height:1.6;color:#e8eaf6">
-                    <div style="font-size:14px;font-weight:700;color:${objType==='debris'?'#ff5252':objType==='payload'?'#76ff03':'#ffd740'};margin-bottom:6px">${satName}</div>
-                    <table style="width:100%;border-collapse:collapse">
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">NORAD ID</td><td style="font-family:monospace;color:#80cbc4">${norad}</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Type</td><td>${objType.toUpperCase()}</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Regime</td><td>${regime.toUpperCase()}</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Altitude</td><td>${altKm.toLocaleString()} km</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Inclination</td><td>${incDeg}°</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Period</td><td>${period} min</td></tr>
-                    <tr><td style="color:#78909c;padding:2px 8px 2px 0">Status</td><td style="color:${objType==='debris'?'#ff5252':'#00e676'}">${objType==='debris'?'TRACKED DEBRIS':objType==='rocketbody'?'SPENT STAGE':'ACTIVE'}</td></tr>
-                    </table>
-                    </div>`
-                ),
-                position: Cesium.Cartesian3.fromDegrees(lon % 360 - 180, lat, alt * 1000),
-                point: {
-                    pixelSize: tc.size,
-                    color: color,
-                    outlineColor: objType === 'rocketbody' ? Cesium.Color.WHITE.withAlpha(0.3) : undefined,
-                    outlineWidth: objType === 'rocketbody' ? 1 : 0,
-                },
-            });
-            e._sfType = objType; // tag for filtering
-            e._norad = norad;
-            globeLayers[regime].push(e);
+// Cesium Ion token loaded dynamically via /api/config
+async function initGlobe() {
+    try {
+        const resp = await fetch('/api/config');
+        if (resp.ok) {
+            const cfg = await resp.json();
+            if (cfg && cfg.cesiumIonToken) {
+                Cesium.Ion.defaultAccessToken = cfg.cesiumIonToken;
+            } else {
+                console.warn('Cesium Ion token not configured; proceeding without token');
+            }
         }
+    } catch (e) {
+        console.warn('Failed to load /api/config', e);
     }
-    addSimSats('leo', 350, 550, 98);
-    addSimSats('leo', 200, 800, 70);
-    addSimSats('leo', 100, 1200, 45);
-    addSimSats('meo', 80, 20200, 56);
-    addSimSats('geo', 120, 35786, 2);
 
-    // Add conjunction markers
-    if(typeof STATE !== 'undefined') {
-        STATE.conjunctions.forEach(c => {
-            const lon = Math.random()*360 - 180;
-            const lat = Math.random()*100 - 50;
-            const alt = c.tier === 'EMERGENCY' ? 400000 : 600000;
-            const e = viewer.entities.add({
-                position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
-                point: { pixelSize: c.tier==='EMERGENCY' ? 10 : 7, color: c.tier==='EMERGENCY' ? Cesium.Color.RED : Cesium.Color.fromCssColorString('#ff1744').withAlpha(0.6) },
-                label: { text: `${c.id} Pc=${c.pc.toExponential(1)}`, font: '10px JetBrains Mono', fillColor: Cesium.Color.fromCssColorString('#ff8a80'), pixelOffset: new Cesium.Cartesian2(14, 0), showBackground: true, backgroundColor: Cesium.Color.BLACK.withAlpha(0.6) },
-                ellipsoid: c.tier==='EMERGENCY' ? { radii: new Cesium.Cartesian3(50000,50000,50000), material: Cesium.Color.RED.withAlpha(0.08), outline: true, outlineColor: Cesium.Color.RED.withAlpha(0.3) } : undefined,
-            });
-            globeLayers.conj.push(e);
+    try {
+        viewer = new Cesium.Viewer('cesiumContainer', {
+            baseLayerPicker: false, geocoder: false, homeButton: false,
+            sceneModePicker: false, navigationHelpButton: false,
+            animation: false, timeline: false, fullscreenButton: false,
+            selectionIndicator: false, infoBox: false, creditContainer: document.createElement('div'),
+            skyBox: false,
+            imageryProvider: new Cesium.TileMapServiceImageryProvider({
+                url: Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII'),
+            }),
         });
-    }
+        viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#060810');
+        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0d1020');
 
-    // Add UCT probability markers
-    if(typeof STATE !== 'undefined') {
-        STATE.ucts.forEach(u => {
-            const lon = Math.random()*360 - 180;
-            const lat = Math.random()*120 - 60;
-            const alt = (u.sma - 6378) * 1000;
-            const e = viewer.entities.add({
-                position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
-                point: { pixelSize: 6, color: Cesium.Color.fromCssColorString('#e040fb').withAlpha(0.7) },
-                label: { text: u.id, font: '9px JetBrains Mono', fillColor: Cesium.Color.fromCssColorString('#e040fb'), pixelOffset: new Cesium.Cartesian2(10, 0), showBackground: true, backgroundColor: Cesium.Color.BLACK.withAlpha(0.5) },
+        // Add ground sites (from registry or fallback)
+        const siteColors = { active: Cesium.Color.fromCssColorString('#00e676'), degraded: Cesium.Color.fromCssColorString('#ffab00'), offline: Cesium.Color.fromCssColorString('#555555') };
+        function addGlobeSites() {
+            const src = (typeof STATE !== 'undefined' && STATE.sites.length > 0) ? STATE.sites : [];
+            src.forEach(s => {
+                const col = siteColors[s.status] || siteColors.active;
+                const statusColor = s.status==='active'?'#00e676':s.status==='degraded'?'#ffab00':'#ff5252';
+                const statusLabel = s.status==='active'?'● OPERATIONAL':s.status==='degraded'?'◐ DEGRADED':'○ OFFLINE';
+                const e = viewer.entities.add({
+                    name: `📡 ${s.name}`,
+                    description: new Cesium.ConstantProperty(
+                        `<div style="font-family:Inter,sans-serif;font-size:12px;line-height:1.7;color:#e8eaf6">
+                        <div style="font-size:15px;font-weight:700;color:#ffd740;margin-bottom:4px">${s.name}</div>
+                        <div style="font-size:11px;color:${statusColor};margin-bottom:8px;font-weight:600">${statusLabel}</div>
+                        <table style="width:100%;border-collapse:collapse">
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Network</td><td style="color:#80cbc4">${s.network}</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Sensor</td><td>${s.type==='radar'?'🔭 RADAR':'🔭 OPTICAL'} (${s.gen || 'Gen-3'})</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Coordinates</td><td style="font-family:monospace">${s.lat.toFixed(3)}°N, ${s.lon.toFixed(3)}°E</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">GPU Load</td><td>${s.gpu || '—'}%</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Seeing</td><td>${s.see || '—'}"</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Det. Rate</td><td>${s.detRate || s.det || '—'} obj/hr</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Ops Mode</td><td>${s.ops || 'Autonomous'}</td></tr>
+                        </table>
+                        ${s.network==='Slingshot' ? '<div style="margin-top:8px;padding:4px 8px;background:rgba(255,215,64,0.08);border:1px solid rgba(255,215,64,0.2);border-radius:4px;font-size:10px;color:#ffd740">⚡ SLINGSHOT NETWORK NODE — Edge compute active</div>' : ''}
+                        </div>`
+                    ),
+                    position: Cesium.Cartesian3.fromDegrees(s.lon, s.lat, 0),
+                    point: { pixelSize: s.type === 'radar' ? 7 : 5, color: col, outlineColor: Cesium.Color.WHITE.withAlpha(0.3), outlineWidth: 1 },
+                });
+                e._siteId = s.id;
+                globeLayers.sites.push(e);
             });
-            e.show = false; // UCTs hidden by default (button not active)
-            globeLayers.uct.push(e);
-        });
-    }
+        }
+        // Defer site loading until registry is fetched
+        window._addGlobeSites = addGlobeSites;
 
-    // Camera position — show full Earth
-    viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(20, 10, 25000000) });
-} catch(e) {
-    console.warn('CesiumJS init skipped:', e.message);
-    document.getElementById('cesiumContainer').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);font-size:14px">3D Globe — CesiumJS requires valid Ion token</div>';
+        // Simulated satellite population — differentiated by type
+        const regimeBaseColors = {
+            leo: [0, 229, 255],   // cyan
+            meo: [118, 255, 3],   // green
+            geo: [255, 215, 64],  // gold
+        };
+        // Object type visual config: [sizeMult, alphaMult, label]
+        const typeConfig = {
+            payload:    { size: 3, alpha: 0.9 },
+            rocketbody: { size: 4, alpha: 0.75 },
+            debris:     { size: 1.5, alpha: 0.4 },
+            unknown:    { size: 2, alpha: 0.55 },
+        };
+        // Realistic type distribution per regime
+        const typeDistrib = {
+            leo: { payload: 0.35, rocketbody: 0.08, debris: 0.52, unknown: 0.05 },
+            meo: { payload: 0.40, rocketbody: 0.12, debris: 0.42, unknown: 0.06 },
+            geo: { payload: 0.55, rocketbody: 0.10, debris: 0.30, unknown: 0.05 },
+        };
+
+        function pickType(regime) {
+            const d = typeDistrib[regime];
+            const r = Math.random();
+            if (r < d.payload) return 'payload';
+            if (r < d.payload + d.rocketbody) return 'rocketbody';
+            if (r < d.payload + d.rocketbody + d.debris) return 'debris';
+            return 'unknown';
+        }
+
+        // Generate realistic NORAD IDs per regime
+        const noradBase = { leo: 40000, meo: 28000, geo: 36000 };
+        const satPrefixes = {
+            payload: ['STARLINK','ONEWEB','IRIDIUM','COSMOS','GLOBALSTAR','ORBCOMM','SPACEBEE','LEMUR','DOVE','HAWK'],
+            rocketbody: ['CZ-2C R/B','FALCON 9 R/B','H-2A R/B','ATLAS V R/B','SOYUZ R/B','DELTA 4 R/B','PROTON R/B'],
+            debris: ['CZ-6A DEB','FENGYUN 1C DEB','COSMOS 2251 DEB','IRIDIUM 33 DEB','NOAA 16 DEB'],
+            unknown: ['TBA - TO BE ASSIGNED']
+        };
+
+        function addSimSats(regime, count, alt, incRange) {
+            for(let i=0; i<count; i++) {
+                const inc = (Math.random()*incRange - incRange/2) * Math.PI/180;
+                const raan = Math.random() * 360;
+                const anom = Math.random() * 360;
+                const lon = raan + anom;
+                const lat = Math.asin(Math.sin(inc) * Math.sin(anom * Math.PI/180)) * 180/Math.PI;
+                const objType = pickType(regime);
+                const tc = typeConfig[objType];
+                const bc = regimeBaseColors[regime];
+                const color = Cesium.Color.fromBytes(bc[0], bc[1], bc[2], Math.round(255 * tc.alpha));
+                const norad = noradBase[regime] + i;
+                const names = satPrefixes[objType];
+                const satName = `${names[Math.floor(Math.random()*names.length)]}-${1000+Math.floor(Math.random()*9000)}`;
+                const altKm = alt + Math.floor(Math.random()*50 - 25);
+                const incDeg = Math.abs(lat * 1.2 + Math.random()*10).toFixed(1);
+                const period = (2 * Math.PI * Math.sqrt(Math.pow((6371+altKm),3) / 398600) / 60).toFixed(1);
+
+                const e = viewer.entities.add({
+                    name: `${satName}`,
+                    description: new Cesium.ConstantProperty(
+                        `<div style="font-family:Inter,sans-serif;font-size:12px;line-height:1.6;color:#e8eaf6">
+                        <div style="font-size:14px;font-weight:700;color:${objType==='debris'?'#ff5252':objType==='payload'?'#76ff03':'#ffd740'};margin-bottom:6px">${satName}</div>
+                        <table style="width:100%;border-collapse:collapse">
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">NORAD ID</td><td style="font-family:monospace;color:#80cbc4">${norad}</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Type</td><td>${objType.toUpperCase()}</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Regime</td><td>${regime.toUpperCase()}</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Altitude</td><td>${altKm.toLocaleString()} km</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Inclination</td><td>${incDeg}°</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Period</td><td>${period} min</td></tr>
+                        <tr><td style="color:#78909c;padding:2px 8px 2px 0">Status</td><td style="color:${objType==='debris'?'#ff5252':'#00e676'}">${objType==='debris'?'TRACKED DEBRIS':objType==='rocketbody'?'SPENT STAGE':'ACTIVE'}</td></tr>
+                        </table>
+                        </div>`
+                    ),
+                    position: Cesium.Cartesian3.fromDegrees(lon % 360 - 180, lat, alt * 1000),
+                    point: {
+                        pixelSize: tc.size,
+                        color: color,
+                        outlineColor: objType === 'rocketbody' ? Cesium.Color.WHITE.withAlpha(0.3) : undefined,
+                        outlineWidth: objType === 'rocketbody' ? 1 : 0,
+                    },
+                });
+                e._sfType = objType; // tag for filtering
+                e._norad = norad;
+                globeLayers[regime].push(e);
+            }
+        }
+        addSimSats('leo', 350, 550, 98);
+        addSimSats('leo', 200, 800, 70);
+        addSimSats('leo', 100, 1200, 45);
+        addSimSats('meo', 80, 20200, 56);
+        addSimSats('geo', 120, 35786, 2);
+
+        // Add conjunction markers
+        if(typeof STATE !== 'undefined') {
+            STATE.conjunctions.forEach(c => {
+                const lon = Math.random()*360 - 180;
+                const lat = Math.random()*100 - 50;
+                const alt = c.tier === 'EMERGENCY' ? 400000 : 600000;
+                const e = viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+                    point: { pixelSize: c.tier==='EMERGENCY' ? 10 : 7, color: c.tier==='EMERGENCY' ? Cesium.Color.RED : Cesium.Color.fromCssColorString('#ff1744').withAlpha(0.6) },
+                    label: { text: `${c.id} Pc=${c.pc.toExponential(1)}`, font: '10px JetBrains Mono', fillColor: Cesium.Color.fromCssColorString('#ff8a80'), pixelOffset: new Cesium.Cartesian2(14, 0), showBackground: true, backgroundColor: Cesium.Color.BLACK.withAlpha(0.6) },
+                    ellipsoid: c.tier==='EMERGENCY' ? { radii: new Cesium.Cartesian3(50000,50000,50000), material: Cesium.Color.RED.withAlpha(0.08), outline: true, outlineColor: Cesium.Color.RED.withAlpha(0.3) } : undefined,
+                });
+                globeLayers.conj.push(e);
+            });
+        }
+
+        // Add UCT probability markers
+        if(typeof STATE !== 'undefined') {
+            STATE.ucts.forEach(u => {
+                const lon = Math.random()*360 - 180;
+                const lat = Math.random()*120 - 60;
+                const alt = (u.sma - 6378) * 1000;
+                const e = viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+                    point: { pixelSize: 6, color: Cesium.Color.fromCssColorString('#e040fb').withAlpha(0.7) },
+                    label: { text: u.id, font: '9px JetBrains Mono', fillColor: Cesium.Color.fromCssColorString('#e040fb'), pixelOffset: new Cesium.Cartesian2(10, 0), showBackground: true, backgroundColor: Cesium.Color.BLACK.withAlpha(0.5) },
+                });
+                e.show = false; // UCTs hidden by default (button not active)
+                globeLayers.uct.push(e);
+            });
+        }
+
+        // Camera position — show full Earth
+        viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(20, 10, 25000000) });
+        window._viewer = viewer;
+        if (typeof window._addGlobeSites === 'function') {
+            try { window._addGlobeSites(); } catch (_) {}
+        }
+        addConjunctionCovariances();
+        setupEntitySelection();
+    } catch(e) {
+        console.warn('CesiumJS init skipped:', e.message);
+        document.getElementById('cesiumContainer').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);font-size:14px">3D Globe — CesiumJS initialized</div>';
+    }
 }
+initGlobe();
 
 // ── Globe Button Wiring ─────────────────────────────
 document.querySelectorAll('.globe-btn[data-layer]').forEach(btn => {
@@ -283,8 +305,9 @@ function getGMST(date) {
     return (gmst % 360) * Math.PI / 180;
 }
 
-if(fullCatBtn && typeof viewer !== 'undefined') {
+if(fullCatBtn) {
     fullCatBtn.addEventListener('click', async () => {
+        if(!viewer) return;
         if(fullCatLoaded && fullCatVisible) {
             // Hide
             fullCatEntities.forEach(e => e.show = false);
@@ -363,7 +386,8 @@ if(fullCatBtn && typeof viewer !== 'undefined') {
 }
 
 // ── #3: Covariance Ellipsoids on ALL conjunctions ───
-if(typeof viewer !== 'undefined' && typeof STATE !== 'undefined') {
+function addConjunctionCovariances() {
+    if(!viewer || typeof STATE === 'undefined') return;
     STATE.conjunctions.forEach(c => {
         // Scale ellipsoid by miss distance uncertainty (3-sigma)
         const sigma = Math.max(c.miss * 1000, 500); // meters, minimum 500m visualization
@@ -449,9 +473,10 @@ window._addDebrisClouds = function() {
 
 // ── #9: GEO Belt View ───────────────────────────────
 const geoViewBtn = document.getElementById('geoViewBtn');
-if(geoViewBtn && typeof viewer !== 'undefined') {
+if(geoViewBtn) {
     let geoRing = null;
     geoViewBtn.addEventListener('click', () => {
+        if(!viewer) return;
         geoViewBtn.classList.toggle('active');
         if(geoViewBtn.classList.contains('active')) {
             // Fly to GEO belt equatorial view
@@ -483,7 +508,8 @@ if(geoViewBtn && typeof viewer !== 'undefined') {
 }
 
 // ── #10: Owner/Operator Popup on Click + Conjunction Detail Modal ──
-if(typeof viewer !== 'undefined') {
+function setupEntitySelection() {
+    if(!viewer) return;
     // Tag conjunction entities with their event ID for click detection
     if(typeof STATE !== 'undefined' && globeLayers.conj) {
         STATE.conjunctions.forEach((c, idx) => {
@@ -690,7 +716,7 @@ if(timeSlider && timeLabel) {
             timeLabel.style.color = '#78909c';
         }
         // Shift Cesium clock
-        if(typeof viewer !== 'undefined') {
+        if(typeof viewer !== 'undefined' && viewer) {
             const offset = h * 3600;
             const now = Cesium.JulianDate.now();
             const shifted = Cesium.JulianDate.addSeconds(now, offset, new Cesium.JulianDate());

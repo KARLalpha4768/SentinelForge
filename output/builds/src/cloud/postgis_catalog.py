@@ -5,6 +5,7 @@ Extracted from cloud_ingest.py per Agent 19 code review recommendation.
 Provides spatial queries (proximity search, cone search) via PostGIS GIST indexes.
 """
 import logging
+import os
 
 logger = logging.getLogger("sentinelforge.cloud.catalog")
 
@@ -21,10 +22,14 @@ class CatalogStore:
     """
 
     def __init__(self, dsn: str = None):
-        self.dsn = dsn or "postgresql://sentinelforge:sf@localhost:5432/catalog"
+        self.dsn = dsn or os.environ.get("DATABASE_URL", "")
         self._conn = None
 
     def connect(self):
+        if not self.dsn:
+            logger.warning("DATABASE_URL not set — using mock connection")
+            self._conn = None
+            return
         try:
             import psycopg2
             self._conn = psycopg2.connect(self.dsn)
