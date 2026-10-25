@@ -9,6 +9,8 @@ from fastapi import FastAPI, Depends, HTTPException, Security
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from typing import List, Optional
+import os
+import secrets
 import time
 
 app = FastAPI(
@@ -22,7 +24,8 @@ API_KEY_NAME = "X-API-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
 
 def get_api_key(api_key_header: str = Security(api_key_header)):
-    if api_key_header != "sf_demo_key_2026":
+    expected_key = os.environ.get("SF_API_KEY", "")
+    if not expected_key or not secrets.compare_digest(api_key_header, expected_key):
         raise HTTPException(status_code=403, detail="Could not validate credentials")
     return api_key_header
 
