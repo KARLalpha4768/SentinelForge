@@ -76,7 +76,8 @@ class StateVector:
     def to_ra_dec(self) -> Tuple[float, float]:
         """Convert ECI position to RA/Dec (degrees)."""
         r = self.r_mag
-        dec = math.asin(self.z / r) * RAD2DEG
+        ratio = max(-1.0, min(1.0, self.z / r)) if r > 0 else 0.0
+        dec = math.asin(ratio) * RAD2DEG
         ra = math.atan2(self.y, self.x) * RAD2DEG
         if ra < 0:
             ra += 360
@@ -190,13 +191,19 @@ class OrbitPropagator:
 
     def _solve_kepler(self, M: float, e: float, tol: float = 1e-12) -> float:
         """Solve Kepler's equation iteratively (Newton-Raphson)."""
-        E = M  # Initial guess
-        for _ in range(50):
-            dE = (E - e * math.sin(E) - M) / (1 - e * math.cos(E))
+        if not 0 <= e < 1:
+            raise ValueError("Eccentricity must be in the range [0, 1)")
+
+        # Work near the origin for numerical stability, then restore full turns.
+        wrapped_M = (M + math.pi) % (2 * math.pi) - math.pi
+        turns = M - wrapped_M
+        E = wrapped_M if e < 0.8 else math.copysign(math.pi, wrapped_M or 1.0)
+        for _ in range(100):
+            dE = (E - e * math.sin(E) - wrapped_M) / (1 - e * math.cos(E))
             E -= dE
             if abs(dE) < tol:
                 break
-        return E
+        return E + turns
 
     def estimate_orbit_regime(self, observations: list) -> Optional[OrbitalElements]:
         """
@@ -222,10 +229,10 @@ class OrbitPropagator:
             return None
 
         # Approximate angular rate to classify orbit regime
-        rate_deg_sec = math.sqrt(
-            (obs[2]["ra_deg"] - obs[0]["ra_deg"])**2 +
-            (obs[2]["dec_deg"] - obs[0]["dec_deg"])**2
-        ) / dt
+        dra = ((obs[2]["ra_deg"] - obs[0]["ra_deg"] + 180) % 360 - 180)
+        dra *= math.cos(math.radians(obs[1]["dec_deg"]))
+        ddec = obs[2]["dec_deg"] - obs[0]["dec_deg"]
+        rate_deg_sec = math.hypot(dra, ddec) / dt
 
         # Higher rate = lower orbit (Kepler's third law)
         if rate_deg_sec > 0.5:
