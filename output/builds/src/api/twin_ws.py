@@ -6,11 +6,10 @@ Supports: propagation, maneuver injection, conjunction replay.
 Surpasses Slingshot's closed-source DST with open architecture + non-Gaussian viz.
 """
 import asyncio
-import json
 import logging
 import math
 import time
-from typing import Dict, List
+from typing import Any
 
 logger = logging.getLogger("sentinelforge.api.twin_ws")
 
@@ -63,10 +62,14 @@ def propagate_kepler_simple(a_km: float, ecc: float, inc_deg: float,
              - y_orb * (sin_raan * sin_argp - cos_raan * cos_argp * cos_inc))
     z_eci = (x_orb * sin_argp * sin_inc + y_orb * cos_argp * sin_inc)
 
-    # ECI to lat/lon/alt (simplified: ignore Earth rotation for demo)
+    # Rotate ECI longitude into the Earth-fixed frame for Cesium rendering.
     r_mag = math.sqrt(x_eci**2 + y_eci**2 + z_eci**2)
     lat = math.degrees(math.asin(z_eci / r_mag))
-    lon = math.degrees(math.atan2(y_eci, x_eci))
+    gst = (math.radians(280.4606) +
+           math.radians(360.9856473) * (dt_sec / 86400.0)) % (2 * math.pi)
+    lon = math.degrees(
+        (math.atan2(y_eci, x_eci) - gst + math.pi) % (2 * math.pi) - math.pi
+    )
     alt_km = r_mag / 1000.0 - R_EARTH_KM
 
     return {
@@ -90,6 +93,71 @@ DEMO_CATALOG = [
 ]
 
 
+class TwinBroadcaster:
+    """Propagate the catalog once per tick and fan the result out to clients."""
+
+    def __init__(self, catalog=None, interval_sec: float = 1.0):
+        self.catalog = catalog if catalog is not None else DEMO_CATALOG
+        self.interval_sec = interval_sec
+        self.clients: set[Any] = set()
+        self._task: asyncio.Task | None = None
+        self._started_at: float | None = None
+
+    async def connect(self, ws: Any) -> None:
+        self.clients.add(ws)
+        if self._task is None or self._task.done():
+            self._started_at = time.time()
+            self._task = asyncio.create_task(self._run())
+
+    async def disconnect(self, ws: Any) -> None:
+        self.clients.discard(ws)
+
+    async def broadcast_once(self, now: float | None = None) -> dict:
+        """Build one catalog frame and send that same frame to every client."""
+        epoch = time.time() if now is None else now
+        if self._started_at is None:
+            self._started_at = epoch
+        dt = epoch - self._started_at
+
+        positions = []
+        for obj in self.catalog:
+            pos = propagate_kepler_simple(
+                obj["a_km"], obj["ecc"], obj["inc"],
+                obj["raan"], obj["argp"], obj["M0"], dt
+            )
+            pos["norad_id"] = obj["norad_id"]
+            pos["name"] = obj["name"]
+            positions.append(pos)
+
+        payload = {
+            "type": "catalog_update",
+            "epoch": epoch,
+            "sim_time_sec": round(dt, 1),
+            "objects": positions,
+        }
+        clients = tuple(self.clients)
+        if clients:
+            results = await asyncio.gather(
+                *(client.send_json(payload) for client in clients),
+                return_exceptions=True,
+            )
+            for client, result in zip(clients, results):
+                if isinstance(result, Exception):
+                    self.clients.discard(client)
+        return payload
+
+    async def _run(self) -> None:
+        try:
+            while self.clients:
+                await self.broadcast_once()
+                await asyncio.sleep(self.interval_sec)
+        finally:
+            self._task = None
+
+
+twin_broadcaster = TwinBroadcaster()
+
+
 try:
     from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
@@ -100,29 +168,14 @@ try:
         """Stream catalog positions at 1Hz for CesiumJS visualization."""
         await ws.accept()
         logger.info("Digital Twin WebSocket connected.")
-        t0 = time.time()
+        await twin_broadcaster.connect(ws)
         try:
             while True:
-                dt = time.time() - t0
-                positions = []
-                for obj in DEMO_CATALOG:
-                    pos = propagate_kepler_simple(
-                        obj["a_km"], obj["ecc"], obj["inc"],
-                        obj["raan"], obj["argp"], obj["M0"], dt
-                    )
-                    pos["norad_id"] = obj["norad_id"]
-                    pos["name"] = obj["name"]
-                    positions.append(pos)
-
-                await ws.send_json({
-                    "type": "catalog_update",
-                    "epoch": time.time(),
-                    "sim_time_sec": round(dt, 1),
-                    "objects": positions
-                })
-                await asyncio.sleep(1.0)
+                await ws.receive_text()
         except WebSocketDisconnect:
             logger.info("Digital Twin WebSocket disconnected.")
+        finally:
+            await twin_broadcaster.disconnect(ws)
 
     @app.websocket("/ws/conjunction")
     async def conjunction_replay(ws: WebSocket):
