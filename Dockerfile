@@ -51,4 +51,6 @@ COPY . .
 EXPOSE 8001
 ENV PYTHONIOENCODING=utf-8
 
-CMD ["uvicorn", "src.api.twin_ws:app", "--host", "0.0.0.0", "--port", "8001"]
+ENV PYTHONPATH=/app/output/builds
+
+CMD ["uvicorn", "src.api.twin_ws:app", "--app-dir", "/app/output/builds", "--host", "0.0.0.0", "--port", "8001"]
