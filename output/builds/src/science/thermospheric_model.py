@@ -25,6 +25,8 @@ References:
 import logging
 import numpy as np
 import math
+import os
+from pathlib import Path
 from typing import Tuple, List, Dict, Optional
 from dataclasses import dataclass, field
 
@@ -294,11 +296,39 @@ class DensityCorrectionNet:
                     h4 = self.dropout(h4)
                     return self.head(h4)
 
-            self.model = ResidualMLP(in_dim=8, hidden=hidden_dim)
-            self.model.eval()
-            self._has_torch = True
-            n_params = sum(p.numel() for p in self.model.parameters())
-            logger.info(f"DensityCorrectionNet initialized: {n_params:,} parameters")
+            configured_path = os.environ.get("DENSITY_MODEL_PATH")
+            weights_path = (
+                Path(configured_path).expanduser()
+                if configured_path
+                else Path(__file__).resolve().parents[4] / "models" / "density_mlp.pth"
+            )
+            if weights_path.is_file():
+                model = ResidualMLP(in_dim=8, hidden=hidden_dim)
+                try:
+                    state_dict = torch.load(
+                        weights_path, map_location="cpu", weights_only=True
+                    )
+                    model.load_state_dict(state_dict)
+                except Exception as exc:
+                    logger.warning(
+                        "Could not load density model weights from %s: %s; "
+                        "using empirical corrections",
+                        weights_path, exc,
+                    )
+                else:
+                    model.eval()
+                    self.model = model
+                    self._has_torch = True
+                    n_params = sum(p.numel() for p in model.parameters())
+                    logger.info(
+                        "DensityCorrectionNet loaded %s parameters from %s",
+                        f"{n_params:,}", weights_path,
+                    )
+            else:
+                logger.info(
+                    "Density model weights not found at %s — using empirical corrections only",
+                    weights_path,
+                )
         except ImportError:
             logger.info("PyTorch not available — using empirical corrections only")
 
