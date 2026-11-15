@@ -34,21 +34,30 @@ class TestOrbitPropagator:
 
     def test_kepler_period(self):
         """Verify Kepler's third law: T² ∝ a³"""
-        mu = 398600.4418  # km³/s²
-        a = 6778  # km (LEO ~407 km alt)
-        T = 2 * np.pi * np.sqrt(a**3 / mu)
-        assert 5400 < T < 5700, f"LEO period should be ~5554s, got {T:.0f}s"
+        from orbit_propagator import OrbitalElements
+
+        orbit = OrbitalElements(
+            norad_id=25544, epoch=0.0, a=6_778_000.0, e=0.0001,
+            i=np.radians(51.6), raan=0.0, argp=0.0, M=0.0,
+        )
+        assert 5400 < orbit.period_sec < 5700
 
     def test_j2_perturbation_nonzero(self):
         """J2 RAAN regression should be non-zero for inclined orbits."""
-        J2 = 1.08263e-3
-        Re = 6371.0
-        a = 7000.0
-        e = 0.001
-        inc = np.radians(51.6)  # ISS inclination
-        n = np.sqrt(398600.4418 / a**3)
-        raan_dot = -1.5 * n * J2 * (Re / a)**2 * np.cos(inc) / (1 - e**2)**2
-        assert abs(raan_dot) > 1e-8, "J2 RAAN regression should be nonzero"
+        from orbit_propagator import OrbitalElements, OrbitPropagator
+
+        orbit = OrbitalElements(
+            norad_id=25544, epoch=0.0, a=7_000_000.0, e=0.001,
+            i=np.radians(51.6), raan=0.5, argp=0.0, M=0.0,
+        )
+        propagated_elements = []
+        propagator = OrbitPropagator()
+        to_state = propagator.kepler_to_state
+        propagator.kepler_to_state = lambda elem: (propagated_elements.append(elem), to_state(elem))[1]
+
+        propagator.propagate(orbit, 600.0)
+
+        assert propagated_elements[0].raan != orbit.raan
 
 
 class TestConjunctionScreener:
