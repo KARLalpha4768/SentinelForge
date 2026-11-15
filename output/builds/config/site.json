@@ -1,0 +1,10 @@
+{
+  "site_id": "EDGE-DEMO-01",
+  "name": "SentinelForge Edge Observatory",
+  "latitude": 38.8951,
+  "longitude": -77.0364,
+  "altitude_m": 100.0,
+  "telescope": "PlaneWave CDK20",
+  "mount": "Direct-Drive Equatorial",
+  "camera": "sCMOS"
+}
