@@ -8,3 +8,8 @@ fix*.ps1
 data/real_frame.fits
 data/synthetic_frame.raw
 benchmarks/benchmark_results.json
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example

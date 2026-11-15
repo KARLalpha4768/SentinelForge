@@ -66,28 +66,7 @@
     <div class="status-bar" id="statusBar">WS: disconnected | Objects: 0</div>
 
     <script>
-        // Initialize CesiumJS (use Ion default token for demo)
-        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI0YjRjOGY2NS1kZjg5LTRjNDEtYjM1Ni03NTAxNDE1MWQ2MjAiLCJpZCI6MjU5LCJpYXQiOjE3MDA1MjYwNTF9.demo';
-
-        const viewer = new Cesium.Viewer('cesiumContainer', {
-            imageryProvider: false,
-            baseLayerPicker: false,
-            geocoder: false,
-            homeButton: false,
-            navigationHelpButton: false,
-            animation: false,
-            timeline: false,
-            sceneModePicker: false,
-            fullscreenButton: false,
-            selectionIndicator: true,
-            infoBox: true,
-        });
-
-        // Dark globe styling
-        viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#0b0f19');
-        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#1a1a2e');
-
-        // Track satellite entities
+        let viewer;
         const entities = {};
 
         // Color map for objects
@@ -99,32 +78,49 @@
 
         function updateHUD(objects) {
             const list = document.getElementById('objList');
-            list.innerHTML = objects.map(o =>
-                `<div class="obj-row">
-                    <span class="obj-name">${o.name}</span>
-                    <span class="obj-alt">${o.alt_km.toFixed(1)} km</span>
-                </div>`
-            ).join('');
+            list.replaceChildren();
+            if (!Array.isArray(objects)) return;
+            objects.forEach(o => {
+                const row = document.createElement('div');
+                row.className = 'obj-row';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'obj-name';
+                nameSpan.textContent = String(o.name ?? '');
+
+                const altSpan = document.createElement('span');
+                altSpan.className = 'obj-alt';
+                const altVal = Number(o.alt_km);
+                altSpan.textContent = `${Number.isFinite(altVal) ? altVal.toFixed(1) : '0.0'} km`;
+
+                row.appendChild(nameSpan);
+                row.appendChild(altSpan);
+                list.appendChild(row);
+            });
         }
 
         function updateEntity(obj) {
+            if (!viewer) return;
             const id = `sat_${obj.norad_id}`;
-            const pos = Cesium.Cartesian3.fromDegrees(obj.lon, obj.lat, obj.alt_km * 1000);
+            const altKm = Number(obj.alt_km) || 0;
+            const lat = Number(obj.lat) || 0;
+            const lon = Number(obj.lon) || 0;
+            const pos = Cesium.Cartesian3.fromDegrees(lon, lat, altKm * 1000);
             const color = colors[obj.norad_id] || Cesium.Color.WHITE;
 
             if (!entities[id]) {
                 entities[id] = viewer.entities.add({
                     id: id,
-                    name: obj.name,
+                    name: String(obj.name ?? ''),
                     position: pos,
                     point: { pixelSize: 8, color: color, outlineColor: Cesium.Color.WHITE, outlineWidth: 1 },
                     label: {
-                        text: obj.name, font: '12px monospace',
+                        text: String(obj.name ?? ''), font: '12px monospace',
                         fillColor: color, outlineColor: Cesium.Color.BLACK,
                         outlineWidth: 2, style: Cesium.LabelStyle.FILL_AND_OUTLINE,
                         verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -12),
                     },
-                    description: `NORAD: ${obj.norad_id}<br>Alt: ${obj.alt_km} km<br>Lat: ${obj.lat}<br>Lon: ${obj.lon}`,
+                    description: `NORAD: ${Number(obj.norad_id)}<br>Alt: ${altKm.toFixed(1)} km<br>Lat: ${lat.toFixed(4)}<br>Lon: ${lon.toFixed(4)}`,
                 });
             } else {
                 entities[id].position = pos;
@@ -162,20 +158,63 @@
             ws.onmessage = (event) => {
                 const d = JSON.parse(event.data);
                 if (d.type === 'conjunction_frame') {
-                    data.innerHTML =
-                        `TCA in: ${d.tca_minus_sec}s<br>` +
-                        `Miss: ${d.miss_distance_km} km<br>` +
-                        `Pc (Non-Gaussian): ${d.pc_non_gaussian}`;
+                    data.replaceChildren();
+                    const line1 = document.createElement('div');
+                    line1.textContent = `TCA in: ${d.tca_minus_sec}s`;
+                    const line2 = document.createElement('div');
+                    line2.textContent = `Miss: ${d.miss_distance_km} km`;
+                    const line3 = document.createElement('div');
+                    line3.textContent = `Pc (Non-Gaussian): ${d.pc_non_gaussian}`;
+                    data.appendChild(line1);
+                    data.appendChild(line2);
+                    data.appendChild(line3);
                 } else if (d.type === 'conjunction_complete') {
-                    data.innerHTML = 'EVENT COMPLETE';
+                    data.replaceChildren();
+                    data.textContent = 'EVENT COMPLETE';
                 }
             };
             ws.onclose = () => { panel.style.display = 'none'; };
         }
 
-        // Boot
-        connectWS();
-        setTimeout(connectConjunction, 2000);
+        // Boot Cesium with dynamic config
+        async function initCesium() {
+            try {
+                const resp = await fetch('/api/config');
+                if (resp.ok) {
+                    const cfg = await resp.json();
+                    if (cfg && cfg.cesiumIonToken) {
+                        Cesium.Ion.defaultAccessToken = cfg.cesiumIonToken;
+                    } else {
+                        console.warn('Cesium Ion token not configured; proceeding without token');
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to load /api/config:', err);
+            }
+
+            viewer = new Cesium.Viewer('cesiumContainer', {
+                imageryProvider: false,
+                baseLayerPicker: false,
+                geocoder: false,
+                homeButton: false,
+                navigationHelpButton: false,
+                animation: false,
+                timeline: false,
+                sceneModePicker: false,
+                fullscreenButton: false,
+                selectionIndicator: true,
+                infoBox: true,
+            });
+
+            // Dark globe styling
+            viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#0b0f19');
+            viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#1a1a2e');
+
+            connectWS();
+            setTimeout(connectConjunction, 2000);
+        }
+
+        initCesium();
     </script>
 </body>
 </html>
