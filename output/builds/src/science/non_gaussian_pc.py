@@ -81,6 +81,53 @@ class StateTransitionTensor:
     def __init__(self, order: int = 3):
         self.order = min(order, 4)
 
+    def _acceleration_eci(self, position: np.ndarray) -> np.ndarray:
+        """Return two-body plus J2 acceleration in the ECI frame."""
+        radius = np.linalg.norm(position)
+        if radius < 100.0:
+            raise ValueError("ECI position magnitude is too small")
+
+        x, y, z = position
+        radius_sq = radius * radius
+        z_ratio_sq = (z * z) / radius_sq
+        acceleration = -self.MU_EARTH * position / radius**3
+        j2_factor = (
+            1.5 * self.J2 * self.MU_EARTH * self.R_EARTH**2 / radius**5
+        )
+        acceleration += j2_factor * np.array([
+            x * (5.0 * z_ratio_sq - 1.0),
+            y * (5.0 * z_ratio_sq - 1.0),
+            z * (5.0 * z_ratio_sq - 3.0),
+        ])
+        return acceleration
+
+    def _variational_derivative(self, augmented_state: np.ndarray) -> np.ndarray:
+        """Evaluate ECI dynamics and d(Phi)/dt = A(t) Phi."""
+        state = augmented_state[:6]
+        position = state[:3]
+        velocity = state[3:]
+        phi = augmented_state[6:].reshape(6, 6)
+
+        radius = np.linalg.norm(position)
+        delta = max(1e-4, radius * 1e-7)
+        acceleration_jacobian = np.empty((3, 3))
+        for axis in range(3):
+            offset = np.zeros(3)
+            offset[axis] = delta
+            acceleration_jacobian[:, axis] = (
+                self._acceleration_eci(position + offset)
+                - self._acceleration_eci(position - offset)
+            ) / (2.0 * delta)
+
+        dynamics_jacobian = np.zeros((6, 6))
+        dynamics_jacobian[:3, 3:] = np.eye(3)
+        dynamics_jacobian[3:, :3] = acceleration_jacobian
+        return np.concatenate((
+            velocity,
+            self._acceleration_eci(position),
+            (dynamics_jacobian @ phi).ravel(),
+        ))
+
     def compute_stm(self, state: np.ndarray, dt: float) -> np.ndarray:
         """
         Compute 6x6 State Transition Matrix via two-body + J2 linearization.
@@ -89,44 +136,30 @@ class StateTransitionTensor:
             state: [x, y, z, vx, vy, vz] in ECI (km, km/s)
             dt: propagation time (seconds)
         """
-        r = np.linalg.norm(state[:3])
-        if r < 100:
+        state = np.asarray(state, dtype=float)
+        if state.shape != (6,) or not np.all(np.isfinite(state)):
+            raise ValueError("state must be a finite six-element ECI vector")
+        if np.linalg.norm(state[:3]) < 100:
+            return np.eye(6)
+        if not math.isfinite(dt):
+            raise ValueError("dt must be finite")
+        if dt == 0.0:
             return np.eye(6)
 
-        # Two-body Keplerian STM (clohessy-wiltshire approximation for near-circular)
-        n = math.sqrt(self.MU_EARTH / r**3)
-        c, s = math.cos(n * dt), math.sin(n * dt)
+        # Integrate the absolute ECI state and its variational equations with
+        # RK4. A 60-second maximum step resolves typical Earth orbits while
+        # avoiding the invalid local-frame assumptions of Hill/CW dynamics.
+        augmented = np.concatenate((state, np.eye(6).ravel()))
+        step_count = max(1, math.ceil(abs(dt) / 60.0))
+        step = dt / step_count
+        for _ in range(step_count):
+            k1 = self._variational_derivative(augmented)
+            k2 = self._variational_derivative(augmented + 0.5 * step * k1)
+            k3 = self._variational_derivative(augmented + 0.5 * step * k2)
+            k4 = self._variational_derivative(augmented + step * k3)
+            augmented += step * (k1 + 2*k2 + 2*k3 + k4) / 6.0
 
-        # Linearized relative motion (CW equations)
-        phi = np.eye(6)
-        phi[0, 0] = 4 - 3*c
-        phi[0, 1] = 0
-        phi[0, 3] = s / n
-        phi[0, 4] = 2*(1 - c) / n
-        phi[1, 0] = 6*(s - n*dt)
-        phi[1, 1] = 1
-        phi[1, 3] = -2*(1 - c) / n
-        phi[1, 4] = (4*s - 3*n*dt) / n
-        phi[2, 2] = c
-        phi[2, 5] = s / n
-        phi[3, 0] = 3*n*s
-        phi[3, 3] = c
-        phi[3, 4] = 2*s
-        phi[4, 0] = -6*n*(1 - c)
-        phi[4, 3] = -2*s
-        phi[4, 4] = 4*c - 3
-        phi[5, 2] = -n*s
-        phi[5, 5] = c
-
-        # J2 secular correction to STM diagonal
-        a = r
-        inc_approx = math.acos(max(-1, min(1, state[2] / r)))
-        j2_rate = -1.5 * n * self.J2 * (self.R_EARTH / a)**2 * math.cos(inc_approx)
-        j2_correction = j2_rate * dt
-        phi[3, 0] += j2_correction * 0.1
-        phi[4, 1] += j2_correction * 0.05
-
-        return phi
+        return augmented[6:].reshape(6, 6)
 
     def compute_stt2(self, state: np.ndarray, dt: float) -> np.ndarray:
         """

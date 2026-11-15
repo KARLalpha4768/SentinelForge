@@ -121,15 +121,18 @@ class ConjunctionScreener:
         if miss_km > self.screen_distance_km:
             return None
 
-        # --- Combine covariances ---
-        # In RTN frame, covariances add (assuming independence)
-        C1 = cov1.to_matrix()
-        C2 = cov2.to_matrix()
-        C_combined = C1 + C2
+        # --- Combine covariances in a common frame ---
+        # Each RTN covariance is expressed in its object's local orbital frame.
+        # Rotate both to ECI before adding independent uncertainties.
+        M1 = self._rtn_to_eci_matrix(pos1, vel1)
+        M2 = self._rtn_to_eci_matrix(pos2, vel2)
+        C1_eci = M1 @ cov1.to_matrix() @ M1.T
+        C2_eci = M2 @ cov2.to_matrix() @ M2.T
+        C_combined_eci = C1_eci + C2_eci
 
         # --- Project into encounter plane ---
         C_2d, miss_2d = self._project_to_encounter_plane(
-            dr, dv, C_combined
+            dr, dv, C_combined_eci
         )
 
         # --- Compute collision probability ---
@@ -173,6 +176,21 @@ class ConjunctionScreener:
             self.events.append(event)
 
         return event
+
+    @staticmethod
+    def _rtn_to_eci_matrix(position: np.ndarray,
+                           velocity: np.ndarray) -> np.ndarray:
+        """Return the direction-cosine matrix that maps RTN vectors to ECI."""
+        r_norm = np.linalg.norm(position)
+        angular_momentum = np.cross(position, velocity)
+        h_norm = np.linalg.norm(angular_momentum)
+        if r_norm < 1e-12 or h_norm < 1e-12:
+            raise ValueError("Cannot construct RTN frame from degenerate state")
+
+        radial = position / r_norm
+        normal = angular_momentum / h_norm
+        transverse = np.cross(normal, radial)
+        return np.column_stack((radial, transverse, normal))
 
     def _project_to_encounter_plane(self,
                                       dr: np.ndarray,
