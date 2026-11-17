@@ -298,7 +298,7 @@ Generated: 2026-05-01 19:07:55 UTC
 - `def __init__(self, dsn: str = None)`
 - `def connect(self)`
 - `def initialize_schema(self)`
-  > self.dsn = dsn or "postgresql://sentinelforge:sf@localhost:5432/catalog" self._conn = None  try: import psycopg2 self._conn = psycopg2.connect(self.dsn) logger.info("Connected to PostGIS catalog") except ImportError: logger.warning("psycopg2 not installed — using mock connection") self._conn = None  Create tables if they don't exist.
+  > self.dsn = dsn or os.environ.get("DATABASE_URL", "") self._conn = None  try: import psycopg2 self._conn = psycopg2.connect(self.dsn) logger.info("Connected to PostGIS catalog") except ImportError: logger.warning("psycopg2 not installed — using mock connection") self._conn = None  Create tables if they don't exist.
 - `def upsert_object(self, norad_id: int, elements: dict,`
   > Insert or update a space object's orbital elements and state.
 - `def find_nearby_objects(self, x_km: float, y_km: float, z_km: float,`

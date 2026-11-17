@@ -5,6 +5,76 @@ provider "aws" {
   region = var.aws_region
 }
 
+# --- Data Sources ---
+data "aws_vpc" "selected" {
+  id = var.vpc_id
+}
+
+# --- Security Groups (Least Privilege) ---
+resource "aws_security_group" "kafka_sg" {
+  name        = "sentinelforge-kafka-sg"
+  description = "Security group for Managed Streaming for Apache Kafka (MSK)"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "MSK TLS broker access from within VPC"
+    from_port   = 9094
+    to_port     = 9094
+    protocol    = "tcp"
+    cidr_blocks = [data.aws_vpc.selected.cidr_block]
+  }
+
+  ingress {
+    description = "MSK plain broker access from within VPC"
+    from_port   = 9092
+    to_port     = 9092
+    protocol    = "tcp"
+    cidr_blocks = [data.aws_vpc.selected.cidr_block]
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "sentinelforge-kafka-sg"
+    Environment = "production"
+    Project     = "SentinelForge"
+  }
+}
+
+resource "aws_security_group" "db_sg" {
+  name        = "sentinelforge-db-sg"
+  description = "Security group for PostGIS RDS PostgreSQL instance"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "PostgreSQL access from within VPC"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = [data.aws_vpc.selected.cidr_block]
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "sentinelforge-db-sg"
+    Environment = "production"
+    Project     = "SentinelForge"
+  }
+}
+
 # 1. Managed Streaming for Apache Kafka (MSK)
 # Replaces the basic Kafka StatefulSet for production resilience
 resource "aws_msk_cluster" "sentinelforge_kafka" {

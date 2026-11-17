@@ -71,13 +71,22 @@ class AdmissibleRegion:
 
         obs_r = np.linalg.norm(observer_pos)
 
-        # Minimum range: object at min altitude along LOS
-        rho_min = max(0.1, self.min_alt + R_EARTH - obs_r)
-        # Maximum range: object at max altitude along LOS
-        rho_max = self.max_alt + R_EARTH + obs_r
+        # Intersect the observation ray with the minimum/maximum altitude
+        # spheres: |observer_pos + rho * los|^2 = radius^2.
+        b = 2.0 * float(np.dot(observer_pos, los))
+        c_min = obs_r**2 - (R_EARTH + self.min_alt)**2
+        c_max = obs_r**2 - (R_EARTH + self.max_alt)**2
+        discriminant_min = b**2 - 4.0 * c_min
+        discriminant_max = b**2 - 4.0 * c_max
+        if discriminant_min < 0.0 or discriminant_max < 0.0:
+            raise ValueError("Line of sight does not intersect the admissible altitude shell")
+
+        rho_min = max(0.1, (-b + np.sqrt(discriminant_min)) / 2.0)
+        rho_max = (-b + np.sqrt(discriminant_max)) / 2.0
+        if rho_max <= rho_min:
+            raise ValueError("Line of sight has no positive admissible range")
 
         # Range-rate bounds from escape velocity constraint
-        r_max = obs_r + rho_max
         v_esc = np.sqrt(2 * MU_EARTH / (R_EARTH + self.min_alt))
         rhodot_min = -v_esc
         rhodot_max = v_esc

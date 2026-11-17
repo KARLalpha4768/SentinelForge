@@ -33,10 +33,49 @@ from typing import Optional, Tuple, List
 logger = logging.getLogger("sentinelforge.sota.screener")
 
 
+# Frame conventions used throughout this module:
+#   - States are absolute ECI vectors [x, y, z, vx, vy, vz] (km, km/s).
+#   - Input covariances are 6x6 and expressed in the object's own RTN frame
+#     at the initial epoch (velocity components along the same R, T, N axes).
+#   - The miss vector is secondary minus primary, in the primary's RTN frame
+#     at TCA.
+# Each object is propagated in ECI, both objects are combined in ECI, and the
+# result is rotated into the primary's RTN frame before projection.
+
+
+def rtn_to_eci_matrix(state: np.ndarray) -> np.ndarray:
+    """3x3 matrix whose columns are the R, T and N unit vectors in ECI."""
+    position = np.asarray(state[:3], dtype=float)
+    velocity = np.asarray(state[3:6], dtype=float)
+    r_norm = np.linalg.norm(position)
+    angular_momentum = np.cross(position, velocity)
+    h_norm = np.linalg.norm(angular_momentum)
+    if r_norm < 1e-9 or h_norm < 1e-9:
+        raise ValueError("Cannot construct RTN frame from degenerate state")
+    radial = position / r_norm
+    normal = angular_momentum / h_norm
+    transverse = np.cross(normal, radial)
+    return np.column_stack((radial, transverse, normal))
+
+
+def _state_rotation(state: np.ndarray) -> np.ndarray:
+    """6x6 block-diagonal rotation taking RTN state components to ECI."""
+    rotation = rtn_to_eci_matrix(state)
+    block = np.zeros((6, 6))
+    block[:3, :3] = rotation
+    block[3:, 3:] = rotation
+    return block
+
+
+def _rotate_tensor3(tensor: np.ndarray, rotation: np.ndarray) -> np.ndarray:
+    """Rotate a third-order tensor: S'_ijk = R_ia R_jb R_kc S_abc."""
+    return np.einsum("ia,jb,kc,abc->ijk", rotation, rotation, rotation, tensor)
+
+
 @dataclass
 class EncounterGeometry:
     """Defines the encounter plane geometry at TCA."""
-    miss_vector_rtn: np.ndarray        # [R, T, N] miss distance in RTN frame (km)
+    miss_vector_rtn: np.ndarray        # Secondary minus primary, in the primary's RTN frame at TCA (km)
     relative_velocity_km_s: float      # Closing speed at TCA
     hard_body_radius_km: float         # Combined hard body radius
     tca_epoch_mjd: float               # Time of Closest Approach
@@ -81,57 +120,110 @@ class StateTransitionTensor:
     def __init__(self, order: int = 3):
         self.order = min(order, 4)
 
-    def compute_stm(self, state: np.ndarray, dt: float) -> np.ndarray:
+    def _acceleration_eci(self, position: np.ndarray) -> np.ndarray:
+        """Return two-body plus J2 acceleration in the ECI frame."""
+        radius = np.linalg.norm(position)
+        if radius < 100.0:
+            raise ValueError("ECI position magnitude is too small")
+
+        x, y, z = position
+        radius_sq = radius * radius
+        z_ratio_sq = (z * z) / radius_sq
+        acceleration = -self.MU_EARTH * position / radius**3
+        j2_factor = (
+            1.5 * self.J2 * self.MU_EARTH * self.R_EARTH**2 / radius**5
+        )
+        acceleration += j2_factor * np.array([
+            x * (5.0 * z_ratio_sq - 1.0),
+            y * (5.0 * z_ratio_sq - 1.0),
+            z * (5.0 * z_ratio_sq - 3.0),
+        ])
+        return acceleration
+
+    def _variational_derivative(self, augmented_state: np.ndarray) -> np.ndarray:
+        """Evaluate ECI dynamics and d(Phi)/dt = A(t) Phi."""
+        state = augmented_state[:6]
+        position = state[:3]
+        velocity = state[3:]
+        phi = augmented_state[6:].reshape(6, 6)
+
+        radius = np.linalg.norm(position)
+        delta = max(1e-4, radius * 1e-7)
+        acceleration_jacobian = np.empty((3, 3))
+        for axis in range(3):
+            offset = np.zeros(3)
+            offset[axis] = delta
+            acceleration_jacobian[:, axis] = (
+                self._acceleration_eci(position + offset)
+                - self._acceleration_eci(position - offset)
+            ) / (2.0 * delta)
+
+        dynamics_jacobian = np.zeros((6, 6))
+        dynamics_jacobian[:3, 3:] = np.eye(3)
+        dynamics_jacobian[3:, :3] = acceleration_jacobian
+        return np.concatenate((
+            velocity,
+            self._acceleration_eci(position),
+            (dynamics_jacobian @ phi).ravel(),
+        ))
+
+    def propagate(self, state: np.ndarray, dt: float) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Compute 6x6 State Transition Matrix via two-body + J2 linearization.
-        
+        Propagate an ECI state and its 6x6 State Transition Matrix (two-body + J2).
+
         Args:
             state: [x, y, z, vx, vy, vz] in ECI (km, km/s)
             dt: propagation time (seconds)
+
+        Returns:
+            (state at t in ECI, STM mapping ECI deviations at epoch to ECI deviations at t)
         """
-        r = np.linalg.norm(state[:3])
-        if r < 100:
-            return np.eye(6)
+        state = np.asarray(state, dtype=float)
+        if state.shape != (6,) or not np.all(np.isfinite(state)):
+            raise ValueError("state must be a finite six-element ECI vector")
+        if np.linalg.norm(state[:3]) < 100:
+            return state.copy(), np.eye(6)
+        if not math.isfinite(dt):
+            raise ValueError("dt must be finite")
+        if dt == 0.0:
+            return state.copy(), np.eye(6)
 
-        # Two-body Keplerian STM (clohessy-wiltshire approximation for near-circular)
-        n = math.sqrt(self.MU_EARTH / r**3)
-        c, s = math.cos(n * dt), math.sin(n * dt)
+        # Integrate the absolute ECI state and its variational equations with
+        # RK4. A 60-second maximum step resolves typical Earth orbits while
+        # avoiding the invalid local-frame assumptions of Hill/CW dynamics.
+        augmented = np.concatenate((state, np.eye(6).ravel()))
+        step_count = max(1, math.ceil(abs(dt) / 60.0))
+        step = dt / step_count
+        for _ in range(step_count):
+            k1 = self._variational_derivative(augmented)
+            k2 = self._variational_derivative(augmented + 0.5 * step * k1)
+            k3 = self._variational_derivative(augmented + 0.5 * step * k2)
+            k4 = self._variational_derivative(augmented + step * k3)
+            augmented += step * (k1 + 2*k2 + 2*k3 + k4) / 6.0
 
-        # Linearized relative motion (CW equations)
-        phi = np.eye(6)
-        phi[0, 0] = 4 - 3*c
-        phi[0, 1] = 0
-        phi[0, 3] = s / n
-        phi[0, 4] = 2*(1 - c) / n
-        phi[1, 0] = 6*(s - n*dt)
-        phi[1, 1] = 1
-        phi[1, 3] = -2*(1 - c) / n
-        phi[1, 4] = (4*s - 3*n*dt) / n
-        phi[2, 2] = c
-        phi[2, 5] = s / n
-        phi[3, 0] = 3*n*s
-        phi[3, 3] = c
-        phi[3, 4] = 2*s
-        phi[4, 0] = -6*n*(1 - c)
-        phi[4, 3] = -2*s
-        phi[4, 4] = 4*c - 3
-        phi[5, 2] = -n*s
-        phi[5, 5] = c
+        return augmented[:6].copy(), augmented[6:].reshape(6, 6)
 
-        # J2 secular correction to STM diagonal
-        a = r
-        inc_approx = math.acos(max(-1, min(1, state[2] / r)))
-        j2_rate = -1.5 * n * self.J2 * (self.R_EARTH / a)**2 * math.cos(inc_approx)
-        j2_correction = j2_rate * dt
-        phi[3, 0] += j2_correction * 0.1
-        phi[4, 1] += j2_correction * 0.05
+    def compute_stm(self, state: np.ndarray, dt: float) -> np.ndarray:
+        """Compute the 6x6 ECI State Transition Matrix (see propagate)."""
+        return self.propagate(state, dt)[1]
 
-        return phi
+    def local_stm(self, state: np.ndarray, dt: float) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        STM between the object's own RTN frames at epoch and at t.
+
+        Maps RTN deviations at epoch to RTN deviations at t, the frame the
+        second-order tensor below is written in. Returns (state at t in ECI, STM).
+        """
+        state = np.asarray(state, dtype=float)
+        state_t, phi_eci = self.propagate(state, dt)
+        phi_local = _state_rotation(state_t).T @ phi_eci @ _state_rotation(state)
+        return state_t, phi_local
 
     def compute_stt2(self, state: np.ndarray, dt: float) -> np.ndarray:
         """
         Compute 2nd-order State Transition Tensor Φ₂ (6x6x6).
         Captures the quadratic nonlinearity (banana curvature).
+        Written in the object's RTN frame: index 0 radial, 1 in-track, 2 cross-track.
         """
         r = np.linalg.norm(state[:3])
         if r < 100:
@@ -182,32 +274,47 @@ class DifferentialAlgebraScreener:
         5. If skewness is significant, fall back to Monte Carlo
     """
 
-    def __init__(self, order: int = 3, mc_samples: int = 50000):
+    def __init__(self, order: int = 3, mc_samples: int = 50000,
+                 seed: Optional[int] = None):
         self.order = order
         self.stt = StateTransitionTensor(order)
         self.mc_samples = mc_samples
+        self.rng = np.random.default_rng(seed)
         logger.info(f"Initialized DA Screener (order={order}, MC fallback={mc_samples})")
 
     def propagate_moments(self, state: np.ndarray, cov: np.ndarray,
                           dt: float) -> MomentTensor:
         """
         Propagate statistical moments through the nonlinear flow.
-        
+
         Uses the chain:
             μ' = Φ₁·μ + ½ Φ₂:(C + μ⊗μ) + ...
             C' = Φ₁·C·Φ₁ᵀ + Φ₂:(C⊗C):Φ₂ᵀ + ...
             S' = Φ₁⊗₃·S + Φ₂ coupling terms
-        """
-        phi = self.stt.compute_stm(state, dt)
-        phi2 = self.stt.compute_stt2(state, dt)
 
-        # 1st moment: linear propagation + quadratic correction
-        mean_prop = phi @ state
-        # Quadratic correction from STT₂ acting on covariance trace
+        Args:
+            state: initial ECI state (km, km/s)
+            cov: 6x6 covariance in the object's RTN frame at epoch
+            dt: propagation time (seconds)
+
+        Returns:
+            Moments in ECI at t: mean is the propagated state plus the
+            second-order shift; covariance and skewness are rotated to ECI.
+        """
+        state = np.asarray(state, dtype=float)
+        cov = np.asarray(cov, dtype=float)
+        # Work in the object's RTN frame, where Φ₂ is defined, then rotate to ECI.
+        state_t, phi = self.stt.local_stm(state, dt)
+        phi2 = self.stt.compute_stt2(state, dt)
+        to_eci = _state_rotation(state_t)
+
+        # 1st moment: second-order shift of the mean, from STT₂ acting on the covariance
+        mean_shift = np.zeros(6)
         for i in range(6):
             for j in range(6):
                 for k in range(6):
-                    mean_prop[i] += 0.5 * phi2[i, j, k] * cov[j, k]
+                    mean_shift[i] += 0.5 * phi2[i, j, k] * cov[j, k]
+        mean_prop = state_t + to_eci @ mean_shift
 
         # 2nd moment: standard + nonlinear spreading
         cov_prop = phi @ cov @ phi.T
@@ -240,19 +347,15 @@ class DifferentialAlgebraScreener:
                             skew[i, j, k] += phi2[j, m, n] * cov[m, i] * cov[n, k]
                             skew[i, j, k] += phi2[k, m, n] * cov[m, i] * cov[n, j]
 
-        return MomentTensor(mean=mean_prop, covariance=cov_prop,
-                           skewness=skew, order=self.order)
+        return MomentTensor(mean=mean_prop,
+                            covariance=to_eci @ cov_prop @ to_eci.T,
+                            skewness=_rotate_tensor3(skew, to_eci),
+                            order=self.order)
 
-    def project_to_encounter_plane(self, moments: MomentTensor,
-                                    encounter: EncounterGeometry) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Project 3D moments onto the 2D B-plane (encounter plane).
-        
-        The B-plane is perpendicular to the relative velocity vector.
-        Basis: ξ (in-plane, towards Sun), η (in-plane, perpendicular), ζ (along v_rel).
-        """
-        miss = encounter.miss_vector_rtn
-        v_rel = encounter.relative_velocity_km_s
+    @staticmethod
+    def _encounter_plane_basis(encounter: EncounterGeometry) -> np.ndarray:
+        """2x3 projection onto the encounter plane, in the primary's RTN frame."""
+        miss = np.asarray(encounter.miss_vector_rtn, dtype=float)
 
         # Construct B-plane basis
         zeta = miss / (np.linalg.norm(miss) + 1e-15)  # Along miss direction
@@ -262,8 +365,19 @@ class DifferentialAlgebraScreener:
         xi /= np.linalg.norm(xi) + 1e-15
         eta = np.cross(zeta, xi)
 
-        # Projection matrix (3D → 2D encounter plane)
-        T = np.array([xi, eta])  # 2x3
+        return np.array([xi, eta])  # 2x3
+
+    def project_to_encounter_plane(self, moments: MomentTensor,
+                                    encounter: EncounterGeometry) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Project 3D moments onto the 2D B-plane (encounter plane).
+
+        The B-plane is perpendicular to the relative velocity vector.
+        Basis: ξ (in-plane, towards Sun), η (in-plane, perpendicular), ζ (along v_rel).
+        The moments must already be in the primary's RTN frame at TCA.
+        """
+        miss = encounter.miss_vector_rtn
+        T = self._encounter_plane_basis(encounter)
 
         # Project moments
         miss_2d = T @ miss[:3]
@@ -331,32 +445,45 @@ class DifferentialAlgebraScreener:
         pc_corrected = pc_gaussian * max(0, correction)
         return max(0.0, min(1.0, pc_corrected))
 
+    def _sample_deviations_eci(self, state: np.ndarray, cov: np.ndarray,
+                               dt: float) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Draw deviations from the RTN covariance at epoch and map each through
+        the same second-order flow as propagate_moments.
+
+        Returns (mean state at t in ECI, deviations at t in ECI, shape [samples, 6]).
+        """
+        state = np.asarray(state, dtype=float)
+        state_t, phi = self.stt.local_stm(state, dt)
+        phi2 = self.stt.compute_stt2(state, dt)
+        dx0 = self.rng.multivariate_normal(np.zeros(6), np.asarray(cov, dtype=float),
+                                           self.mc_samples)
+        dxt = dx0 @ phi.T + 0.5 * np.einsum("ijk,sj,sk->si", phi2, dx0, dx0)
+        return state_t, dxt @ _state_rotation(state_t).T
+
     def monte_carlo_pc(self, state_pri: np.ndarray, cov_pri: np.ndarray,
                        state_sec: np.ndarray, cov_sec: np.ndarray,
-                       r_combined: float, dt: float) -> float:
+                       r_combined: float, dt: float,
+                       encounter: EncounterGeometry) -> float:
         """
         Monte Carlo fallback for when Edgeworth diverges (high skewness).
-        
-        Draws samples from the initial distribution, propagates each through
-        the nonlinear dynamics, and counts hard-body sphere intersections.
+
+        Draws deviations from each object's initial uncertainty, propagates
+        them through the second-order flow, adds them to the encounter's miss
+        vector and counts samples inside the hard-body radius on the same
+        encounter plane the analytic methods use.
         """
-        hits = 0
-        phi_pri = self.stt.compute_stm(state_pri, dt)
-        phi_sec = self.stt.compute_stm(state_sec, dt)
+        state_pri_t, dev_pri = self._sample_deviations_eci(state_pri, cov_pri, dt)
+        _, dev_sec = self._sample_deviations_eci(state_sec, cov_sec, dt)
 
-        # Draw samples from initial uncertainty
-        samples_pri = np.random.multivariate_normal(state_pri, cov_pri, self.mc_samples)
-        samples_sec = np.random.multivariate_normal(state_sec, cov_sec, self.mc_samples)
+        to_rtn = rtn_to_eci_matrix(state_pri_t).T
+        miss = np.asarray(encounter.miss_vector_rtn, dtype=float)[:3]
+        relative = miss + (dev_sec[:, :3] - dev_pri[:, :3]) @ to_rtn.T
+        relative_2d = relative @ self._encounter_plane_basis(encounter).T
 
-        for i in range(self.mc_samples):
-            pos_pri = (phi_pri @ samples_pri[i])[:3]
-            pos_sec = (phi_sec @ samples_sec[i])[:3]
-            dist = np.linalg.norm(pos_pri - pos_sec)
-            if dist < r_combined:
-                hits += 1
-
-        pc_mc = hits / self.mc_samples
-        return pc_mc
+        hits = np.count_nonzero(np.einsum("si,si->s", relative_2d, relative_2d)
+                                < r_combined**2)
+        return hits / self.mc_samples
 
     def screen(self, encounter: EncounterGeometry,
                state_pri: np.ndarray, cov_pri: np.ndarray,
@@ -369,15 +496,17 @@ class DifferentialAlgebraScreener:
             dict with pc_gaussian, pc_edgeworth, pc_monte_carlo (if needed),
             is_gaussian flag, skewness_metric, and recommendation.
         """
-        # Propagate moments for both objects
+        # Propagate moments for both objects (each returned in ECI)
         moments_pri = self.propagate_moments(state_pri, cov_pri, dt)
         moments_sec = self.propagate_moments(state_sec, cov_sec, dt)
 
-        # Combined covariance in encounter frame
-        combined_cov = moments_pri.covariance + moments_sec.covariance
-        combined_skew = moments_pri.skewness + moments_sec.skewness
+        # Relative state is secondary minus primary. For independent objects
+        # the covariances add, and the third central moments subtract.
+        to_rtn = _state_rotation(moments_pri.mean).T
+        combined_cov = to_rtn @ (moments_pri.covariance + moments_sec.covariance) @ to_rtn.T
+        combined_skew = _rotate_tensor3(moments_sec.skewness - moments_pri.skewness, to_rtn)
         combined = MomentTensor(
-            mean=moments_pri.mean - moments_sec.mean,
+            mean=to_rtn @ (moments_sec.mean - moments_pri.mean),
             covariance=combined_cov,
             skewness=combined_skew,
             order=self.order
@@ -411,7 +540,7 @@ class DifferentialAlgebraScreener:
         # Monte Carlo fallback for high-skewness encounters
         if skew_metric > 0.01 and pc_edge > 1e-7:
             pc_mc = self.monte_carlo_pc(state_pri, cov_pri, state_sec, cov_sec,
-                                         encounter.hard_body_radius_km, dt)
+                                         encounter.hard_body_radius_km, dt, encounter)
             result['pc_monte_carlo'] = pc_mc
             result['pc_best'] = pc_mc
             result['method'] = 'Monte Carlo (high skewness)'

@@ -22,10 +22,8 @@ RUN nvcc -O3 -arch=sm_87 \
     -shared -o libsentinel_gpu.so \
     -Xcompiler -fPIC
 
-# Compile C++ drivers
+# Compile the available C++ processing modules
 RUN g++ -O3 -std=c++17 \
-    src/camera_driver.cpp \
-    src/mount_control.cpp \
     src/plate_solver.cpp \
     src/photometry.cpp \
     -shared -o libsentinel_hw.so \

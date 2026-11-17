@@ -519,7 +519,8 @@ def run_self_test():
     # 10. LEO tracking benchmark
     print("\n─── LEO Tracking Benchmark ───")
     altitudes = [200, 300, 420, 550, 800, 1200, 2000]
-    print(f"  {'Alt (km)':>10s}  {'Rate (°/s)':>10s}  {'RA (\"/s)':>10s}  {'Dec (\"/s)':>10s}  {'Trackable':>10s}")
+    ra_header, dec_header = 'RA ("/s)', 'Dec ("/s)'
+    print(f"  {'Alt (km)':>10s}  {'Rate (°/s)':>10s}  {ra_header:>10s}  {dec_header:>10s}  {'Trackable':>10s}")
     for alt in altitudes:
         r = TrackingRates.from_leo_pass(alt, 51.6, 60)
         ok = "✓ Yes" if r.total_rate_deg_per_sec <= 5.0 else "✗ Too fast"
