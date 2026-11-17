@@ -153,13 +153,17 @@ Examples:
   "how's the gpu?" → {"cmd":"jetson_health","args":[],"narr":"Running GPU diagnostics..."}
   "hello" → {"cmd":"_reply","text":"Hello! I'm the SentinelForge terminal. Ask me anything about the codebase, or tell me what to run."}`;
 
-  // Strict fixed model allow-list (cannot be used as an open proxy)
-  const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-lite'];
+  // Strict fixed model allow-list (cannot be used as an open proxy).
+  // Both are stable Flash-Lite models that think at the "minimal" level by
+  // default. gemini-3.1-flash-lite is scheduled to shut down May 7, 2027:
+  // https://ai.google.dev/gemini-api/docs/deprecations
+  const models = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
   const reqBody = JSON.stringify({
     contents: [{ parts: [{ text: `${systemPrompt}\n\nUser input: ${JSON.stringify(input)}` }] }],
     generationConfig: {
-      temperature: 0.1,
-      maxOutputTokens: 256,
+      // Gemini 3 ignores temperature, and the output limit includes thinking
+      // tokens, so leave headroom beyond the short JSON reply.
+      maxOutputTokens: 1024,
       responseMimeType: 'application/json'
     }
   });
@@ -189,7 +193,10 @@ Examples:
       }
 
       const data = await response.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const parts = data?.candidates?.[0]?.content?.parts;
+      const text = Array.isArray(parts)
+        ? parts.find(part => typeof part?.text === 'string' && part.thought !== true)?.text
+        : undefined;
       if (!text) continue;
 
       let parsed;
